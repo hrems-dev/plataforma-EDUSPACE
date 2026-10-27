@@ -1,0 +1,70 @@
+# PROD local: cada servicio escucha en 8080 dentro de Docker y no publica puerto (solo el Gateway se expone).
+# Las credenciales llegan por variables de entorno, nunca por este repositorio.
+server:
+  port: 8080
+spring:
+  datasource:
+    url: jdbc:postgresql://alumnos-ms-db:5432/alumnos_db
+    username: ${DB_USER}
+    password: ${DB_PASSWORD}
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: America/Lima
+  flyway:
+    enabled: true
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP:kafka:9092}
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          jwk-set-uri: ${JWK_SET_URI:http://auth-ms:8080/.well-known/jwks.json}
+  servlet:
+    multipart:
+      max-file-size: 6MB
+      max-request-size: 7MB
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_URL:http://eureka-server:8761/eureka}
+  instance:
+    prefer-ip-address: true
+    instance-id: ${spring.application.name}:${random.value}
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+  endpoint:
+    health:
+      probes:
+        enabled: true
+app:
+  security:
+    swagger-public: false
+  kafka:
+    topic:
+      alumno-registrado: alumno.registrado
+      alumno-estado-cambiado: alumno.estado-cambiado
+  storage:
+    endpoint: ${MINIO_ENDPOINT:http://minio:9000}
+    public-endpoint: ${MINIO_PUBLIC_ENDPOINT}
+    access-key: ${MINIO_ACCESS_KEY}
+    secret-key: ${MINIO_SECRET_KEY}
+    bucket: alumnos-documentos
+  documentos:
+    max-bytes: 5242880
+    vigencia-descarga: PT10M
+  expediente:
+    requeridos: PARTIDA_NACIMIENTO,DNI,FICHA_SIAGIE
+  salud:
+    docentes-pueden-leer: false
+
+# PROD: SERVICE_TOKEN es obligatorio (sin valor por defecto): el servicio no arranca sin él.
+eduspace:
+  service-token: ${SERVICE_TOKEN}

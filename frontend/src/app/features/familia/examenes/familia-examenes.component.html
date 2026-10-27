@@ -1,0 +1,55 @@
+<div class="page">
+  <app-page-header titulo="Exámenes" subtitulo="Rinde tus exámenes en línea y revisa tus resultados. El tiempo lo controla el servidor." />
+
+  @if (esAlumno()) {
+    <section class="card">
+      <div class="card-body" style="padding-bottom: 0"><h2>Disponibles para rendir</h2></div>
+      <div class="table-wrap">
+        <table class="table">
+          <thead><tr><th>Examen</th><th>Disponible hasta</th><th>Duración</th><th>Intentos</th><th></th></tr></thead>
+          <tbody>
+            @for (e of disponibles(); track e.examenId) {
+              <tr>
+                <td><strong>{{ e.titulo }}</strong>@if (e.instrucciones) { <div class="muted">{{ e.instrucciones }}</div> }</td>
+                <td>{{ e.fechaFin | date: 'dd/MM HH:mm' }}</td>
+                <td>{{ e.duracionMin }} min</td>
+                <td>{{ e.intentosRealizados }} de {{ e.intentosMax }}</td>
+                <td class="acciones">
+                  @if (e.puedeRendir) { <a class="btn btn-sm btn-primary" [routerLink]="['/familia/examenes', e.examenId, 'rendir']">Rendir examen</a> }
+                  @else { <span class="badge badge-gray">Sin intentos</span> }
+                </td>
+              </tr>
+            } @empty {
+              <tr><td colspan="5" class="vacio">No hay exámenes disponibles ahora.</td></tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </section>
+  }
+
+  <section class="card">
+    <div class="card-body" style="padding-bottom: 0"><h2>Resultados</h2></div>
+    <div class="table-wrap">
+      <table class="table">
+        <thead><tr><th>Examen</th><th>Enviado</th><th>Puntaje</th><th>Nota</th><th>Estado</th></tr></thead>
+        <tbody>
+          @for (r of mios(); track r.intentoId) {
+            <tr>
+              <td><strong>{{ r.tituloExamen }}</strong><div class="muted">Intento {{ r.numeroIntento }}</div></td>
+              <td class="muted">{{ r.enviadoEn ? (r.enviadoEn | date: 'dd/MM HH:mm') : '—' }}</td>
+              <td>{{ r.puntajeObtenido ?? '—' }} / {{ r.puntajeTotal }}</td>
+              <td>
+                @if (r.nota !== undefined && r.nota !== null) { <strong [style.color]="r.nota < 11 ? 'var(--danger)' : ''">{{ r.nota }}</strong> }
+                @else { <span class="muted">{{ r.requiereRevisionAbiertas ? 'Pendiente de revisión' : '—' }}</span> }
+              </td>
+              <td><span [class]="'badge ' + clase(r.estado)">{{ r.estado.replace('_', ' ') }}</span></td>
+            </tr>
+          } @empty {
+            <tr><td colspan="5" class="vacio">{{ cargando() ? 'Cargando…' : 'Todavía no hay resultados.' }}</td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </section>
+</div>

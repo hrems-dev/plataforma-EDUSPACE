@@ -1,0 +1,113 @@
+<div class="page">
+  <app-page-header titulo="Secciones" subtitulo="Grupos de alumnos por grado y año. La capacidad define los cupos de matrícula.">@if (puedeEditar()) {
+    <button type="button" class="btn btn-primary" (click)="nueva()">Nueva sección</button>
+  }</app-page-header>
+  @if (!puedeEditar()) {
+    <div class="aviso aviso-warn">Solo el administrador puede modificar esta información; tú puedes consultarla.</div>
+  }
+
+  <form class="toolbar" [formGroup]="filtro">
+    <select class="input" formControlName="anioId" (change)="cargar()" aria-label="Año académico">
+      @for (a of anios(); track a.id) {
+        <option [ngValue]="a.id">Año {{ a.nombre }}</option>
+      }
+    </select>
+    <select class="input" formControlName="gradoId" (change)="cargar()" aria-label="Grado">
+      <option [ngValue]="0">Todos los grados</option>
+      @for (g of grados(); track g.id) {
+        <option [ngValue]="g.id">{{ g.nivelNombre }} · {{ g.nombre }}</option>
+      }
+    </select>
+  </form>
+
+  <div class="card">
+    <div class="table-wrap">
+      <table class="table">
+        <thead>
+          <tr><th>Grado</th><th>Sección</th><th>Turno</th><th>Capacidad</th><th>Aula</th><th>Tutor</th><th>Estado</th><th></th></tr>
+        </thead>
+        <tbody>
+          @for (s of secciones(); track s.id) {
+            <tr>
+              <td>{{ s.gradoNombre }}</td>
+              <td><strong>{{ s.nombre }}</strong></td>
+              <td>{{ s.turno === 'MANANA' ? 'Mañana' : 'Tarde' }}</td>
+              <td>{{ s.capacidad }}</td>
+              <td>{{ s.aulaNombre ?? '—' }}</td>
+              <td>{{ s.tutorNombre ?? '—' }}</td>
+              <td><span [class]="'badge ' + (s.activo ? 'badge-ok' : 'badge-gray')">{{ s.activo ? 'Activa' : 'Inactiva' }}</span></td>
+              <td class="acciones">@if (puedeEditar()) {
+                <button type="button" class="btn btn-sm" (click)="editar(s)">Editar</button>
+                <button type="button" class="btn btn-sm" (click)="eliminar(s)">Eliminar</button>
+              }</td>
+            </tr>
+          } @empty {
+            <tr><td colspan="8" class="vacio">{{ cargando() ? 'Cargando…' : 'No hay secciones con esos filtros.' }}</td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+@if (abierto()) {
+  <app-modal [titulo]="editando() ? 'Editar sección' : 'Nueva sección'" (cerrar)="cerrar()">
+    <form [formGroup]="form" (ngSubmit)="guardar()" id="form-seccion" novalidate>
+      <div class="form-grid">
+        <div class="field">
+          <label for="s-anio">Año</label>
+          <select id="s-anio" formControlName="anioId">
+            <option [ngValue]="0" disabled>Elige…</option>
+            @for (a of anios(); track a.id) { <option [ngValue]="a.id">{{ a.nombre }}</option> }
+          </select>
+        </div>
+        <div class="field">
+          <label for="s-grado">Grado</label>
+          <select id="s-grado" formControlName="gradoId">
+            <option [ngValue]="0" disabled>Elige…</option>
+            @for (g of grados(); track g.id) { <option [ngValue]="g.id">{{ g.nivelNombre }} · {{ g.nombre }}</option> }
+          </select>
+          @if (form.controls.gradoId.touched && form.controls.gradoId.invalid) { <span class="error">Elige un grado.</span> }
+        </div>
+        <div class="field">
+          <label for="s-nombre">Sección</label>
+          <input id="s-nombre" formControlName="nombre" placeholder="A" />
+          @if (form.controls.nombre.touched && form.controls.nombre.invalid) { <span class="error">Obligatorio.</span> }
+        </div>
+        <div class="field">
+          <label for="s-turno">Turno</label>
+          <select id="s-turno" formControlName="turno">
+            <option value="MANANA">Mañana</option>
+            <option value="TARDE">Tarde</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="s-cap">Capacidad</label>
+          <input id="s-cap" type="number" min="1" formControlName="capacidad" />
+        </div>
+        <div class="field">
+          <label for="s-aula">Aula</label>
+          <select id="s-aula" formControlName="aulaId">
+            <option [ngValue]="0">Sin aula</option>
+            @for (a of aulas(); track a.id) { <option [ngValue]="a.id">{{ a.nombre }} ({{ a.capacidad }})</option> }
+          </select>
+        </div>
+        <div class="field full">
+          <label for="s-tutor">Tutor</label>
+          <select id="s-tutor" formControlName="tutorDocenteId">
+            <option [ngValue]="0">Sin tutor</option>
+            @for (d of docentes(); track d.id) { <option [ngValue]="d.id">{{ nombreDocente(d) }}</option> }
+          </select>
+        </div>
+        <div class="field full">
+          <label class="check"><input type="checkbox" formControlName="activo" /> Sección activa</label>
+        </div>
+      </div>
+      @if (errorForm()) { <div class="aviso aviso-danger" style="margin-top: 14px" role="alert">{{ errorForm() }}</div> }
+    </form>
+    <ng-container footer>
+      <button type="button" class="btn" (click)="cerrar()">Cancelar</button>
+      <button type="submit" form="form-seccion" class="btn btn-primary" [disabled]="guardando()">{{ guardando() ? 'Guardando…' : 'Guardar' }}</button>
+    </ng-container>
+  </app-modal>
+}

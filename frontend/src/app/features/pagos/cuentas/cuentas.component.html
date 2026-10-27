@@ -1,0 +1,69 @@
+<div class="page">
+  <app-page-header titulo="Cuentas por alumno" subtitulo="Cuotas, descuentos, mora y saldos de cada alumno.">
+    @if (esAdmin() && alumno()) { <button type="button" class="btn" (click)="abrirDescuento()">Asignar descuento</button> }
+  </app-page-header>
+
+  <section class="card">
+    <div class="card-body"><app-buscador-alumno [soloActivos]="false" (elegidoAlumno)="elegir($event)" /></div>
+  </section>
+
+  @if (cuenta(); as c) {
+    <section class="kpis" aria-label="Resumen de la cuenta">
+      <div class="kpi"><div class="etiqueta">Total cobrado</div><div class="valor" style="color: var(--ok)">S/ {{ c.totalCobrado | number: '1.2-2' }}</div></div>
+      <div class="kpi"><div class="etiqueta">Pendiente</div><div class="valor">S/ {{ c.totalPendiente | number: '1.2-2' }}</div></div>
+      <div class="kpi"><div class="etiqueta">Vencido</div><div class="valor" [style.color]="c.totalVencido > 0 ? 'var(--danger)' : ''">S/ {{ c.totalVencido | number: '1.2-2' }}</div></div>
+    </section>
+    <div class="muted">Responsable de pago: <strong>{{ c.responsableNombre ?? '—' }}</strong></div>
+
+    <div class="card">
+      <div class="table-wrap">
+        <table class="table">
+          <thead><tr><th>Concepto</th><th>Vence</th><th>Monto</th><th>Descuento</th><th>Mora</th><th>Saldo</th><th>Estado</th></tr></thead>
+          <tbody>
+            @for (q of c.cuotas; track q.id) {
+              <tr>
+                <td><strong>{{ q.descripcion }}</strong></td>
+                <td>{{ q.fechaVencimiento | date: 'dd/MM/yyyy' }}@if (q.diasAtraso > 0) { <div class="muted" style="color: var(--danger)">{{ q.diasAtraso }} días de atraso</div> }</td>
+                <td>{{ q.montoBase | number: '1.2-2' }}</td>
+                <td>{{ q.descuento | number: '1.2-2' }}</td>
+                <td [style.color]="q.mora > 0 ? 'var(--danger)' : ''">{{ q.mora | number: '1.2-2' }}</td>
+                <td><strong>{{ q.saldo | number: '1.2-2' }}</strong></td>
+                <td><span [class]="'badge ' + clase(q.estado)">{{ q.estado }}</span></td>
+              </tr>
+            } @empty {
+              <tr><td colspan="7" class="vacio">Este alumno aún no tiene cuotas (se generan al matricularse, si hay tarifa).</td></tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  } @else if (cargando()) {
+    <div class="muted">Cargando…</div>
+  }
+</div>
+
+@if (abierto()) {
+  <app-modal titulo="Asignar descuento" [ancho]="480" (cerrar)="cerrar()">
+    <form [formGroup]="form" (ngSubmit)="asignar()" id="form-desc" novalidate>
+      <div class="form-grid">
+        <div class="field full">
+          <label for="d-desc">Descuento</label>
+          <select id="d-desc" formControlName="descuentoId">
+            <option [ngValue]="0" disabled>Elige…</option>
+            @for (d of descuentos(); track d.id) { <option [ngValue]="d.id">{{ d.nombre }} ({{ d.tipo === 'PORCENTAJE' ? d.valor + ' %' : 'S/ ' + d.valor }} · {{ d.aplicaA }})</option> }
+          </select>
+        </div>
+        <div class="field full">
+          <label for="d-anio">Año lectivo</label>
+          <select id="d-anio" formControlName="anioId">@for (a of anios(); track a.id) { <option [ngValue]="a.id">{{ a.nombre }}</option> }</select>
+        </div>
+        <div class="field full"><label for="d-motivo">Motivo (opcional)</label><input id="d-motivo" formControlName="motivo" placeholder="Hermanos" /></div>
+      </div>
+      @if (errorForm()) { <div class="aviso aviso-danger" style="margin-top: 14px" role="alert">{{ errorForm() }}</div> }
+    </form>
+    <ng-container footer>
+      <button type="button" class="btn" (click)="cerrar()">Cancelar</button>
+      <button type="submit" form="form-desc" class="btn btn-primary" [disabled]="guardando()">Asignar</button>
+    </ng-container>
+  </app-modal>
+}

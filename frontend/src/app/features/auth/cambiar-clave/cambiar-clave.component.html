@@ -1,0 +1,51 @@
+<main class="pagina">
+  <section class="panel">
+    <div class="marca">
+      <div class="logo">E</div>
+      <div class="nombre">EduSpace</div>
+    </div>
+    <h1>Cambiar clave</h1>
+    @if (obligatorio()) {
+      <div class="aviso aviso-warn">Tu clave es temporal. Debes cambiarla para continuar.</div>
+    } @else {
+      <p class="muted">Al cambiarla se cerrarán tus demás sesiones.</p>
+    }
+
+    <form [formGroup]="form" (ngSubmit)="enviar()" novalidate>
+      <div class="field">
+        <label for="claveActual">Clave actual</label>
+        <input id="claveActual" type="password" formControlName="claveActual" autocomplete="current-password" />
+        @if (form.controls.claveActual.touched && form.controls.claveActual.invalid) {
+          <span class="error">Ingresa tu clave actual.</span>
+        }
+      </div>
+
+      <div class="field">
+        <label for="claveNueva">Clave nueva</label>
+        <input id="claveNueva" type="password" formControlName="claveNueva" autocomplete="new-password" />
+        @if (form.controls.claveNueva.touched && form.controls.claveNueva.invalid) {
+          <span class="error">Debe tener entre 8 y 72 caracteres.</span>
+        }
+      </div>
+
+      <div class="field">
+        <label for="confirmacion">Repite la clave nueva</label>
+        <input id="confirmacion" type="password" formControlName="confirmacion" autocomplete="new-password" />
+        @if (form.controls.confirmacion.touched && form.hasError('noCoinciden')) {
+          <span class="error">Las claves no coinciden.</span>
+        }
+      </div>
+
+      @if (error()) {
+        <div class="aviso aviso-danger" role="alert">{{ error() }}</div>
+      }
+
+      <button type="submit" class="btn btn-primary entrar" [disabled]="cargando()">
+        {{ cargando() ? 'Guardando…' : 'Cambiar clave' }}
+      </button>
+      @if (!obligatorio()) {
+        <button type="button" class="btn entrar" (click)="cancelar()">Cancelar</button>
+      }
+    </form>
+  </section>
+</main>

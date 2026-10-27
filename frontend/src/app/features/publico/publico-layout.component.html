@@ -1,0 +1,47 @@
+<div class="pub">
+  <div class="pub-demo" role="note">Sitio de ejemplo: todos los nombres, cifras y noticias son ficticios.</div>
+  <header class="pub-cab">
+    <div class="pub-wrap pub-cab-in">
+      <a routerLink="/" class="pub-marca" aria-label="Inicio">
+        <span class="pub-logo" aria-hidden="true">H</span>
+        <span><strong>{{ colegio.nombre }}</strong><small>{{ colegio.lema }}</small></span>
+      </a>
+      <button type="button" class="pub-burger" (click)="menuAbierto.set(!menuAbierto())" [attr.aria-expanded]="menuAbierto()" aria-label="Menú">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16" /></svg>
+      </button>
+      <nav class="pub-nav" [class.abierto]="menuAbierto()" aria-label="Principal">
+        @for (e of enlaces; track e.ruta) {
+          <a [routerLink]="e.ruta" routerLinkActive="activo" [routerLinkActiveOptions]="{ exact: e.exacto }">{{ e.etiqueta }}</a>
+        }
+        <button type="button" class="pub-btn pub-btn-primario" (click)="ingresar()">{{ conSesion() ? 'Ir a mi portal' : 'Ingresar al portal' }}</button>
+      </nav>
+    </div>
+  </header>
+
+  <main><router-outlet /></main>
+
+  <footer class="pub-pie">
+    <div class="pub-wrap pub-pie-grid">
+      <div>
+        <strong class="pub-pie-tit">{{ colegio.nombre }}</strong>
+        <p>{{ colegio.lema }}. Formamos personas íntegras, curiosas y comprometidas con su comunidad.</p>
+      </div>
+      <div>
+        <strong class="pub-pie-tit">Visítanos</strong>
+        <p>{{ colegio.direccion }}<br />{{ colegio.ciudad }}</p>
+        <p>{{ colegio.horarioAtencion }}</p>
+      </div>
+      <div>
+        <strong class="pub-pie-tit">Contacto</strong>
+        <p>Tel. {{ colegio.telefono }}<br />WhatsApp {{ colegio.whatsapp }}<br />{{ colegio.correo }}</p>
+      </div>
+      <div>
+        <strong class="pub-pie-tit">Enlaces</strong>
+        <p>
+          @for (e of enlaces; track e.ruta) { <a [routerLink]="e.ruta">{{ e.etiqueta }}</a><br /> }
+        </p>
+      </div>
+    </div>
+    <div class="pub-wrap pub-pie-fin">© {{ anio }} {{ colegio.nombre }} · Sitio de ejemplo · Portal con EduSpace</div>
+  </footer>
+</div>

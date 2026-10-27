@@ -1,0 +1,73 @@
+<div class="page">
+  <app-page-header titulo="Notificaciones" subtitulo="Avisos del colegio sobre asistencia, notas, pagos y matrícula.">
+    @if (pestana() !== 'preferencias') {
+      <button type="button" class="btn" [disabled]="noLeidas() === 0" (click)="leerTodas()">Marcar todas como leídas</button>
+    }
+  </app-page-header>
+
+  <div class="checks" role="tablist" aria-label="Vistas">
+    <label [style.background]="pestana() === 'todas' ? 'var(--primary-soft)' : ''">
+      <input type="radio" name="vista" [checked]="pestana() === 'todas'" (change)="elegir('todas')" /> Todas
+    </label>
+    <label [style.background]="pestana() === 'sinLeer' ? 'var(--primary-soft)' : ''">
+      <input type="radio" name="vista" [checked]="pestana() === 'sinLeer'" (change)="elegir('sinLeer')" /> Sin leer @if (noLeidas() > 0) { ({{ noLeidas() }}) }
+    </label>
+    <label [style.background]="pestana() === 'preferencias' ? 'var(--primary-soft)' : ''">
+      <input type="radio" name="vista" [checked]="pestana() === 'preferencias'" (change)="elegir('preferencias')" /> Preferencias
+    </label>
+  </div>
+
+  @if (pestana() === 'preferencias') {
+    <div class="card">
+      <div class="card-body" style="padding-bottom: 0">
+        <p class="muted" style="margin: 0">Elige por qué canal quieres recibir cada tipo de aviso. El correo solo existe para algunos.</p>
+      </div>
+      <div class="table-wrap">
+        <table class="table">
+          <thead>
+            <tr><th>Aviso</th>@for (c of canales; track c) { <th>{{ c === 'IN_APP' ? 'En la app' : c === 'EMAIL' ? 'Correo' : 'Notificación push' }}</th> }</tr>
+          </thead>
+          <tbody>
+            @for (t of tipos; track t.codigo) {
+              <tr>
+                <td><strong>{{ t.etiqueta }}</strong></td>
+                @for (c of canales; track c) {
+                  <td>
+                    @if (t.canales.includes(c)) {
+                      <input type="checkbox" [checked]="activa(t.codigo, c)" (change)="cambiar(t.codigo, c, $any($event.target).checked)" [attr.aria-label]="t.etiqueta + ' por ' + c" style="width: 18px; height: 18px" />
+                    } @else {
+                      <span class="muted">—</span>
+                    }
+                  </td>
+                }
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      <div class="card-body"><button type="button" class="btn btn-primary" [disabled]="guardando()" (click)="guardarPreferencias()">{{ guardando() ? 'Guardando…' : 'Guardar preferencias' }}</button></div>
+    </div>
+  } @else {
+    <div class="card">
+      @for (n of lista(); track n.id) {
+        <button type="button" (click)="marcar(n)" class="notif" [class.sinleer]="!n.leida" [attr.aria-label]="(n.leida ? '' : 'Sin leer: ') + n.titulo">
+          <span class="punto" aria-hidden="true"></span>
+          <span class="cuerpo">
+            <span class="tit">{{ n.titulo }} <span class="badge badge-gray">{{ etiqueta(n.tipo) }}</span></span>
+            <span class="msg">{{ n.mensaje }}</span>
+            <span class="muted">{{ n.creadaEn | date: 'dd/MM/yyyy HH:mm' }}</span>
+          </span>
+        </button>
+      } @empty {
+        <div class="vacio">{{ cargando() ? 'Cargando…' : pestana() === 'sinLeer' ? 'No tienes notificaciones sin leer.' : 'Aún no tienes notificaciones.' }}</div>
+      }
+      <div class="toolbar" style="padding: 12px 16px; justify-content: space-between">
+        <span class="muted">{{ total() }} notificaciones · página {{ pagina() + 1 }} de {{ paginas() }}</span>
+        <span>
+          <button type="button" class="btn btn-sm" [disabled]="pagina() === 0" (click)="irA(pagina() - 1)">Anterior</button>
+          <button type="button" class="btn btn-sm" [disabled]="pagina() + 1 >= paginas()" (click)="irA(pagina() + 1)">Siguiente</button>
+        </span>
+      </div>
+    </div>
+  }
+</div>

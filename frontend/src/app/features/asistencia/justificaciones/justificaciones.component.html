@@ -1,0 +1,64 @@
+<div class="page">
+  <app-page-header titulo="Justificaciones de inasistencia" subtitulo="Solicitudes de los apoderados. Al aprobar, las faltas del rango pasan a justificadas." />
+
+  <div class="toolbar">
+    <select class="input" [formControl]="estado" (change)="cargar(0)" aria-label="Estado">
+      <option value="PENDIENTE">Pendientes</option>
+      <option value="APROBADA">Aprobadas</option>
+      <option value="RECHAZADA">Rechazadas</option>
+      <option value="">Todas</option>
+    </select>
+  </div>
+
+  <div class="card">
+    <div class="table-wrap">
+      <table class="table">
+        <thead><tr><th>Alumno</th><th>Rango</th><th>Tipo</th><th>Motivo</th><th>Estado</th><th></th></tr></thead>
+        <tbody>
+          @for (j of lista(); track j.id) {
+            <tr>
+              <td><a [routerLink]="['/alumnos', j.alumnoId]"><strong>{{ nombre(j.alumnoId) }}</strong></a><div class="muted">Pedido el {{ j.creadoEn | date: 'dd/MM/yyyy' }}</div></td>
+              <td>{{ j.fechaDesde | date: 'dd/MM' }}{{ j.fechaHasta !== j.fechaDesde ? ' – ' + (j.fechaHasta | date: 'dd/MM') : '' }}</td>
+              <td>{{ j.tipo }}</td>
+              <td style="max-width: 300px">{{ j.motivo }}@if (j.comentarioResolucion) { <div class="muted">Respuesta: {{ j.comentarioResolucion }}</div> }</td>
+              <td><span [class]="'badge ' + clase(j.estado)">{{ j.estado }}</span></td>
+              <td class="acciones">
+                @if (j.rutaArchivo) { <button type="button" class="btn btn-sm" (click)="verSustento(j)">Ver sustento</button> }
+                @if (j.estado === 'PENDIENTE') {
+                  <button type="button" class="btn btn-sm btn-primary" (click)="resolver(j, 'APROBADA')">Aprobar</button>
+                  <button type="button" class="btn btn-sm" (click)="resolver(j, 'RECHAZADA')">Rechazar</button>
+                }
+              </td>
+            </tr>
+          } @empty {
+            <tr><td colspan="6" class="vacio">{{ cargando() ? 'Cargando…' : 'No hay justificaciones con ese estado.' }}</td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    <div class="toolbar" style="padding: 12px 16px; justify-content: space-between">
+      <span class="muted">{{ total() }} justificaciones · página {{ pagina() + 1 }} de {{ paginas() }}</span>
+      <span>
+        <button type="button" class="btn btn-sm" [disabled]="pagina() === 0" (click)="irA(pagina() - 1)">Anterior</button>
+        <button type="button" class="btn btn-sm" [disabled]="pagina() + 1 >= paginas()" (click)="irA(pagina() + 1)">Siguiente</button>
+      </span>
+    </div>
+  </div>
+</div>
+
+@if (resolviendo(); as r) {
+  <app-modal [titulo]="(r.resolucion === 'APROBADA' ? 'Aprobar' : 'Rechazar') + ' justificación'" [ancho]="480" (cerrar)="cerrar()">
+    <p style="margin-top: 0"><strong>{{ nombre(r.j.alumnoId) }}</strong> · {{ r.j.fechaDesde | date: 'dd/MM' }}{{ r.j.fechaHasta !== r.j.fechaDesde ? ' – ' + (r.j.fechaHasta | date: 'dd/MM') : '' }}</p>
+    <div class="field">
+      <label for="j-com">Comentario {{ r.resolucion === 'RECHAZADA' ? '(obligatorio)' : '(opcional)' }}</label>
+      <textarea id="j-com" rows="3" [formControl]="comentario" style="padding: 10px 12px; min-height: 80px"></textarea>
+    </div>
+    @if (errorForm()) { <div class="aviso aviso-danger" style="margin-top: 14px" role="alert">{{ errorForm() }}</div> }
+    <ng-container footer>
+      <button type="button" class="btn" (click)="cerrar()">Cancelar</button>
+      <button type="button" class="btn" [class.btn-primary]="r.resolucion === 'APROBADA'" [class.btn-danger]="r.resolucion === 'RECHAZADA'" [disabled]="guardando()" (click)="confirmar()">
+        {{ r.resolucion === 'APROBADA' ? 'Aprobar' : 'Rechazar' }}
+      </button>
+    </ng-container>
+  </app-modal>
+}

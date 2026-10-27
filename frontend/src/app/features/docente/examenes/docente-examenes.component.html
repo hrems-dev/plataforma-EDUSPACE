@@ -1,0 +1,135 @@
+<div class="page">
+  <app-page-header titulo="Exámenes" subtitulo="Arma exámenes con preguntas de tu banco, publícalos y revisa los resultados. El tiempo lo controla el servidor.">
+    <a class="btn" routerLink="/docente/banco">Banco de preguntas</a>
+    <button type="button" class="btn btn-primary" [disabled]="!ctx()?.asignaciones?.length" (click)="nuevo()">Nuevo examen</button>
+  </app-page-header>
+
+  <div class="toolbar">
+    <select class="input" [formControl]="estado" (change)="cargar(0)" aria-label="Estado">
+      <option value="">Todos</option>
+      <option value="BORRADOR">Borradores</option>
+      <option value="PUBLICADO">Publicados</option>
+      <option value="CERRADO">Cerrados</option>
+      <option value="CALIFICADO">Calificados</option>
+    </select>
+  </div>
+
+  <div class="card">
+    <div class="table-wrap">
+      <table class="table">
+        <thead><tr><th>Examen</th><th>Curso y sección</th><th>Ventana</th><th>Duración</th><th>Puntaje</th><th>Estado</th><th></th></tr></thead>
+        <tbody>
+          @for (x of examenes(); track x.id) {
+            <tr>
+              <td><strong>{{ x.titulo }}</strong></td>
+              <td>{{ etiqueta(x) }}</td>
+              <td class="muted">{{ x.fechaInicio | date: 'dd/MM HH:mm' }} → {{ x.fechaFin | date: 'dd/MM HH:mm' }}</td>
+              <td>{{ x.duracionMin }} min · {{ x.intentosMax }} {{ x.intentosMax === 1 ? 'intento' : 'intentos' }}</td>
+              <td>{{ x.puntajeTotal }}</td>
+              <td><span [class]="'badge ' + clase(x.estado)">{{ x.estado }}</span></td>
+              <td class="acciones">
+                @if (x.estado === 'BORRADOR') {
+                  <button type="button" class="btn btn-sm" (click)="editar(x)">Editar</button>
+                  <button type="button" class="btn btn-sm btn-primary" (click)="publicar(x)">Publicar</button>
+                } @else {
+                  <button type="button" class="btn btn-sm" (click)="verResultados(x)">Resultados</button>
+                }
+                @if (x.estado === 'PUBLICADO') { <button type="button" class="btn btn-sm" (click)="cerrarExamen(x)">Cerrar</button> }
+              </td>
+            </tr>
+          } @empty {
+            <tr><td colspan="7" class="vacio">{{ cargando() ? 'Cargando…' : 'Aún no creaste exámenes.' }}</td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    <div class="toolbar" style="padding: 12px 16px; justify-content: space-between">
+      <span class="muted">{{ total() }} exámenes · página {{ pagina() + 1 }} de {{ paginas() }}</span>
+      <span>
+        <button type="button" class="btn btn-sm" [disabled]="pagina() === 0" (click)="irA(pagina() - 1)">Anterior</button>
+        <button type="button" class="btn btn-sm" [disabled]="pagina() + 1 >= paginas()" (click)="irA(pagina() + 1)">Siguiente</button>
+      </span>
+    </div>
+  </div>
+</div>
+
+@if (abierto()) {
+  <app-modal [titulo]="editando() ? 'Editar examen' : 'Nuevo examen'" [ancho]="760" (cerrar)="cerrar()">
+    <form [formGroup]="form" (ngSubmit)="guardar()" id="form-examen" novalidate>
+      <div class="form-grid">
+        <div class="field">
+          <label for="x-asig">Curso y sección</label>
+          <select id="x-asig" formControlName="asignacion" (change)="cargarBanco()">
+            @for (a of ctx()?.asignaciones ?? []; track a.id) { <option [ngValue]="a.id">{{ a.cursoNombre }} · {{ a.seccionNombre }}</option> }
+          </select>
+        </div>
+        <div class="field">
+          <label for="x-per">Periodo</label>
+          <select id="x-per" formControlName="periodoId">@for (p of ctx()?.periodos ?? []; track p.id) { <option [ngValue]="p.id">{{ p.nombre }}</option> }</select>
+        </div>
+        <div class="field full"><label for="x-tit">Título</label><input id="x-tit" formControlName="titulo" />
+          @if (form.controls.titulo.touched && form.controls.titulo.invalid) { <span class="error">Obligatorio.</span> }</div>
+        <div class="field full"><label for="x-ins">Instrucciones</label><textarea id="x-ins" rows="2" formControlName="instrucciones" style="padding: 10px 12px; min-height: 64px"></textarea></div>
+        <div class="field"><label for="x-ini">Se puede rendir desde</label><input id="x-ini" type="datetime-local" formControlName="fechaInicio" /></div>
+        <div class="field"><label for="x-fin">Hasta</label><input id="x-fin" type="datetime-local" formControlName="fechaFin" /></div>
+        <div class="field"><label for="x-dur">Duración (minutos)</label><input id="x-dur" type="number" min="1" formControlName="duracionMin" /></div>
+        <div class="field"><label for="x-int">Intentos permitidos</label><input id="x-int" type="number" min="1" formControlName="intentosMax" /></div>
+        <div class="field full"><label class="check"><input type="checkbox" formControlName="barajarPreguntas" /> Barajar el orden de las preguntas</label></div>
+      </div>
+
+      <h2 style="margin: 18px 0 8px">Preguntas del examen <span class="badge" style="margin-left: 6px">{{ nElegidas() }} elegidas · {{ puntajeTotal() }} puntos</span></h2>
+      <div class="table-wrap" style="max-height: 280px; overflow-y: auto; border: 1px solid var(--line); border-radius: 10px">
+        <table class="table" style="min-width: 0">
+          <tbody>
+            @for (p of banco(); track p.id) {
+              <tr>
+                <td style="width: 40px"><input type="checkbox" [checked]="estaElegida(p)" (change)="alternar(p, $any($event.target).checked)" [attr.aria-label]="'Incluir: ' + p.enunciado" style="width: 18px; height: 18px" /></td>
+                <td>{{ p.enunciado }}<div class="muted">{{ p.tipo.replaceAll('_', ' ').toLowerCase() }}{{ p.tema ? ' · ' + p.tema : '' }}</div></td>
+                <td style="width: 70px" class="muted">{{ p.puntaje }} pts</td>
+              </tr>
+            } @empty {
+              <tr><td class="vacio">No hay preguntas activas en el banco de este curso. Créalas en «Banco de preguntas».</td></tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      @if (errorForm()) { <div class="aviso aviso-danger" style="margin-top: 14px" role="alert">{{ errorForm() }}</div> }
+    </form>
+    <ng-container footer>
+      <button type="button" class="btn" (click)="cerrar()">Cancelar</button>
+      <button type="submit" form="form-examen" class="btn btn-primary" [disabled]="guardando()">{{ guardando() ? 'Guardando…' : 'Guardar borrador' }}</button>
+    </ng-container>
+  </app-modal>
+}
+
+@if (resultados(); as r) {
+  <app-modal [titulo]="'Resultados · ' + r.titulo" [ancho]="720" (cerrar)="cerrarResultados()">
+    <section class="kpis" style="margin-bottom: 16px">
+      <div class="kpi"><div class="etiqueta">Alumnos evaluados</div><div class="valor">{{ r.alumnosEvaluados }}</div></div>
+      <div class="kpi"><div class="etiqueta">Promedio</div><div class="valor">{{ r.promedioNotas !== undefined && r.promedioNotas !== null ? (r.promedioNotas | number: '1.1-1') : '—' }}</div></div>
+      <div class="kpi"><div class="etiqueta">Nota máx. / mín.</div><div class="valor" style="font-size: 22px">{{ r.notaMaxima ?? '—' }} / {{ r.notaMinima ?? '—' }}</div></div>
+    </section>
+    @if (pendientesRevision() > 0) {
+      <div class="aviso aviso-warn" style="margin-bottom: 12px">{{ pendientesRevision() }} intento(s) tienen preguntas abiertas pendientes de revisión.</div>
+    }
+    <div class="table-wrap">
+      <table class="table" style="min-width: 0">
+        <thead><tr><th>Alumno</th><th>Intento</th><th>Estado</th><th>Puntaje</th><th>Nota</th></tr></thead>
+        <tbody>
+          @for (i of r.intentos; track i.intentoId) {
+            <tr>
+              <td><strong>{{ i.alumnoNombre }}</strong></td>
+              <td>{{ i.numeroIntento }}</td>
+              <td><span class="badge">{{ i.estado.replace('_', ' ') }}</span>@if (i.requiereRevision) { <span class="badge badge-warn" style="margin-left: 4px">Revisar</span> }</td>
+              <td>{{ i.puntajeObtenido ?? '—' }} / {{ r.puntajeTotal }}</td>
+              <td [style.color]="(i.nota ?? 20) < 11 ? 'var(--danger)' : ''"><strong>{{ i.nota ?? '—' }}</strong></td>
+            </tr>
+          } @empty {
+            <tr><td colspan="5" class="vacio">Nadie rindió este examen todavía.</td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    <ng-container footer><button type="button" class="btn btn-primary" (click)="cerrarResultados()">Cerrar</button></ng-container>
+  </app-modal>
+}

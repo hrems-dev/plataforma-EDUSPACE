@@ -1,0 +1,98 @@
+<div class="page">
+  <app-page-header titulo="Docentes" subtitulo="Ficha del docente. Para que inicie sesión, su cuenta se crea en Usuarios y roles con el rol DOCENTE.">
+    <button type="button" class="btn btn-primary" (click)="nuevo()">Nuevo docente</button>
+  </app-page-header>
+
+  <form class="toolbar" (submit)="$event.preventDefault(); buscar()">
+    <input class="input grow" type="search" [formControl]="busqueda" placeholder="Buscar por nombre o documento" aria-label="Buscar docente" />
+    <button type="submit" class="btn">Buscar</button>
+  </form>
+
+  <div class="card">
+    <div class="table-wrap">
+      <table class="table">
+        <thead>
+          <tr><th>Docente</th><th>Documento</th><th>Especialidad</th><th>Contacto</th><th>Cuenta</th><th>Estado</th><th></th></tr>
+        </thead>
+        <tbody>
+          @for (d of docentes(); track d.id) {
+            <tr>
+              <td><strong>{{ d.apellidos }}, {{ d.nombres }}</strong></td>
+              <td>{{ d.tipoDocumento ?? 'DNI' }} {{ d.numeroDocumento }}</td>
+              <td>{{ d.especialidad ?? '—' }}</td>
+              <td>
+                {{ d.email ?? '—' }}
+                @if (d.telefono) { <div class="muted">{{ d.telefono }}</div> }
+              </td>
+              <td><span [class]="'badge ' + (d.usuarioId ? 'badge-ok' : 'badge-gray')">{{ d.usuarioId ? 'Vinculada' : 'Sin cuenta' }}</span></td>
+              <td><span [class]="'badge ' + (d.estado === 'ACTIVO' ? 'badge-ok' : 'badge-gray')">{{ d.estado === 'ACTIVO' ? 'Activo' : 'Inactivo' }}</span></td>
+              <td class="acciones">
+                <button type="button" class="btn btn-sm" (click)="editar(d)">Editar</button>
+                <button type="button" class="btn btn-sm" [disabled]="d.estado !== 'ACTIVO'" (click)="eliminar(d)">Dar de baja</button>
+              </td>
+            </tr>
+          } @empty {
+            <tr><td colspan="7" class="vacio">{{ cargando() ? 'Cargando…' : 'No hay docentes con esa búsqueda.' }}</td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    <div class="toolbar" style="padding: 12px 16px; justify-content: space-between">
+      <span class="muted">{{ total() }} docentes · página {{ pagina() + 1 }} de {{ paginas() }}</span>
+      <span>
+        <button type="button" class="btn btn-sm" [disabled]="pagina() === 0" (click)="irA(pagina() - 1)">Anterior</button>
+        <button type="button" class="btn btn-sm" [disabled]="pagina() + 1 >= paginas()" (click)="irA(pagina() + 1)">Siguiente</button>
+      </span>
+    </div>
+  </div>
+</div>
+
+@if (abierto()) {
+  <app-modal [titulo]="editando() ? 'Editar docente' : 'Nuevo docente'" (cerrar)="cerrar()">
+    <form [formGroup]="form" (ngSubmit)="guardar()" id="form-docente" novalidate>
+      <div class="form-grid">
+        <div class="field">
+          <label for="d-tipo">Tipo de documento</label>
+          <select id="d-tipo" formControlName="tipoDocumento">
+            <option value="DNI">DNI</option>
+            <option value="CE">Carné de extranjería</option>
+            <option value="PASAPORTE">Pasaporte</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="d-num">Número</label>
+          <input id="d-num" formControlName="numeroDocumento" />
+          @if (form.controls.numeroDocumento.touched && form.controls.numeroDocumento.invalid) { <span class="error">Obligatorio.</span> }
+        </div>
+        <div class="field">
+          <label for="d-nombres">Nombres</label>
+          <input id="d-nombres" formControlName="nombres" />
+          @if (form.controls.nombres.touched && form.controls.nombres.invalid) { <span class="error">Obligatorio.</span> }
+        </div>
+        <div class="field">
+          <label for="d-apellidos">Apellidos</label>
+          <input id="d-apellidos" formControlName="apellidos" />
+          @if (form.controls.apellidos.touched && form.controls.apellidos.invalid) { <span class="error">Obligatorio.</span> }
+        </div>
+        <div class="field">
+          <label for="d-email">Correo</label>
+          <input id="d-email" type="email" formControlName="email" />
+          @if (form.controls.email.invalid) { <span class="error">Correo no válido.</span> }
+        </div>
+        <div class="field">
+          <label for="d-tel">Teléfono</label>
+          <input id="d-tel" formControlName="telefono" />
+        </div>
+        <div class="field full">
+          <label for="d-esp">Especialidad</label>
+          <input id="d-esp" formControlName="especialidad" placeholder="Matemática" />
+        </div>
+      </div>
+      @if (errorForm()) { <div class="aviso aviso-danger" style="margin-top: 14px" role="alert">{{ errorForm() }}</div> }
+    </form>
+    <ng-container footer>
+      <button type="button" class="btn" (click)="cerrar()">Cancelar</button>
+      <button type="submit" form="form-docente" class="btn btn-primary" [disabled]="guardando()">{{ guardando() ? 'Guardando…' : 'Guardar' }}</button>
+    </ng-container>
+  </app-modal>
+}

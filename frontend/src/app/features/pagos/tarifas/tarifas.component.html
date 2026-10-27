@@ -1,0 +1,101 @@
+<div class="page">
+  <app-page-header titulo="Tarifas" subtitulo="Monto y calendario de cuotas por año, nivel y, opcionalmente, grado. Sin tarifa, la matrícula no genera cuotas y se crea una alerta.">
+    <button type="button" class="btn btn-primary" [disabled]="!anioId.value" (click)="nueva()">Nueva tarifa</button>
+  </app-page-header>
+
+  <div class="toolbar">
+    <select class="input" [formControl]="anioId" (change)="cargar()" aria-label="Año académico">
+      @for (a of anios(); track a.id) { <option [ngValue]="a.id">Año {{ a.nombre }}</option> }
+    </select>
+  </div>
+
+  <div class="card">
+    <div class="table-wrap">
+      <table class="table">
+        <thead>
+          <tr><th>Concepto</th><th>Nivel</th><th>Grado</th><th>Monto</th><th>Cuotas</th><th>Calendario</th><th>Estado</th><th></th></tr>
+        </thead>
+        <tbody>
+          @for (t of tarifas(); track t.id) {
+            <tr>
+              <td><strong>{{ t.conceptoNombre }}</strong></td>
+              <td>{{ nombreNivel(t.nivelId) }}</td>
+              <td>{{ nombreGrado(t.gradoId) }}</td>
+              <td>{{ soles(t.monto) }}</td>
+              <td>{{ t.numCuotas }}</td>
+              <td class="muted">desde {{ meses[t.mesInicio - 1] }}, vence el día {{ t.diaVencimiento }}</td>
+              <td><span [class]="'badge ' + (t.activo ? 'badge-ok' : 'badge-gray')">{{ t.activo ? 'Activa' : 'Inactiva' }}</span></td>
+              <td class="acciones"><button type="button" class="btn btn-sm" (click)="editar(t)">Editar</button></td>
+            </tr>
+          } @empty {
+            <tr><td colspan="8" class="vacio">{{ cargando() ? 'Cargando…' : 'Este año aún no tiene tarifas.' }}</td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+@if (abierto()) {
+  <app-modal [titulo]="editando() ? 'Editar tarifa' : 'Nueva tarifa'" (cerrar)="cerrar()">
+    <form [formGroup]="form" (ngSubmit)="guardar()" id="form-tarifa" novalidate>
+      @if (editando()) {
+        <div class="aviso aviso-warn" style="margin-bottom: 14px">
+          El monto y el calendario de una tarifa existente no se pueden cambiar. Desactívala y crea una nueva con los valores correctos.
+        </div>
+      }
+      <div class="form-grid">
+        <div class="field full">
+          <label for="t-concepto">Concepto</label>
+          <select id="t-concepto" formControlName="conceptoId">
+            <option [ngValue]="0" disabled>Elige…</option>
+            @for (c of conceptos(); track c.id) { <option [ngValue]="c.id">{{ c.nombre }} ({{ c.tipo }})</option> }
+          </select>
+          @if (form.controls.conceptoId.touched && form.controls.conceptoId.invalid) { <span class="error">Elige un concepto.</span> }
+        </div>
+        <div class="field">
+          <label for="t-nivel">Nivel</label>
+          <select id="t-nivel" formControlName="nivelId" (change)="cambioNivel()">
+            <option [ngValue]="0" disabled>Elige…</option>
+            @for (n of niveles(); track n.id) { <option [ngValue]="n.id">{{ n.nombre }}</option> }
+          </select>
+          @if (form.controls.nivelId.touched && form.controls.nivelId.invalid) { <span class="error">Elige un nivel.</span> }
+        </div>
+        <div class="field">
+          <label for="t-grado">Grado</label>
+          <select id="t-grado" formControlName="gradoId">
+            <option [ngValue]="0">Todos los grados del nivel</option>
+            @for (g of gradosDelNivel(); track g.id) { <option [ngValue]="g.id">{{ g.nombre }}</option> }
+          </select>
+        </div>
+        <div class="field">
+          <label for="t-monto">Monto por cuota (S/)</label>
+          <input id="t-monto" type="number" step="0.01" min="0.01" formControlName="monto" />
+          @if (form.controls.monto.touched && form.controls.monto.invalid) { <span class="error">Debe ser mayor que 0.</span> }
+        </div>
+        <div class="field">
+          <label for="t-cuotas">N.º de cuotas</label>
+          <input id="t-cuotas" type="number" min="1" max="12" formControlName="numCuotas" />
+        </div>
+        <div class="field">
+          <label for="t-mes">Mes de la primera cuota</label>
+          <select id="t-mes" formControlName="mesInicio">
+            @for (m of meses; track $index) { <option [ngValue]="$index + 1">{{ m }}</option> }
+          </select>
+        </div>
+        <div class="field">
+          <label for="t-dia">Día de vencimiento</label>
+          <input id="t-dia" type="number" min="1" max="28" formControlName="diaVencimiento" />
+        </div>
+        <div class="field full">
+          <label class="check"><input type="checkbox" formControlName="activo" /> Tarifa activa</label>
+        </div>
+      </div>
+      @if (errorForm()) { <div class="aviso aviso-danger" style="margin-top: 14px" role="alert">{{ errorForm() }}</div> }
+    </form>
+    <ng-container footer>
+      <button type="button" class="btn" (click)="cerrar()">Cancelar</button>
+      <button type="submit" form="form-tarifa" class="btn btn-primary" [disabled]="guardando()">{{ guardando() ? 'Guardando…' : 'Guardar' }}</button>
+    </ng-container>
+  </app-modal>
+}

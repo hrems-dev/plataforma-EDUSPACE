@@ -1,0 +1,25 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: "eduspace-services"
+    metrics_path: "/actuator/prometheus"
+    eureka_sd_configs:
+      - server: "http://host.docker.internal:18761/eureka"
+        refresh_interval: 10s
+    relabel_configs:
+      # Reemplaza 'localhost' por 'host.docker.internal' para resolver desde el contenedor Docker
+      - source_labels: [__address__]
+        target_label: __address__
+        regex: "localhost:(.*)"
+        replacement: "host.docker.internal:${1}"
+      # Asigna el nombre de la aplicación registrado en Eureka a la etiqueta application
+      - source_labels: [__meta_eureka_app_name]
+        target_label: application
+        regex: (.*)
+        replacement: ${1}
+      # Asigna el instance id
+      - source_labels: [__meta_eureka_app_instance_id]
+        target_label: instance
+

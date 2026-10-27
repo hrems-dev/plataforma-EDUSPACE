@@ -1,0 +1,65 @@
+<div class="page">
+  <app-page-header titulo="Importar alumnos" subtitulo="Carga masiva desde un archivo CSV (hasta 500 alumnos). Cada fila se procesa por separado: una fila con error no detiene las demás.">
+    <a class="btn" routerLink="/alumnos">Volver a alumnos</a>
+  </app-page-header>
+
+  <section class="card">
+    <div class="card-body">
+      <h2 style="margin-bottom: 10px">Formato del archivo</h2>
+      <ul class="muted" style="margin: 0 0 14px; padding-left: 20px; line-height: 1.7">
+        <li>Primera fila con los nombres de columna; separador coma o punto y coma; codificación UTF-8.</li>
+        <li>Obligatorias: <code>numeroDocumento</code>, <code>nombres</code>, <code>apellidoPaterno</code>, <code>fechaNacimiento</code> (AAAA-MM-DD), <code>sexo</code> (M o F),
+          <code>apoderadoNumeroDocumento</code>, <code>apoderadoNombres</code>, <code>apoderadoApellidos</code>, <code>apoderadoParentesco</code> (PADRE, MADRE, TUTOR…).</li>
+        <li>Opcionales: <code>apellidoMaterno</code>, <code>tipoDocumento</code>, <code>direccion</code>, <code>distrito</code>, <code>telefono</code>, <code>email</code>,
+          <code>apoderadoTipoDocumento</code>, <code>apoderadoTelefono</code>, <code>apoderadoEmail</code>.</li>
+        <li>El apoderado de cada fila queda como principal y responsable de pago.</li>
+      </ul>
+      <button type="button" class="btn" (click)="descargarPlantilla()">Descargar plantilla</button>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="card-body">
+      <h2 style="margin-bottom: 12px">Subir archivo</h2>
+      <div class="toolbar">
+        <input class="input grow" type="file" accept=".csv,text/csv" (change)="elegir($event)" aria-label="Archivo CSV" />
+        <button type="button" class="btn btn-primary" [disabled]="!archivo() || enviando()" (click)="importar()">{{ enviando() ? 'Importando…' : 'Importar' }}</button>
+      </div>
+      @if (error()) { <div class="aviso aviso-danger" style="margin-top: 14px" role="alert">{{ error() }}</div> }
+    </div>
+  </section>
+
+  @if (resultado(); as r) {
+    <section class="card">
+      <div class="card-body toolbar" style="justify-content: space-between">
+        <h2>Resultado</h2>
+        <span>
+          <span class="badge">{{ r.total }} filas</span>
+          <span class="badge badge-ok" style="margin-left: 6px">{{ r.creados }} creados</span>
+          @if (r.fallidos > 0) { <span class="badge badge-danger" style="margin-left: 6px">{{ r.fallidos }} con error</span> }
+        </span>
+      </div>
+      <div class="table-wrap">
+        <table class="table">
+          <thead><tr><th>Línea</th><th>Documento</th><th>Resultado</th></tr></thead>
+          <tbody>
+            @for (f of r.filas; track f.linea) {
+              <tr>
+                <td>{{ f.linea }}</td>
+                <td>{{ f.numeroDocumento ?? '—' }}</td>
+                <td>
+                  @if (f.creado) {
+                    <span class="badge badge-ok">Creado</span> {{ f.codigo }}
+                    @if (f.alumnoId) { <a [routerLink]="['/alumnos', f.alumnoId]" style="margin-left: 8px">Ver expediente</a> }
+                  } @else {
+                    <span class="badge badge-danger">Error</span> {{ f.error }}
+                  }
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </section>
+  }
+</div>

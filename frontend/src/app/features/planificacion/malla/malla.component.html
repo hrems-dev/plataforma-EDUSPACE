@@ -1,0 +1,66 @@
+<div class="page">
+  <app-page-header titulo="Malla curricular" subtitulo="Cursos de cada grado y sus horas semanales. El horario de las secciones se arma con estas horas.">@if (puedeEditar()) {
+    <button type="button" class="btn btn-primary" [disabled]="!gradoId.value" (click)="agregar()">Agregar curso</button>
+  }</app-page-header>
+  @if (!puedeEditar()) {
+    <div class="aviso aviso-warn">Solo el administrador puede modificar esta información; tú puedes consultarla.</div>
+  }
+
+  <div class="toolbar">
+    <select class="input" [formControl]="gradoId" (change)="cargar()" aria-label="Grado">
+      @for (g of grados(); track g.id) { <option [ngValue]="g.id">{{ g.nivelNombre }} · {{ g.nombre }}</option> }
+    </select>
+    @if (malla(); as m) { <span class="badge">Total: {{ m.totalHoras }} horas por semana</span> }
+  </div>
+
+  <div class="card">
+    <div class="table-wrap">
+      <table class="table">
+        <thead><tr><th>Código</th><th>Curso</th><th>Horas semanales</th><th></th></tr></thead>
+        <tbody>
+          @for (c of malla()?.cursos ?? []; track c.id) {
+            <tr>
+              <td>{{ c.cursoCodigo }}</td>
+              <td><strong>{{ c.cursoNombre }}</strong></td>
+              <td>{{ c.horasSemanales }}</td>
+              <td class="acciones">@if (puedeEditar()) {
+                <button type="button" class="btn btn-sm" (click)="editar(c)">Cambiar horas</button>
+                <button type="button" class="btn btn-sm" (click)="quitar(c)">Quitar</button>
+              }</td>
+            </tr>
+          } @empty {
+            <tr><td colspan="4" class="vacio">{{ cargando() ? 'Cargando…' : 'Este grado aún no tiene cursos en su malla.' }}</td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+@if (abierto()) {
+  <app-modal [titulo]="editando() ? 'Horas de ' + editando()!.cursoNombre : 'Agregar curso a la malla'" [ancho]="460" (cerrar)="cerrar()">
+    <form [formGroup]="form" (ngSubmit)="guardar()" id="form-malla" novalidate>
+      <div class="form-grid">
+        @if (!editando()) {
+          <div class="field full">
+            <label for="m-curso">Curso</label>
+            <select id="m-curso" formControlName="cursoId">
+              <option [ngValue]="0" disabled>Elige…</option>
+              @for (c of disponibles(); track c.id) { <option [ngValue]="c.id">{{ c.nombre }}</option> }
+            </select>
+            @if (form.controls.cursoId.touched && form.controls.cursoId.invalid) { <span class="error">Elige un curso.</span> }
+          </div>
+        }
+        <div class="field full">
+          <label for="m-horas">Horas semanales</label>
+          <input id="m-horas" type="number" min="1" max="40" formControlName="horasSemanales" />
+        </div>
+      </div>
+      @if (errorForm()) { <div class="aviso aviso-danger" style="margin-top: 14px" role="alert">{{ errorForm() }}</div> }
+    </form>
+    <ng-container footer>
+      <button type="button" class="btn" (click)="cerrar()">Cancelar</button>
+      <button type="submit" form="form-malla" class="btn btn-primary" [disabled]="guardando()">Guardar</button>
+    </ng-container>
+  </app-modal>
+}

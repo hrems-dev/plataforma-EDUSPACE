@@ -1,0 +1,69 @@
+<div class="page">
+  <app-page-header titulo="Morosos y alertas" subtitulo="Cuotas vencidas y situaciones de cobranza que requieren atención." />
+
+  <section class="kpis" aria-label="Resumen de morosidad">
+    <div class="kpi">
+      <div class="etiqueta">Alumnos con deuda vencida</div>
+      <div class="valor">{{ morosos()?.totalAlumnosMorosos ?? '—' }}</div>
+    </div>
+    <div class="kpi">
+      <div class="etiqueta">Deuda vencida acumulada</div>
+      <div class="valor" style="color: var(--danger)">{{ morosos() ? soles(morosos()!.totalDeudaAcumulada) : '—' }}</div>
+    </div>
+  </section>
+
+  <div class="card">
+    <div class="card-body" style="padding-bottom: 0"><h2>Alumnos morosos</h2></div>
+    <div class="table-wrap">
+      <table class="table">
+        <thead>
+          <tr><th>Alumno</th><th>Responsable de pago</th><th>Cuotas vencidas</th><th>Saldo vencido</th></tr>
+        </thead>
+        <tbody>
+          @for (m of morosos()?.listaMorosos ?? []; track m.alumnoId) {
+            <tr>
+              <td><strong>{{ m.alumnoNombre }}</strong></td>
+              <td>{{ m.responsableNombre }}</td>
+              <td>{{ m.cuotasVencidas }}</td>
+              <td style="color: var(--danger); font-weight: 600">{{ soles(m.saldoTotalVencido) }}</td>
+            </tr>
+          } @empty {
+            <tr><td colspan="4" class="vacio">{{ cargando() ? 'Cargando…' : 'No hay alumnos con deuda vencida.' }}</td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-body toolbar" style="justify-content: space-between">
+      <h2>Alertas de cobranza</h2>
+      <button type="button" class="btn btn-sm" (click)="alternarResueltas()">{{ verResueltas() ? 'Ver pendientes' : 'Ver resueltas' }}</button>
+    </div>
+    <div class="table-wrap">
+      <table class="table">
+        <thead>
+          <tr><th>Tipo</th><th>Detalle</th><th>Fecha</th><th></th></tr>
+        </thead>
+        <tbody>
+          @for (a of alertas(); track a.id) {
+            <tr>
+              <td><span [class]="'badge ' + (a.tipo === 'SIN_TARIFA' ? 'badge-warn' : 'badge-violet')">{{ etiqueta(a.tipo) }}</span></td>
+              <td>{{ a.detalle }}</td>
+              <td class="muted">{{ a.creadaEn | date: 'dd/MM/yyyy HH:mm' }}</td>
+              <td class="acciones">
+                @if (!a.resuelta) {
+                  <button type="button" class="btn btn-sm" (click)="resolver(a)">Marcar resuelta</button>
+                } @else {
+                  <span class="badge badge-ok">Resuelta</span>
+                }
+              </td>
+            </tr>
+          } @empty {
+            <tr><td colspan="4" class="vacio">{{ verResueltas() ? 'No hay alertas resueltas.' : 'No hay alertas pendientes.' }}</td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>

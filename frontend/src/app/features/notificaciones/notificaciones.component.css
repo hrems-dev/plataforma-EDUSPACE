@@ -1,0 +1,9 @@
+.notif { display: flex; gap: 14px; width: 100%; text-align: left; padding: 14px 18px; border: 0; border-top: 1px solid #eef1f8; background: #fff; cursor: pointer; min-height: 64px; }
+.notif:first-child { border-top: 0; }
+.notif:hover { background: var(--bg); }
+.notif .punto { flex: 0 0 10px; height: 10px; margin-top: 6px; border-radius: 50%; background: transparent; }
+.notif.sinleer .punto { background: var(--primary); }
+.notif .cuerpo { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.notif .tit { font-weight: 600; }
+.notif:not(.sinleer) .tit { font-weight: 500; color: var(--ink-2); }
+.notif .msg { color: var(--ink-2); }

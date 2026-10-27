@@ -1,0 +1,95 @@
+server:
+  port: 18080
+
+spring:
+  application:
+    name: eduspace-gateway
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          jwk-set-uri: ${JWK_SET_URI:http://localhost:8090/.well-known/jwks.json}
+  servlet:
+    multipart:
+      max-file-size: 6MB
+      max-request-size: 7MB
+  cloud:
+    gateway:
+      server:
+        webmvc:
+          routes:
+            - id: auth-route
+              uri: lb://auth-ms
+              predicates:
+                - Path=/api/v1/auth/**
+            - id: planificacion-route
+              uri: lb://planificacion-ms
+              predicates:
+                - Path=/api/v1/planificacion/**
+            - id: alumnos-route
+              uri: lb://alumnos-ms
+              predicates:
+                - Path=/api/v1/alumnos/**
+            - id: apoderados-route
+              uri: lb://alumnos-ms
+              predicates:
+                - Path=/api/v1/apoderados/**
+            - id: notificaciones-route
+              uri: lb://notificaciones-ms
+              predicates:
+                - Path=/api/v1/notificaciones/**
+            - id: calificaciones-route
+              uri: lb://calificaciones-ms
+              predicates:
+                - Path=/api/v1/calificaciones/**
+            - id: pagos-route
+              uri: lb://pago-ms
+              predicates:
+                - Path=/api/v1/pagos/**
+            - id: examenes-route
+              uri: lb://examenes-ms
+              predicates:
+                - Path=/api/v1/examenes/**
+            - id: matriculas-route
+              uri: lb://matricula-ms
+              predicates:
+                - Path=/api/v1/matriculas/**
+            - id: asistencia-route
+              uri: lb://asistencia-ms
+              predicates:
+                - Path=/api/v1/asistencia/**
+            - id: tareas-route
+              uri: lb://tareas-ms
+              predicates:
+                - Path=/api/v1/tareas/**
+
+eduspace:
+  gateway:
+    cors:
+      allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:4200}
+    actuator-public: true     # DEV: Prometheus local raspa sin token
+    rate-limit:
+      enabled: true
+      requests-per-minute: 300
+      burst: 50
+      login-per-minute: 120    # DEV: holgado para que tools/e2e (muchos login seguidos) no reciba 429
+      login-burst: 60
+
+eureka:
+  client:
+    registry-fetch-interval-seconds: 5      # DEV: ve a los demás servicios en segundos, no en 30 s
+    service-url:
+      defaultZone: http://localhost:18761/eureka/
+  instance:
+    hostname: localhost
+    instance-id: ${spring.application.name}:${server.port}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: always
+

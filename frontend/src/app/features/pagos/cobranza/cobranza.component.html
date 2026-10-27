@@ -1,0 +1,94 @@
+<div class="page">
+  <app-page-header titulo="Cobranza" subtitulo="Pagos registrados por periodo y medio de pago, con su comprobante." />
+
+  <form class="toolbar" [formGroup]="filtro" (ngSubmit)="cargar(0)">
+    <label class="muted" for="c-desde">Desde</label>
+    <input id="c-desde" class="input" type="date" formControlName="desde" />
+    <label class="muted" for="c-hasta">Hasta</label>
+    <input id="c-hasta" class="input" type="date" formControlName="hasta" />
+    <select class="input" formControlName="medio" (change)="cargar(0)" aria-label="Medio de pago">
+      <option value="">Todos los medios</option>
+      @for (m of medios; track m) { <option [value]="m">{{ m.replace('_', '/') }}</option> }
+    </select>
+    <button type="submit" class="btn btn-primary">Consultar</button>
+  </form>
+
+  <section class="kpis" aria-label="Resumen">
+    <div class="kpi"><div class="etiqueta">Pagos en el periodo</div><div class="valor">{{ total() }}</div></div>
+    <div class="kpi"><div class="etiqueta">Cobrado en esta página</div><div class="valor" style="color: var(--ok)">S/ {{ totalPagina() | number: '1.2-2' }}</div></div>
+  </section>
+
+  <div class="card">
+    <div class="table-wrap">
+      <table class="table">
+        <thead><tr><th>Fecha</th><th>Alumno</th><th>Pagador</th><th>Medio</th><th>Comprobante</th><th>Monto</th><th>Estado</th><th></th></tr></thead>
+        <tbody>
+          @for (p of pagos(); track p.id) {
+            <tr>
+              <td class="muted">{{ p.pagadoEn | date: 'dd/MM/yyyy HH:mm' }}</td>
+              <td><strong>{{ nombres.nombre(p.alumnoId) }}</strong></td>
+              <td>{{ p.pagadorNombre ?? '—' }}</td>
+              <td>{{ p.medio.replace('_', '/') }}</td>
+              <td>{{ p.comprobante?.numeroCompleto ?? '—' }}</td>
+              <td><strong>S/ {{ p.montoTotal | number: '1.2-2' }}</strong></td>
+              <td><span [class]="'badge ' + (p.estado === 'CONFIRMADO' ? 'badge-ok' : 'badge-gray')">{{ p.estado }}</span></td>
+              <td class="acciones">
+                <button type="button" class="btn btn-sm" (click)="ver(p)">Detalle</button>
+                @if (esAdmin() && p.estado === 'CONFIRMADO') { <button type="button" class="btn btn-sm" (click)="pedirAnulacion(p)">Anular</button> }
+              </td>
+            </tr>
+          } @empty {
+            <tr><td colspan="8" class="vacio">{{ cargando() ? 'Cargando…' : 'No hay pagos en ese periodo.' }}</td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    <div class="toolbar" style="padding: 12px 16px; justify-content: space-between">
+      <span class="muted">Página {{ pagina() + 1 }} de {{ paginas() }}</span>
+      <span>
+        <button type="button" class="btn btn-sm" [disabled]="pagina() === 0" (click)="irA(pagina() - 1)">Anterior</button>
+        <button type="button" class="btn btn-sm" [disabled]="pagina() + 1 >= paginas()" (click)="irA(pagina() + 1)">Siguiente</button>
+      </span>
+    </div>
+  </div>
+</div>
+
+@if (detalle(); as p) {
+  <app-modal [titulo]="'Pago ' + (p.comprobante?.numeroCompleto ?? '#' + p.id)" [ancho]="620" (cerrar)="cerrar()">
+    <dl class="datos" style="margin-bottom: 16px">
+      <div><dt>Alumno</dt><dd>{{ nombres.nombre(p.alumnoId) }}</dd></div>
+      <div><dt>Pagador</dt><dd>{{ p.pagadorNombre ?? '—' }} {{ p.pagadorDocumento ?? '' }}</dd></div>
+      <div><dt>Medio</dt><dd>{{ p.medio.replace('_', '/') }} {{ p.referencia ?? '' }}</dd></div>
+      <div><dt>Fecha</dt><dd>{{ p.pagadoEn | date: 'dd/MM/yyyy HH:mm' }}</dd></div>
+      <div><dt>Total</dt><dd>S/ {{ p.montoTotal | number: '1.2-2' }}</dd></div>
+      <div><dt>Comprobante</dt><dd>{{ p.comprobante ? p.comprobante.tipo + ' ' + p.comprobante.numeroCompleto + ' (' + p.comprobante.estado + ')' : '—' }}</dd></div>
+    </dl>
+    <h2 style="margin-bottom: 8px">Cuotas pagadas</h2>
+    <div class="table-wrap">
+      <table class="table" style="min-width: 0">
+        <thead><tr><th>Cuota</th><th>Aplicado</th><th>Saldo</th><th>Estado</th></tr></thead>
+        <tbody>
+          @for (d of p.detalles; track d.id) {
+            <tr><td>{{ d.cuotaDescripcion }}</td><td>S/ {{ d.montoAplicado | number: '1.2-2' }}</td><td>S/ {{ d.nuevoSaldoCuota | number: '1.2-2' }}</td><td><span class="badge">{{ d.nuevoEstadoCuota }}</span></td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    <ng-container footer><button type="button" class="btn btn-primary" (click)="cerrar()">Cerrar</button></ng-container>
+  </app-modal>
+}
+
+@if (anulando(); as p) {
+  <app-modal titulo="Anular pago" [ancho]="480" (cerrar)="cerrar()">
+    <p style="margin-top: 0">Se anulará el pago de <strong>S/ {{ p.montoTotal | number: '1.2-2' }}</strong> de {{ nombres.nombre(p.alumnoId) }} y su comprobante. Esta acción queda auditada.</p>
+    <div class="field">
+      <label for="a-motivo">Motivo</label>
+      <textarea id="a-motivo" rows="3" [formControl]="motivo" style="padding: 10px 12px; min-height: 80px"></textarea>
+    </div>
+    @if (errorForm()) { <div class="aviso aviso-danger" style="margin-top: 14px" role="alert">{{ errorForm() }}</div> }
+    <ng-container footer>
+      <button type="button" class="btn" (click)="cerrar()">Cancelar</button>
+      <button type="button" class="btn btn-danger" [disabled]="guardando()" (click)="anular()">Anular pago</button>
+    </ng-container>
+  </app-modal>
+}

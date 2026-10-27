@@ -1,0 +1,69 @@
+<div class="page">
+  <app-page-header titulo="Descuentos" subtitulo="Catálogo de descuentos. Editarlos no altera las cuotas que ya se generaron.">
+    <button type="button" class="btn btn-primary" (click)="nuevo()">Nuevo descuento</button>
+  </app-page-header>
+
+  <div class="card">
+    <div class="table-wrap">
+      <table class="table">
+        <thead>
+          <tr><th>Nombre</th><th>Tipo</th><th>Valor</th><th>Aplica a</th><th>Estado</th><th></th></tr>
+        </thead>
+        <tbody>
+          @for (d of descuentos(); track d.id) {
+            <tr>
+              <td><strong>{{ d.nombre }}</strong></td>
+              <td>{{ d.tipo === 'PORCENTAJE' ? 'Porcentaje' : 'Monto fijo' }}</td>
+              <td>{{ valor(d) }}</td>
+              <td><span class="badge">{{ d.aplicaA }}</span></td>
+              <td><span [class]="'badge ' + (d.activo ? 'badge-ok' : 'badge-gray')">{{ d.activo ? 'Activo' : 'Inactivo' }}</span></td>
+              <td class="acciones"><button type="button" class="btn btn-sm" (click)="editar(d)">Editar</button></td>
+            </tr>
+          } @empty {
+            <tr><td colspan="6" class="vacio">{{ cargando() ? 'Cargando…' : 'Aún no hay descuentos.' }}</td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+@if (abierto()) {
+  <app-modal [titulo]="editando() ? 'Editar descuento' : 'Nuevo descuento'" [ancho]="480" (cerrar)="cerrar()">
+    <form [formGroup]="form" (ngSubmit)="guardar()" id="form-descuento" novalidate>
+      <div class="form-grid">
+        <div class="field full">
+          <label for="de-nombre">Nombre</label>
+          <input id="de-nombre" formControlName="nombre" placeholder="Hermanos" />
+          @if (form.controls.nombre.touched && form.controls.nombre.invalid) { <span class="error">Obligatorio.</span> }
+        </div>
+        <div class="field">
+          <label for="de-tipo">Tipo</label>
+          <select id="de-tipo" formControlName="tipo">
+            <option value="PORCENTAJE">Porcentaje</option>
+            <option value="MONTO_FIJO">Monto fijo (S/)</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="de-valor">Valor</label>
+          <input id="de-valor" type="number" step="0.01" min="0.01" formControlName="valor" />
+          @if (form.controls.valor.touched && form.controls.valor.invalid) { <span class="error">Debe ser mayor que 0.</span> }
+        </div>
+        <div class="field">
+          <label for="de-aplica">Aplica a</label>
+          <select id="de-aplica" formControlName="aplicaA">
+            @for (a of aplicaA; track a) { <option [value]="a">{{ a }}</option> }
+          </select>
+        </div>
+        <div class="field">
+          <label class="check" style="margin-top: 22px"><input type="checkbox" formControlName="activo" /> Descuento activo</label>
+        </div>
+      </div>
+      @if (errorForm()) { <div class="aviso aviso-danger" style="margin-top: 14px" role="alert">{{ errorForm() }}</div> }
+    </form>
+    <ng-container footer>
+      <button type="button" class="btn" (click)="cerrar()">Cancelar</button>
+      <button type="submit" form="form-descuento" class="btn btn-primary" [disabled]="guardando()">{{ guardando() ? 'Guardando…' : 'Guardar' }}</button>
+    </ng-container>
+  </app-modal>
+}

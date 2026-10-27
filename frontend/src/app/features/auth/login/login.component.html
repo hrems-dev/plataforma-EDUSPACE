@@ -1,0 +1,36 @@
+<main class="pagina">
+  <section class="panel">
+    <div class="marca">
+      <div class="logo">E</div>
+      <div class="nombre">EduSpace</div>
+    </div>
+    <h1>Iniciar sesión</h1>
+    <p class="muted">Accede con tu usuario del colegio</p>
+
+    <form [formGroup]="form" (ngSubmit)="enviar()" novalidate>
+      <div class="field">
+        <label for="username">Usuario o correo</label>
+        <input id="username" type="text" formControlName="username" autocomplete="username" autofocus />
+        @if (form.controls.username.touched && form.controls.username.invalid) {
+          <span class="error">Ingresa tu usuario.</span>
+        }
+      </div>
+
+      <div class="field">
+        <label for="password">Clave</label>
+        <input id="password" type="password" formControlName="password" autocomplete="current-password" />
+        @if (form.controls.password.touched && form.controls.password.invalid) {
+          <span class="error">Ingresa tu clave.</span>
+        }
+      </div>
+
+      @if (error()) {
+        <div class="aviso aviso-danger" role="alert">{{ error() }}</div>
+      }
+
+      <button type="submit" class="btn btn-primary entrar" [disabled]="cargando()">
+        {{ cargando() ? 'Ingresando…' : 'Ingresar' }}
+      </button>
+    </form>
+  </section>
+</main>

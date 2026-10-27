@@ -1,0 +1,41 @@
+# PROD local: aplicación + base de datos en la red externa 'eduspace-prod-net'
+# (crearla una vez con: docker network create eduspace-prod-net). La base no publica puerto.
+name: eduspace-planificacion
+services:
+  planificacion-ms:
+    build: .
+    container_name: eduspace-planificacion-ms
+    env_file: .env
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      TZ: America/Lima
+    depends_on:
+      planificacion-ms-db:
+        condition: service_healthy
+    networks: [eduspace-prod-net]
+    restart: unless-stopped
+
+  planificacion-ms-db:
+    image: postgres:16-alpine
+    container_name: eduspace-planificacion-ms-db
+    environment:
+      POSTGRES_DB: ${DB_NAME:-planificacion_db}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      TZ: America/Lima
+    volumes:
+      - planificacion-db-prod-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME:-planificacion_db}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    networks: [eduspace-prod-net]
+    restart: unless-stopped
+
+networks:
+  eduspace-prod-net:
+    external: true
+
+volumes:
+  planificacion-db-prod-data:

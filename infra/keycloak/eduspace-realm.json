@@ -1,0 +1,153 @@
+{
+  "realm": "eduspace",
+  "displayName": "EduSpace",
+  "enabled": true,
+  "sslRequired": "none",
+  "registrationAllowed": false,
+  "loginWithEmailAllowed": true,
+  "duplicateEmailsAllowed": false,
+  "resetPasswordAllowed": true,
+  "editUsernameAllowed": false,
+  "verifyEmail": false,
+  "defaultSignatureAlgorithm": "RS256",
+  "accessTokenLifespan": 900,
+  "ssoSessionIdleTimeout": 1800,
+  "ssoSessionMaxLifespan": 36000,
+  "revokeRefreshToken": true,
+  "refreshTokenMaxReuse": 0,
+  "bruteForceProtected": true,
+  "permanentLockout": false,
+  "failureFactor": 5,
+  "maxFailureWaitSeconds": 900,
+  "minimumQuickLoginWaitSeconds": 60,
+  "waitIncrementSeconds": 60,
+  "maxDeltaTimeSeconds": 43200,
+  "passwordPolicy": "length(8)",
+  "roles": {
+    "realm": [
+      { "name": "ADMIN", "description": "Administración total" },
+      { "name": "SECRETARIA", "description": "Matrícula, expedientes y horarios" },
+      { "name": "DOCENTE", "description": "Asistencia, tareas, exámenes y notas de sus cursos" },
+      { "name": "ALUMNO", "description": "Consulta de sus propios datos" },
+      { "name": "APODERADO", "description": "Consulta de datos de sus hijos" },
+      { "name": "CAJERO", "description": "Cobros en ventanilla" }
+    ]
+  },
+  "components": {
+    "org.keycloak.userprofile.UserProfileProvider": [
+      {
+        "providerId": "declarative-user-profile",
+        "subComponents": {},
+        "config": {
+          "kc.user.profile.config": [
+            "{\"attributes\":[{\"name\":\"username\",\"displayName\":\"${username}\",\"validations\":{\"length\":{\"min\":3,\"max\":255},\"username-prohibited-characters\":{},\"up-username-not-idn-homograph\":{}},\"permissions\":{\"view\":[\"admin\",\"user\"],\"edit\":[\"admin\",\"user\"]}},{\"name\":\"email\",\"displayName\":\"${email}\",\"validations\":{\"email\":{},\"length\":{\"max\":255}},\"required\":{\"roles\":[\"user\"]},\"permissions\":{\"view\":[\"admin\",\"user\"],\"edit\":[\"admin\",\"user\"]}},{\"name\":\"firstName\",\"displayName\":\"${firstName}\",\"validations\":{\"length\":{\"max\":255}},\"permissions\":{\"view\":[\"admin\",\"user\"],\"edit\":[\"admin\",\"user\"]}},{\"name\":\"lastName\",\"displayName\":\"${lastName}\",\"validations\":{\"length\":{\"max\":255}},\"permissions\":{\"view\":[\"admin\",\"user\"],\"edit\":[\"admin\",\"user\"]}},{\"name\":\"usuarioId\",\"displayName\":\"Id numérico de EduSpace\",\"validations\":{\"pattern\":{\"pattern\":\"^[0-9]+$\",\"error-message\":\"Debe ser un número\"}},\"permissions\":{\"view\":[\"admin\"],\"edit\":[\"admin\"]}}]}"
+          ]
+        }
+      }
+    ]
+  },
+  "clients": [
+    {
+      "clientId": "eduspace-web",
+      "name": "EduSpace Web (panel administrativo)",
+      "enabled": true,
+      "publicClient": true,
+      "protocol": "openid-connect",
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false,
+      "rootUrl": "http://localhost:4200",
+      "redirectUris": ["http://localhost:4200/*", "http://127.0.0.1:4200/*"],
+      "webOrigins": ["http://localhost:4200", "http://127.0.0.1:4200"],
+      "attributes": {
+        "pkce.code.challenge.method": "S256",
+        "post.logout.redirect.uris": "http://localhost:4200/*##http://127.0.0.1:4200/*"
+      },
+      "defaultClientScopes": ["basic", "web-origins", "acr", "profile", "roles", "email"],
+      "protocolMappers": [
+        {
+          "name": "usuarioId",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper",
+          "consentRequired": false,
+          "config": {
+            "user.attribute": "usuarioId",
+            "claim.name": "usuarioId",
+            "jsonType.label": "long",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "userinfo.token.claim": "true"
+          }
+        }
+      ]
+    },
+    {
+      "clientId": "eduspace-e2e",
+      "name": "EduSpace pruebas por consola (solo DEV)",
+      "description": "Permite pedir tokens con usuario y clave desde scripts. No debe existir en PROD.",
+      "enabled": true,
+      "publicClient": true,
+      "protocol": "openid-connect",
+      "standardFlowEnabled": false,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": true,
+      "serviceAccountsEnabled": false,
+      "defaultClientScopes": ["basic", "web-origins", "acr", "profile", "roles", "email"],
+      "protocolMappers": [
+        {
+          "name": "usuarioId",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper",
+          "consentRequired": false,
+          "config": {
+            "user.attribute": "usuarioId",
+            "claim.name": "usuarioId",
+            "jsonType.label": "long",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "userinfo.token.claim": "true"
+          }
+        }
+      ]
+    }
+  ],
+  "users": [
+    {
+      "username": "admin", "email": "admin@eduspace.com", "firstName": "Administrador", "lastName": "EduSpace",
+      "enabled": true, "emailVerified": true, "attributes": { "usuarioId": ["1"] },
+      "credentials": [{ "type": "password", "value": "admin123", "temporary": false }],
+      "realmRoles": ["ADMIN"]
+    },
+    {
+      "username": "secretaria", "email": "secretaria@eduspace.com", "firstName": "Secretaría", "lastName": "EduSpace",
+      "enabled": true, "emailVerified": true, "attributes": { "usuarioId": ["2"] },
+      "credentials": [{ "type": "password", "value": "secre123", "temporary": false }],
+      "realmRoles": ["SECRETARIA"]
+    },
+    {
+      "username": "cajero", "email": "cajero@eduspace.com", "firstName": "Caja", "lastName": "EduSpace",
+      "enabled": true, "emailVerified": true, "attributes": { "usuarioId": ["3"] },
+      "credentials": [{ "type": "password", "value": "cajero123", "temporary": false }],
+      "realmRoles": ["CAJERO"]
+    },
+    {
+      "username": "docente", "email": "docente@eduspace.com", "firstName": "Docente", "lastName": "Prueba",
+      "enabled": true, "emailVerified": true, "attributes": { "usuarioId": ["4"] },
+      "credentials": [{ "type": "password", "value": "Clave12345", "temporary": false }],
+      "realmRoles": ["DOCENTE"]
+    },
+    {
+      "username": "apoderado", "email": "apoderado@eduspace.com", "firstName": "Apoderado", "lastName": "Prueba",
+      "enabled": true, "emailVerified": true, "attributes": { "usuarioId": ["5"] },
+      "credentials": [{ "type": "password", "value": "Clave12345", "temporary": false }],
+      "realmRoles": ["APODERADO"]
+    },
+    {
+      "username": "alumno", "email": "alumno@eduspace.com", "firstName": "Alumno", "lastName": "Prueba",
+      "enabled": true, "emailVerified": true, "attributes": { "usuarioId": ["6"] },
+      "credentials": [{ "type": "password", "value": "Clave12345", "temporary": false }],
+      "realmRoles": ["ALUMNO"]
+    }
+  ]
+}

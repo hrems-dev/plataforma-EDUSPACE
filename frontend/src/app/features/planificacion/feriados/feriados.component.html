@@ -1,0 +1,56 @@
+<div class="page">
+  <app-page-header titulo="Feriados" subtitulo="En un feriado no se abren sesiones de asistencia ni se programan clases.">@if (puedeEditar()) {
+    <button type="button" class="btn btn-primary" [disabled]="!anioId.value" (click)="nuevo()">Nuevo feriado</button>
+  }</app-page-header>
+  @if (!puedeEditar()) {
+    <div class="aviso aviso-warn">Solo el administrador puede modificar esta información; tú puedes consultarla.</div>
+  }
+
+  <div class="toolbar">
+    <select class="input" [formControl]="anioId" (change)="cargar()" aria-label="Año académico">
+      @for (a of anios(); track a.id) { <option [ngValue]="a.id">Año {{ a.nombre }}</option> }
+    </select>
+  </div>
+
+  <div class="card">
+    <div class="table-wrap">
+      <table class="table">
+        <thead><tr><th>Fecha</th><th>Descripción</th><th></th></tr></thead>
+        <tbody>
+          @for (f of feriados(); track f.id) {
+            <tr>
+              <td><strong>{{ f.fecha | date: 'EEEE dd/MM/yyyy' }}</strong></td>
+              <td>{{ f.descripcion }}</td>
+              <td class="acciones">@if (puedeEditar()) {
+                <button type="button" class="btn btn-sm" (click)="editar(f)">Editar</button>
+                <button type="button" class="btn btn-sm" (click)="eliminar(f)">Eliminar</button>
+              }</td>
+            </tr>
+          } @empty {
+            <tr><td colspan="3" class="vacio">{{ cargando() ? 'Cargando…' : 'Este año aún no tiene feriados.' }}</td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+@if (abierto()) {
+  <app-modal [titulo]="editando() ? 'Editar feriado' : 'Nuevo feriado'" [ancho]="460" (cerrar)="cerrar()">
+    <form [formGroup]="form" (ngSubmit)="guardar()" id="form-feriado" novalidate>
+      <div class="form-grid">
+        <div class="field full"><label for="f-fecha">Fecha</label><input id="f-fecha" type="date" formControlName="fecha" /></div>
+        <div class="field full">
+          <label for="f-desc">Descripción</label>
+          <input id="f-desc" formControlName="descripcion" placeholder="Fiestas Patrias" />
+          @if (form.controls.descripcion.touched && form.controls.descripcion.invalid) { <span class="error">Obligatoria.</span> }
+        </div>
+      </div>
+      @if (errorForm()) { <div class="aviso aviso-danger" style="margin-top: 14px" role="alert">{{ errorForm() }}</div> }
+    </form>
+    <ng-container footer>
+      <button type="button" class="btn" (click)="cerrar()">Cancelar</button>
+      <button type="submit" form="form-feriado" class="btn btn-primary" [disabled]="guardando()">Guardar</button>
+    </ng-container>
+  </app-modal>
+}

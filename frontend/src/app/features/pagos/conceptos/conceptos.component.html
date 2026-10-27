@@ -1,0 +1,61 @@
+<div class="page">
+  <app-page-header titulo="Conceptos de pago" subtitulo="Matrícula, pensión y otros cobros. Las tarifas se definen sobre estos conceptos.">
+    <button type="button" class="btn btn-primary" (click)="nuevo()">Nuevo concepto</button>
+  </app-page-header>
+
+  <div class="card">
+    <div class="table-wrap">
+      <table class="table">
+        <thead>
+          <tr><th>Código</th><th>Nombre</th><th>Tipo</th><th>Estado</th><th></th></tr>
+        </thead>
+        <tbody>
+          @for (c of conceptos(); track c.id) {
+            <tr>
+              <td>{{ c.codigo }}</td>
+              <td><strong>{{ c.nombre }}</strong></td>
+              <td><span class="badge">{{ c.tipo }}</span></td>
+              <td><span [class]="'badge ' + (c.activo ? 'badge-ok' : 'badge-gray')">{{ c.activo ? 'Activo' : 'Inactivo' }}</span></td>
+              <td class="acciones"><button type="button" class="btn btn-sm" (click)="editar(c)">Editar</button></td>
+            </tr>
+          } @empty {
+            <tr><td colspan="5" class="vacio">{{ cargando() ? 'Cargando…' : 'Aún no hay conceptos.' }}</td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+@if (abierto()) {
+  <app-modal [titulo]="editando() ? 'Editar concepto' : 'Nuevo concepto'" [ancho]="480" (cerrar)="cerrar()">
+    <form [formGroup]="form" (ngSubmit)="guardar()" id="form-concepto" novalidate>
+      <div class="form-grid">
+        <div class="field">
+          <label for="co-codigo">Código</label>
+          <input id="co-codigo" formControlName="codigo" placeholder="PENSION" />
+          @if (form.controls.codigo.touched && form.controls.codigo.invalid) { <span class="error">Obligatorio.</span> }
+        </div>
+        <div class="field">
+          <label for="co-tipo">Tipo</label>
+          <select id="co-tipo" formControlName="tipo">
+            @for (t of tipos; track t) { <option [value]="t">{{ t }}</option> }
+          </select>
+        </div>
+        <div class="field full">
+          <label for="co-nombre">Nombre</label>
+          <input id="co-nombre" formControlName="nombre" />
+          @if (form.controls.nombre.touched && form.controls.nombre.invalid) { <span class="error">Obligatorio.</span> }
+        </div>
+        <div class="field full">
+          <label class="check"><input type="checkbox" formControlName="activo" /> Concepto activo</label>
+        </div>
+      </div>
+      @if (errorForm()) { <div class="aviso aviso-danger" style="margin-top: 14px" role="alert">{{ errorForm() }}</div> }
+    </form>
+    <ng-container footer>
+      <button type="button" class="btn" (click)="cerrar()">Cancelar</button>
+      <button type="submit" form="form-concepto" class="btn btn-primary" [disabled]="guardando()">{{ guardando() ? 'Guardando…' : 'Guardar' }}</button>
+    </ng-container>
+  </app-modal>
+}

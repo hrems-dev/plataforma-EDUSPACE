@@ -1,0 +1,24 @@
+version: '3.8'
+
+services:
+  examenes-db:
+    image: postgres:16-alpine
+    container_name: eduspace-examenes-db-dev
+    environment:
+      POSTGRES_DB: examenes_db
+      POSTGRES_USER: eduspace
+      POSTGRES_PASSWORD: eduspace
+      TZ: America/Lima
+    ports:
+      - "15447:5432"
+    volumes:
+      - examenes_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U eduspace -d examenes_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  examenes_db_data:
+

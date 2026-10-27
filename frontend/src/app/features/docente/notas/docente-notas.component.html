@@ -1,0 +1,120 @@
+<div class="page">
+  <app-page-header titulo="Notas" subtitulo="Define los criterios de evaluación de cada curso (los pesos suman 100) y registra las notas de 0 a 20.">
+    <button type="button" class="btn btn-primary" [disabled]="!hayCambios() || guardando() || cerrado()" (click)="guardarNotas()">{{ guardando() ? 'Guardando…' : 'Guardar notas' }}</button>
+  </app-page-header>
+
+  <form class="toolbar" [formGroup]="filtro">
+    <select class="input" formControlName="asignacion" (change)="cargar()" aria-label="Curso y sección">
+      @for (a of ctx()?.asignaciones ?? []; track a.id) { <option [ngValue]="a.id">{{ a.cursoNombre }} · {{ a.seccionNombre }}</option> }
+    </select>
+    <select class="input" formControlName="periodoId" (change)="cargar()" aria-label="Periodo">
+      @for (p of ctx()?.periodos ?? []; track p.id) { <option [ngValue]="p.id">{{ p.nombre }}</option> }
+    </select>
+    @if (registro()) { <span [class]="'badge ' + (cerrado() ? 'badge-warn' : 'badge-ok')">{{ cerrado() ? 'Periodo cerrado: solo lectura' : 'Periodo abierto' }}</span> }
+    @if (hayCambios()) { <span class="muted">Hay notas sin guardar</span> }
+  </form>
+
+  <section class="card">
+    <div class="card-body">
+      <div class="toolbar" style="justify-content: space-between; margin-bottom: 10px">
+        <h2>Criterios de evaluación</h2>
+        <span>
+          @if (pesos(); as p) { <span [class]="'badge ' + (p.esValido ? 'badge-ok' : 'badge-warn')">Suma de pesos: {{ p.sumaPesos }} / 100</span> }
+          <button type="button" class="btn btn-sm" style="margin-left: 8px" [disabled]="cerrado()" (click)="nuevoCriterio()">Nuevo criterio</button>
+        </span>
+      </div>
+      @if (pesos() && !pesos()!.esValido) { <div class="aviso aviso-warn" style="margin-bottom: 10px">{{ pesos()!.mensaje }}</div> }
+      <div class="table-wrap">
+        <table class="table" style="min-width: 0">
+          <thead><tr><th>Criterio</th><th>Peso</th><th>Origen</th><th></th></tr></thead>
+          <tbody>
+            @for (c of registro()?.criterios ?? []; track c.id) {
+              <tr>
+                <td><strong>{{ c.nombre }}</strong></td>
+                <td>{{ c.peso }} %</td>
+                <td><span class="badge badge-gray">{{ c.origenTipo === 'MANUAL' ? 'Manual' : c.origenTipo === 'TAREAS' ? 'Tareas' : 'Exámenes' }}</span></td>
+                <td class="acciones">
+                  <button type="button" class="btn btn-sm" [disabled]="cerrado()" (click)="editarCriterio(c)">Editar</button>
+                  <button type="button" class="btn btn-sm" [disabled]="cerrado()" (click)="eliminarCriterio(c)">Eliminar</button>
+                </td>
+              </tr>
+            } @empty {
+              <tr><td colspan="4" class="vacio">Aún no hay criterios para este curso y periodo. Crea al menos uno.</td></tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="card-body" style="padding-bottom: 0"><h2>Registro de notas</h2><div class="muted">Los criterios de tareas y exámenes se llenan solos con las notas de esas actividades.</div></div>
+    <div class="table-wrap">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Alumno</th>
+            @for (c of registro()?.criterios ?? []; track c.id) { <th>{{ c.nombre }} ({{ c.peso }}%)</th> }
+            <th>Promedio</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (f of registro()?.alumnos ?? []; track f.matriculaId) {
+            <tr>
+              <td><strong>{{ f.alumnoNombre }}</strong></td>
+              @for (c of registro()?.criterios ?? []; track c.id) {
+                <td>
+                  <input type="number" min="0" max="20" step="0.5" class="input" style="width: 84px; min-height: 36px" [disabled]="!editable(c)"
+                    [value]="valor(f.matriculaId, c.id, f.notasPorCriterioId?.[c.id]) ?? ''" (input)="editar(f.matriculaId, c.id, $any($event.target).value)"
+                    [attr.aria-label]="'Nota de ' + f.alumnoNombre + ' en ' + c.nombre" />
+                </td>
+              }
+              <td><strong [style.color]="(f.promedio ?? 20) < 11 ? 'var(--danger)' : ''">{{ f.promedio !== undefined && f.promedio !== null ? (f.promedio | number: '1.1-1') + ' (' + f.literal + ')' : '—' }}</strong></td>
+            </tr>
+          } @empty {
+            <tr><td [attr.colspan]="(registro()?.criterios?.length ?? 0) + 2" class="vacio">{{ cargando() ? 'Cargando…' : 'No hay alumnos matriculados en esta sección.' }}</td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  @if (pendientes().length > 0) {
+    <section class="card">
+      <div class="card-body" style="padding-bottom: 0">
+        <h2>Notas de tareas y exámenes sin asignar a un criterio</h2>
+        <div class="muted">Crea un criterio de origen «Tareas» o «Exámenes» para que se apliquen.</div>
+      </div>
+      <div class="table-wrap">
+        <table class="table">
+          <thead><tr><th>Origen</th><th>Actividad</th><th>Alumno</th><th>Nota</th><th>Fecha</th></tr></thead>
+          <tbody>
+            @for (p of pendientes(); track p.id) {
+              <tr><td>{{ p.origen === 'TAREA' ? 'Tarea' : 'Examen' }}</td><td>{{ p.titulo }}</td><td>Alumno {{ p.alumnoId }}</td><td>{{ p.valor }}</td><td class="muted">{{ p.fechaEvento | date: 'dd/MM HH:mm' }}</td></tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </section>
+  }
+</div>
+
+@if (abierto()) {
+  <app-modal [titulo]="editando() ? 'Editar criterio' : 'Nuevo criterio'" [ancho]="460" (cerrar)="cerrarDialogo()">
+    <form [formGroup]="formCriterio" (ngSubmit)="guardarCriterio()" id="form-criterio" novalidate>
+      <div class="form-grid">
+        <div class="field full"><label for="k-nombre">Nombre</label><input id="k-nombre" formControlName="nombre" placeholder="Examen bimestral" /></div>
+        <div class="field"><label for="k-peso">Peso (%)</label><input id="k-peso" type="number" min="1" max="100" formControlName="peso" /></div>
+        <div class="field">
+          <label for="k-origen">Origen de la nota</label>
+          <select id="k-origen" formControlName="origenTipo"><option value="MANUAL">Manual</option><option value="TAREAS">Tareas</option><option value="EXAMENES">Exámenes</option></select>
+        </div>
+      </div>
+      @if (errorForm()) { <div class="aviso aviso-danger" style="margin-top: 14px" role="alert">{{ errorForm() }}</div> }
+    </form>
+    <ng-container footer>
+      <button type="button" class="btn" (click)="cerrarDialogo()">Cancelar</button>
+      <button type="submit" form="form-criterio" class="btn btn-primary">Guardar</button>
+    </ng-container>
+  </app-modal>
+}

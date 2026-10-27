@@ -1,0 +1,38 @@
+from lib import *
+ids = json.load(open('ids.json')); ids2 = json.load(open('ids2.json'))
+print('== caja y cobro de la matrícula del alumno 1')
+call('pago','POST','/api/v1/pagos/caja/abrir', CAJ, {'montoApertura':100})
+cu = esperar(lambda: call('pago','GET','/api/v1/pagos/cuotas?alumnoId=1&estado=PENDIENTE', CAJ)['contenido'], 'cuota pendiente alumno 1')
+cm = [c for c in cu if c['conceptoTipo']=='MATRICULA'][0]
+check(cm['saldo']==350, 'cuota de matrícula = S/ 350')
+pay = call('pago','POST','/api/v1/pagos', CAJ, {'alumnoId':1,'pagadorNombre':'Rosa Quispe','pagadorDocumento':'10000001','montoTotal':350,'medio':'EFECTIVO','idempotencyKey':'e2e-pay-1','detalles':[{'cuotaId':cm['id'],'montoAplicado':350}]}, expect=201)
+check(pay and pay['comprobante']['numeroCompleto']=='R001-00000001', 'comprobante R001-00000001')
+call('pago','POST','/api/v1/pagos', CAJ, {'alumnoId':1,'pagadorNombre':'Rosa Quispe','pagadorDocumento':'10000001','montoTotal':350,'medio':'EFECTIVO','idempotencyKey':'e2e-pay-1','detalles':[{'cuotaId':cm['id'],'montoAplicado':350}]}, expect=201)
+for i in range(2): call('pago','GET',f"/api/v1/pagos/{pay['id']}", CAJ)
+print('== matricula-ms confirma por pago.confirmado')
+m = esperar(lambda: (lambda r: r if r['matricula']['estado']=='MATRICULADO' else None)(call('mat','GET',f"/api/v1/matriculas/{ids2['m1']}", SEC)), 'matrícula MATRICULADO')
+check(m is not None, 'matrícula 1 pasó a MATRICULADO')
+print('== pago-ms genera las 10 pensiones al recibir matricula.confirmada')
+pens = esperar(lambda: (lambda r: r if len([c for c in r['contenido'] if c['conceptoTipo']=='PENSION'])==10 else None)(call('pago','GET','/api/v1/pagos/cuotas?alumnoId=1&size=50', CAJ)), '10 pensiones')
+if pens:
+    ps = sorted([c for c in pens['contenido'] if c['conceptoTipo']=='PENSION'], key=lambda c:c['numeroCuota'])
+    print('  ', [(c['descripcion'], c['montoBase'], c['fechaVencimiento']) for c in ps][:3], '...', ps[-1]['fechaVencimiento'])
+    check(sum(c['montoBase'] for c in ps)==2500, 'pensiones suman 2500')
+print('== comprobantes en BD (sin duplicados)')
+out = subprocess.run(['podman','exec','e2e-pg-pago','psql','-U','eduspace','-d','pago_db','-tAc','select count(*), max(numero) from comprobantes'],capture_output=True,text=True).stdout.strip()
+check(out=='1|1', f'1 comprobante y numero 1 (obtenido {out})')
+print('== eventos')
+for t in ['pago.confirmado','matricula.confirmada']:
+    ev = topic(t); print('  ', t, [(e['eventType'], e.get('matriculaId'), e.get('conceptoTipo')) for e in ev])
+check(any(e.get('conceptoTipo')=='MATRICULA' and 'payload' not in e for e in topic('pago.confirmado')), 'pago.confirmado plano con conceptoTipo')
+print('== asistencia/tareas/examenes/calificaciones reciben la réplica')
+for db,tabla in [('asistencia','matriculas_local'),('tareas','matriculas_local'),('examenes','matriculas_local'),('calificaciones','matriculas_local')]:
+    n = esperar(lambda: subprocess.run(['podman','exec',f'e2e-pg-{db}','psql','-U','eduspace','-d',f'{db}_db','-tAc',f"select count(*)||':'||string_agg(estado,',') from {tabla}"],capture_output=True,text=True).stdout.strip(), f'réplica {db}')
+    print('  ', db, n)
+check(all(c['alumnoId']==1 for c in call('pago','GET','/api/v1/pagos/cuotas?alumnoId=1&size=50', CAJ)['contenido']), 'el filtro alumnoId devuelve solo cuotas del alumno')
+print('== matricula 2: se paga y confirma también')
+cu2 = esperar(lambda: call('pago','GET','/api/v1/pagos/cuotas?alumnoId=2&estado=PENDIENTE', CAJ)['contenido'], 'cuota pendiente alumno 2')
+cm2 = [c for c in cu2 if c['conceptoTipo']=='MATRICULA'][0]
+call('pago','POST','/api/v1/pagos', CAJ, {'alumnoId':2,'pagadorNombre':'Papá 2','montoTotal':350,'medio':'YAPE_PLIN','referencia':'op-123','idempotencyKey':'e2e-pay-2','detalles':[{'cuotaId':cm2['id'],'montoAplicado':350}]}, expect=201)
+esperar(lambda: (lambda r: r if r['matricula']['estado']=='MATRICULADO' else None)(call('mat','GET',f"/api/v1/matriculas/{ids2['m2']}", SEC)), 'matrícula 2 MATRICULADO')
+print('FAILS:', FAILS)

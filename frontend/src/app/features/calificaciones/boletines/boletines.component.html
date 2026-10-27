@@ -1,0 +1,15 @@
+<div class="page">
+  <app-page-header titulo="Libretas y boletines" subtitulo="Notas por curso y periodo, resultado anual y boletines oficiales de un alumno." />
+
+  <section class="card">
+    <div class="card-body"><app-buscador-alumno [soloActivos]="false" (elegidoAlumno)="elegir($event)" /></div>
+  </section>
+
+  @if (libreta(); as l) {
+    <app-libreta-vista [libreta]="l" />
+  } @else if (cargando()) {
+    <div class="muted">Cargando libreta…</div>
+  } @else if (sinDatos()) {
+    <div class="aviso aviso-warn">Este alumno no tiene matrícula con notas en el año activo.</div>
+  }
+</div>

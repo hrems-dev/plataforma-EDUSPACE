@@ -1,0 +1,54 @@
+<div class="page">
+  <app-page-header titulo="Cupos" subtitulo="Vacantes por sección. Cada matrícula o pre-matrícula vigente ocupa un cupo." />
+  @if (!esAdmin()) { <div class="aviso">Solo el administrador puede cambiar la capacidad de una sección.</div> }
+
+  <form class="toolbar" [formGroup]="filtro">
+    <select class="input" formControlName="anioId" (change)="cargar()" aria-label="Año académico">
+      @for (a of anios(); track a.id) { <option [ngValue]="a.id">Año {{ a.nombre }}</option> }
+    </select>
+    <select class="input" formControlName="gradoId" (change)="cargar()" aria-label="Grado">
+      <option [ngValue]="0">Todos los grados</option>
+      @for (g of grados(); track g.id) { <option [ngValue]="g.id">{{ g.nivelNombre }} · {{ g.nombre }}</option> }
+    </select>
+  </form>
+
+  <div class="card">
+    <div class="table-wrap">
+      <table class="table">
+        <thead><tr><th>Sección</th><th>Capacidad @if (esAdmin()) { <span class="muted">(clic para cambiar)</span> }</th><th>Ocupados</th><th>Vacantes</th><th>Ocupación</th></tr></thead>
+        <tbody>
+          @for (c of cupos(); track c.seccionId) {
+            <tr>
+              <td><strong>{{ nombre(c) }}</strong></td>
+              <td>
+                @if (editando() === c.seccionId) {
+                  <div style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap">
+                    <input class="input" type="number" min="1" style="width: 84px" [value]="nuevaCapacidad()" (input)="nuevaCapacidad.set(soloNumero($any($event.target).value))" (keydown.enter)="guardar(c)" (keydown.escape)="cancelar()" [attr.aria-label]="'Nueva capacidad de ' + nombre(c)" />
+                    <button type="button" class="btn btn-primary btn-sm" [disabled]="guardando() || !!problema(c)" (click)="guardar(c)">Guardar</button>
+                    <button type="button" class="btn btn-sm" (click)="cancelar()">Cancelar</button>
+                  </div>
+                  @if (aulaDe(c); as a) { <div class="muted" style="font-size: .8rem; margin-top: 4px">Máximo {{ a.capacidad }} por el aula {{ a.nombre }}.</div> }
+                  @if (problema(c); as p) { <div class="muted" style="color: var(--danger); font-size: .8rem; margin-top: 4px">{{ p }}</div> }
+                } @else if (esAdmin()) {
+                  <button type="button" class="btn btn-sm" (click)="editar(c)" [attr.aria-label]="'Capacidad ' + c.capacidad + '. Cambiar la capacidad de ' + nombre(c)" title="Cambiar la capacidad de esta sección">{{ c.capacidad }} ✎</button>
+                } @else {
+                  {{ c.capacidad }}
+                }
+              </td>
+              <td>{{ c.ocupados }}</td>
+              <td [style.color]="c.vacantes === 0 ? 'var(--danger)' : ''" [style.font-weight]="c.vacantes === 0 ? 700 : 400">{{ c.vacantes }}</td>
+              <td>
+                <div style="display: flex; align-items: center; gap: 10px">
+                  <div [class]="'barra-cupo ' + nivel(c)" style="flex: 1" role="img" [attr.aria-label]="porcentaje(c) + ' por ciento ocupado'"><span [style.width.%]="porcentaje(c)"></span></div>
+                  <span class="muted" style="width: 38px">{{ porcentaje(c) }} %</span>
+                </div>
+              </td>
+            </tr>
+          } @empty {
+            <tr><td colspan="5" class="vacio">{{ cargando() ? 'Cargando…' : 'No hay secciones con cupos para ese filtro.' }}</td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>

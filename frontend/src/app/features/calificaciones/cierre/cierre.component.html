@@ -1,0 +1,103 @@
+<div class="page">
+  <app-page-header titulo="Cierre de periodo y boletines" subtitulo="Promedios por alumno y curso. Al cerrar, los promedios se congelan y se pueden generar los boletines oficiales.">
+    <button type="button" class="btn" [disabled]="ocupado() || promedios().length === 0 || cerrado" (click)="cerrarPeriodo()">Cerrar periodo</button>
+    @if (esAdmin()) { <button type="button" class="btn" [disabled]="ocupado() || !cerrado" (click)="abrirReapertura()">Reabrir…</button> }
+    <button type="button" class="btn btn-primary" [disabled]="ocupado() || !cerrado" (click)="generarBoletines()">Generar boletines</button>
+  </app-page-header>
+
+  <form class="toolbar" [formGroup]="filtro">
+    <select class="input" formControlName="anioId" (change)="alCambiarAnio()" aria-label="Año académico">
+      @for (a of anios(); track a.id) { <option [ngValue]="a.id">Año {{ a.nombre }}</option> }
+    </select>
+    <select class="input" formControlName="seccionId" (change)="cargar()" aria-label="Sección">
+      @for (s of secciones(); track s.id) { <option [ngValue]="s.id">{{ s.gradoNombre }} · {{ s.nombre }}</option> }
+    </select>
+    <select class="input" formControlName="periodoId" (change)="cargar()" aria-label="Periodo">
+      @for (p of periodos(); track p.id) { <option [ngValue]="p.id">{{ p.nombre }} ({{ p.estado.toLowerCase() }})</option> }
+    </select>
+    @if (promedios().length > 0) { <span [class]="'badge ' + (cerrado ? 'badge-ok' : 'badge-warn')">{{ cerrado ? 'Periodo cerrado' : 'Abierto (promedios en borrador)' }}</span> }
+  </form>
+
+  <div class="card">
+    <div class="table-wrap">
+      <table class="table">
+        <thead><tr><th>Alumno</th><th>Curso</th><th>Promedio</th><th>Literal</th><th>Estado</th></tr></thead>
+        <tbody>
+          @for (p of promedios(); track p.id) {
+            <tr>
+              <td><strong>{{ p.alumnoNombre }}</strong></td>
+              <td>{{ curso(p.cursoId) }}</td>
+              <td [style.color]="p.promedio < 11 ? 'var(--danger)' : ''">{{ p.promedio | number: '1.2-2' }}</td>
+              <td><span class="badge">{{ p.literal }}</span></td>
+              <td><span [class]="'badge ' + (p.estado === 'CERRADO' ? 'badge-ok' : 'badge-warn')">{{ p.estado === 'CERRADO' ? 'Cerrado' : 'Borrador' }}</span></td>
+            </tr>
+          } @empty {
+            <tr><td colspan="5" class="vacio">{{ cargando() ? 'Cargando…' : 'Aún no hay promedios calculados para esta sección y periodo (los docentes deben registrar notas).' }}</td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  @if (boletines().length > 0) {
+    <section class="card">
+      <div class="card-body" style="padding-bottom: 0"><h2>Boletines generados ({{ boletines().length }})</h2></div>
+      <div class="table-wrap">
+        <table class="table">
+          <thead><tr><th>Alumno</th><th>Versión</th><th>Estado</th><th>Generado</th><th></th></tr></thead>
+          <tbody>
+            @for (b of boletines(); track b.id) {
+              <tr>
+                <td>Alumno {{ b.alumnoId }}</td>
+                <td>v{{ b.version }}</td>
+                <td><span [class]="'badge ' + (b.estado === 'VIGENTE' ? 'badge-ok' : 'badge-gray')">{{ b.estado }}</span></td>
+                <td class="muted">{{ b.generadoEn | date: 'dd/MM/yyyy HH:mm' }}</td>
+                <td class="acciones"><button type="button" class="btn btn-sm" (click)="descargar(b)">Descargar PDF</button></td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </section>
+  }
+
+  <section class="card">
+    <div class="card-body toolbar" style="justify-content: space-between">
+      <h2>Resultados anuales</h2>
+      <button type="button" class="btn btn-sm" (click)="verResultadosAnuales()">Ver resultados de la sección</button>
+    </div>
+    @if (resultados().length > 0) {
+      <div class="table-wrap">
+        <table class="table">
+          <thead><tr><th>Alumno</th><th>Curso</th><th>Promedio final</th><th>Literal</th><th>Resultado</th></tr></thead>
+          <tbody>
+            @for (r of resultados(); track r.id) {
+              <tr>
+                <td>Alumno {{ r.alumnoId }}</td>
+                <td>{{ curso(r.cursoId) }}</td>
+                <td>{{ r.promedioFinal | number: '1.2-2' }}</td>
+                <td><span class="badge">{{ r.literal }}</span></td>
+                <td><span [class]="'badge ' + claseResultado(r.estado)">{{ r.estado }}</span></td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  </section>
+</div>
+
+@if (reabriendo()) {
+  <app-modal titulo="Reabrir periodo" [ancho]="480" (cerrar)="cerrarDialogo()">
+    <p style="margin-top: 0">Reabrir permite corregir notas de un periodo cerrado. Queda registrado quién lo hizo y por qué.</p>
+    <div class="field">
+      <label for="r-motivo">Motivo</label>
+      <textarea id="r-motivo" rows="3" [formControl]="motivo" style="padding: 10px 12px; min-height: 80px"></textarea>
+    </div>
+    @if (errorForm()) { <div class="aviso aviso-danger" style="margin-top: 14px" role="alert">{{ errorForm() }}</div> }
+    <ng-container footer>
+      <button type="button" class="btn" (click)="cerrarDialogo()">Cancelar</button>
+      <button type="button" class="btn btn-danger" [disabled]="ocupado()" (click)="reabrir()">Reabrir periodo</button>
+    </ng-container>
+  </app-modal>
+}

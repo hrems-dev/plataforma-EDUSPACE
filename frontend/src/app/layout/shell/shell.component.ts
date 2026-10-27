@@ -1,0 +1,138 @@
+import { Component, HostListener, computed, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { timer } from 'rxjs';
+import { catchError, switchMap } from 'rxjs/operators';
+import { of } from 'rxjs';
+import { AlumnoService } from '../../core/services/alumno.service';
+import { AlumnoResumen } from '../../core/models/alumno.model';
+import { AuthService } from '../../core/services/auth.service';
+import { NotificacionService } from '../../core/services/notificacion.service';
+import { MENU, PERSONAL } from '../menu';
+
+@Component({
+  selector: 'app-shell',
+  imports: [RouterLink, RouterLinkActive, RouterOutlet],
+  templateUrl: './shell.component.html',
+  styleUrl: './shell.component.css'
+})
+export class ShellComponent {
+  private readonly auth = inject(AuthService);
+  private readonly router = inject(Router);
+  private readonly notificaciones = inject(NotificacionService);
+  private readonly alumnosApi = inject(AlumnoService);
+  protected readonly noLeidas = this.notificaciones.noLeidas;
+
+  protected readonly menuAbierto = signal(false);
+  protected readonly usuario = this.auth.currentUser;
+
+  /** Solo los grupos con al menos una opción permitida para los roles de la sesión. */
+  protected readonly menu = computed(() =>
+    MENU.map(g => ({
+      ...g,
+      items: g.items.filter(i => this.auth.tieneAlgunRol(i.roles) && !(i.soloEduspace && this.auth.esKeycloak))
+    })).filter(g => g.items.length > 0)
+  );
+
+  // --- Paleta de búsqueda (Ctrl+K): saltar a cualquier pantalla permitida o abrir el expediente de un alumno ---
+  protected readonly paletaAbierta = signal(false);
+  protected readonly texto = signal('');
+  protected readonly alumnos = signal<AlumnoResumen[]>([]);
+  protected readonly seleccion = signal(0);
+  protected readonly puedeBuscarAlumnos = computed(() => this.auth.tieneAlgunRol(PERSONAL));
+  private busqueda?: ReturnType<typeof setTimeout>;
+
+  protected readonly opciones = computed(() => {
+    const t = this.texto().trim().toLowerCase();
+    const pantallas = this.menu()
+      .flatMap(g => g.items.map(i => ({ tipo: 'pantalla' as const, etiqueta: i.etiqueta, detalle: g.titulo, ruta: i.ruta })))
+      .filter(o => !t || `${o.etiqueta} ${o.detalle}`.toLowerCase().includes(t));
+    const personas = this.alumnos().map(a => ({ tipo: 'alumno' as const, etiqueta: a.nombreCompleto, detalle: `Alumno · ${a.numeroDocumento}`, ruta: `/alumnos/${a.id}` }));
+    return [...personas, ...pantallas].slice(0, 12);
+  });
+
+  protected readonly esKeycloak = this.auth.esKeycloak;
+  protected readonly consolaAdmin = this.auth.consolaAdminUrl;
+  protected readonly esAdmin = this.auth.isAdmin;
+
+  protected readonly rolPrincipal = computed(() => this.auth.roles().join(' · '));
+
+  constructor() {
+    // Contador de notificaciones sin leer: al entrar y luego cada minuto. Si falla, el menú sigue funcionando.
+    timer(0, 60_000)
+      .pipe(
+        switchMap(() => this.notificaciones.actualizarConteo().pipe(catchError(() => of(0)))),
+        takeUntilDestroyed()
+      )
+      .subscribe();
+  }
+
+  @HostListener('document:keydown', ['$event'])
+  protected alTeclear(e: KeyboardEvent): void {
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+      e.preventDefault();
+      this.paletaAbierta() ? this.cerrarPaleta() : this.abrirPaleta();
+    }
+  }
+
+  protected abrirPaleta(): void {
+    this.texto.set('');
+    this.alumnos.set([]);
+    this.seleccion.set(0);
+    this.paletaAbierta.set(true);
+    setTimeout(() => document.getElementById('paleta-texto')?.focus());
+  }
+
+  protected cerrarPaleta(): void {
+    this.paletaAbierta.set(false);
+  }
+
+  protected escribir(valor: string): void {
+    this.texto.set(valor);
+    this.seleccion.set(0);
+    clearTimeout(this.busqueda);
+    const q = valor.trim();
+    if (q.length < 2 || !this.puedeBuscarAlumnos()) {
+      this.alumnos.set([]);
+      return;
+    }
+    this.busqueda = setTimeout(() => {
+      this.alumnosApi.listar(q, '', 0, 5).pipe(catchError(() => of(null))).subscribe(p => {
+        if (this.texto().trim() === q) this.alumnos.set(p?.contenido ?? []);
+      });
+    }, 250);
+  }
+
+  protected teclaPaleta(e: KeyboardEvent): void {
+    const n = this.opciones().length;
+    if (e.key === 'ArrowDown') { e.preventDefault(); this.seleccion.update(i => (i + 1) % Math.max(n, 1)); }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); this.seleccion.update(i => (i - 1 + Math.max(n, 1)) % Math.max(n, 1)); }
+    else if (e.key === 'Enter') { e.preventDefault(); const o = this.opciones()[this.seleccion()]; if (o) this.irA(o.ruta); }
+    else if (e.key === 'Escape') this.cerrarPaleta();
+  }
+
+  protected irA(ruta: string): void {
+    this.cerrarPaleta();
+    this.router.navigateByUrl(ruta);
+  }
+
+  protected alternarMenu(): void {
+    this.menuAbierto.update(v => !v);
+  }
+
+  protected cerrarMenu(): void {
+    this.menuAbierto.set(false);
+  }
+
+  protected salir(): void {
+    this.auth.logout();
+  }
+
+  protected irACambiarClave(): void {
+    if (this.esKeycloak) {
+      this.auth.abrirCuenta();
+      return;
+    }
+    this.router.navigate(['/cambiar-clave']);
+  }
+}

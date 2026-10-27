@@ -1,0 +1,24 @@
+version: '3.8'
+
+services:
+  asistencia-db:
+    image: postgres:16-alpine
+    container_name: eduspace-asistencia-db-dev
+    environment:
+      POSTGRES_DB: asistencia_db
+      POSTGRES_USER: eduspace
+      POSTGRES_PASSWORD: eduspace
+      TZ: America/Lima
+    ports:
+      - "15444:5432"
+    volumes:
+      - asistencia_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U eduspace -d asistencia_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  asistencia_db_data:
+

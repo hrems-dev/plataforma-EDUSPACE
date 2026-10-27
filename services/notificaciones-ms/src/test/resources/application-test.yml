@@ -1,0 +1,42 @@
+spring:
+  cloud:
+    config:
+      enabled: false
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+  kafka:
+    bootstrap-servers: localhost:1
+    listener:
+      auto-startup: false
+  mail:
+    host: localhost
+    port: 1
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          jwk-set-uri: http://localhost:1/.well-known/jwks.json
+eureka:
+  client:
+    enabled: false
+resilience4j:
+  circuitbreaker:
+    instances:
+      alumnosClient:
+        slidingWindowSize: 4
+        minimumNumberOfCalls: 4
+        failureRateThreshold: 50
+        waitDurationInOpenState: 30s
+        permittedNumberOfCallsInHalfOpenState: 2
+        automaticTransitionFromOpenToHalfOpenEnabled: false
+app:
+  security:
+    swagger-public: false
+  reintentos:
+    intervalo: PT1H
+    espera-inicial: PT1H
+
+eduspace:
+  service-token: test-token

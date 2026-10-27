@@ -1,0 +1,70 @@
+# DEV: las aplicaciones corren con Maven; solo las bases, Kafka, MinIO y Mailpit corren en Docker.
+server:
+  port: 8092
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:15442/alumnos_db
+    username: ${DB_USER:eduspace}
+    password: ${DB_PASSWORD:eduspace}
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: America/Lima
+  flyway:
+    enabled: true
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP:localhost:19092}
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          jwk-set-uri: ${JWK_SET_URI:http://localhost:8090/.well-known/jwks.json}
+  servlet:
+    multipart:
+      max-file-size: 6MB
+      max-request-size: 7MB
+eureka:
+  client:
+    registry-fetch-interval-seconds: 5      # DEV: ve a los demás servicios en segundos, no en 30 s
+    service-url:
+      defaultZone: ${EUREKA_URL:http://localhost:18761/eureka}
+  instance:
+    hostname: localhost
+    instance-id: ${spring.application.name}:${server.port}
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+  endpoint:
+    health:
+      probes:
+        enabled: true
+app:
+  security:
+    swagger-public: true
+  kafka:
+    topic:
+      alumno-registrado: alumno.registrado
+      alumno-estado-cambiado: alumno.estado-cambiado
+  storage:
+    endpoint: ${MINIO_ENDPOINT:http://localhost:19000}
+    public-endpoint: ${MINIO_PUBLIC_ENDPOINT:http://localhost:19000}
+    access-key: ${MINIO_ACCESS_KEY:minioadmin}
+    secret-key: ${MINIO_SECRET_KEY:minioadmin}
+    bucket: alumnos-documentos
+  documentos:
+    max-bytes: 5242880
+    vigencia-descarga: PT10M
+  expediente:
+    requeridos: PARTIDA_NACIMIENTO,DNI,FICHA_SIAGIE
+  salud:
+    docentes-pueden-leer: true
+
+# Token compartido entre servicios para /internal/** (header X-Service-Token). Sin él, /internal responde 401.
+eduspace:
+  service-token: ${SERVICE_TOKEN:eduspace-dev-service-token}

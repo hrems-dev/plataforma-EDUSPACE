@@ -1,0 +1,18 @@
+spring:
+  cloud:
+    config:
+      enabled: false
+  config:
+    import: ""
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+eureka:
+  client:
+    enabled: false
+spring.cloud.discovery.enabled: false
+app:
+  auth:
+    jwt:
+      generar-clave-si-falta: true

@@ -1,0 +1,12 @@
+apiVersion: 1
+
+providers:
+  - name: 'Eduspace Dashboards'
+    orgId: 1
+    folder: 'Eduspace'
+    type: file
+    disableDeletion: false
+    editable: true
+    options:
+      path: /etc/grafana/provisioning/dashboards
+

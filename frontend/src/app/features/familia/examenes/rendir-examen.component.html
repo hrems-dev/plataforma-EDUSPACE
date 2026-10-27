@@ -1,0 +1,80 @@
+<div class="page">
+  @switch (fase()) {
+    @case ('inicio') {
+      <app-page-header [titulo]="examen()?.titulo ?? 'Examen'" subtitulo="Lee estas indicaciones antes de comenzar.">
+        <a class="btn" routerLink="/familia/examenes">Volver</a>
+      </app-page-header>
+      @if (error()) { <div class="aviso aviso-danger" role="alert">{{ error() }}</div> }
+      @if (examen(); as e) {
+        <section class="card">
+          <div class="card-body">
+            @if (e.instrucciones) { <p style="margin-top: 0; white-space: pre-line">{{ e.instrucciones }}</p> }
+            <ul style="line-height: 1.8; padding-left: 20px">
+              <li>Tienes <strong>{{ e.duracionMin }} minutos</strong> desde que comienzas. El tiempo lo controla el servidor: cerrar la página no lo detiene.</li>
+              <li>Tus respuestas se guardan solas mientras avanzas.</li>
+              <li>Intentos: {{ e.intentosRealizados }} de {{ e.intentosMax }} usados. Puntaje total: {{ e.puntajeTotal }}.</li>
+              <li>Si el tiempo termina, el examen se envía automáticamente.</li>
+            </ul>
+            <button type="button" class="btn btn-primary" [disabled]="iniciando() || !e.puedeRendir" (click)="comenzar()">
+              {{ iniciando() ? 'Iniciando…' : e.intentosRealizados > 0 ? 'Continuar o comenzar' : 'Comenzar examen' }}
+            </button>
+          </div>
+        </section>
+      } @else if (!cargando()) {
+        <div class="aviso aviso-warn">Este examen no está disponible para ti en este momento.</div>
+      }
+    }
+
+    @case ('rindiendo') {
+      <div class="cabecera-examen">
+        <div><strong>{{ intento()?.tituloExamen }}</strong><div class="muted">{{ contestadas() }} de {{ preguntas().length }} respondidas</div></div>
+        <div class="reloj" [class.poco]="poco()" role="timer" [attr.aria-label]="'Tiempo restante ' + reloj()">{{ reloj() }}</div>
+        <button type="button" class="btn btn-primary" [disabled]="enviando()" (click)="enviar()">{{ enviando() ? 'Enviando…' : 'Enviar examen' }}</button>
+      </div>
+      @if (error()) { <div class="aviso aviso-danger" role="alert">{{ error() }}</div> }
+
+      @for (p of preguntas(); track p.preguntaId; let n = $index) {
+        <section class="card">
+          <div class="card-body">
+            <div class="toolbar" style="justify-content: space-between; margin-bottom: 10px">
+              <strong>Pregunta {{ n + 1 }}</strong>
+              <span class="muted">{{ p.puntaje }} pts @if (guardadas().has(p.preguntaId)) { · <span style="color: var(--ok)">guardada</span> }</span>
+            </div>
+            <p style="margin: 0 0 14px; white-space: pre-line">{{ p.enunciado }}</p>
+            @if (p.tipo === 'ABIERTA') {
+              <textarea class="respuesta" rows="4" [value]="respuestas()[p.preguntaId]?.texto ?? ''" (input)="escribir(p, $any($event.target).value)" (blur)="guardarTexto(p)" [attr.aria-label]="'Respuesta de la pregunta ' + (n + 1)"></textarea>
+            } @else {
+              <div style="display: flex; flex-direction: column; gap: 8px" role="group" [attr.aria-label]="'Opciones de la pregunta ' + (n + 1)">
+                @for (o of p.opciones; track o.id) {
+                  <label class="opcion" [class.marcada]="marcada(p, o.id)">
+                    <input [type]="p.tipo === 'OPCION_MULTIPLE' ? 'checkbox' : 'radio'" [name]="'p' + p.preguntaId" [checked]="marcada(p, o.id)" (change)="elegir(p, o.id, $any($event.target).checked)" />
+                    {{ o.texto }}
+                  </label>
+                }
+              </div>
+              @if (p.tipo === 'OPCION_MULTIPLE') { <div class="muted" style="margin-top: 8px">Puede haber más de una respuesta correcta.</div> }
+            }
+          </div>
+        </section>
+      }
+    }
+
+    @case ('enviado') {
+      <app-page-header titulo="Examen enviado" [subtitulo]="resultado()?.tituloExamen ?? ''" />
+      @if (resultado(); as r) {
+        <section class="card">
+          <div class="card-body">
+            @if (r.nota !== undefined && r.nota !== null) {
+              <div class="kpi" style="border: 0; padding: 0"><div class="etiqueta">Tu nota</div><div class="valor">{{ r.nota }}</div><div class="nota">{{ r.puntajeObtenido }} de {{ r.puntajeTotal }} puntos</div></div>
+            } @else if (r.requiereRevisionAbiertas) {
+              <div class="aviso aviso-warn">Tus respuestas se enviaron. Tu docente debe revisar las preguntas abiertas; la nota final aparecerá cuando termine. Puntaje parcial: <strong>{{ r.puntajeObtenido }}</strong> de {{ r.puntajeTotal }}.</div>
+            } @else {
+              <div class="aviso aviso-ok">Tus respuestas se enviaron correctamente.</div>
+            }
+            <button type="button" class="btn btn-primary" style="margin-top: 16px" (click)="volver()">Volver a exámenes</button>
+          </div>
+        </section>
+      }
+    }
+  }
+</div>

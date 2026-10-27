@@ -1,0 +1,54 @@
+<div class="page">
+  <app-page-header titulo="Tareas" [subtitulo]="ctx.seleccionado()?.nombreCompleto ?? ''" />
+  <app-selector-hijo />
+
+  @if (ctx.esApoderado()) { <div class="aviso aviso-warn">Las entregas las hace el alumno desde su cuenta. Aquí puedes ver qué tiene pendiente y cómo le fue.</div> }
+
+  <div class="card">
+    <div class="table-wrap">
+      <table class="table">
+        <thead><tr><th>Tarea</th><th>Entrega</th><th>Estado</th><th></th></tr></thead>
+        <tbody>
+          @for (t of delHijo(); track t.tareaId) {
+            <tr>
+              <td><strong>{{ t.titulo }}</strong></td>
+              <td>{{ t.fechaEntrega | date: 'dd/MM/yyyy HH:mm' }}@if (t.vencida) { <div class="muted" style="color: var(--danger)">vencida{{ t.permiteTardia ? ' · acepta tardías' : '' }}</div> }</td>
+              <td><span [class]="'badge ' + clase(t.estadoEntrega)">{{ texto(t.estadoEntrega) }}</span></td>
+              <td class="acciones">
+                @if (!ctx.esApoderado() && (t.estadoEntrega === 'SIN_ENTREGAR' || t.estadoEntrega === 'DEVUELTA') && (!t.vencida || t.permiteTardia)) {
+                  <button type="button" class="btn btn-sm btn-primary" (click)="abrir(t)">{{ t.estadoEntrega === 'DEVUELTA' ? 'Reenviar' : 'Entregar' }}</button>
+                } @else if (!ctx.esApoderado() && t.estadoEntrega === 'ENTREGADA' && (!t.vencida || t.permiteTardia)) {
+                  <button type="button" class="btn btn-sm" (click)="abrir(t)">Reenviar</button>
+                }
+              </td>
+            </tr>
+          } @empty {
+            <tr><td colspan="4" class="vacio">{{ cargando() ? 'Cargando…' : 'No hay tareas publicadas.' }}</td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+@if (entregando(); as t) {
+  <app-modal [titulo]="'Entregar: ' + t.titulo" [ancho]="520" (cerrar)="cerrar()">
+    <form (ngSubmit)="entregar()" id="form-entrega" novalidate>
+      <div class="field">
+        <label for="e-arch">Archivos (máx. 10 MB cada uno)</label>
+        <input id="e-arch" type="file" multiple accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.txt" (change)="elegirArchivos($event)" />
+        @if (archivos().length > 0) { <span class="muted">{{ archivos().length }} archivo(s) elegido(s)</span> }
+      </div>
+      <div class="field" style="margin-top: 14px">
+        <label for="e-com">Comentario (opcional)</label>
+        <textarea id="e-com" rows="3" [formControl]="comentario" style="padding: 10px 12px; min-height: 80px"></textarea>
+      </div>
+      @if (t.estadoEntrega !== 'SIN_ENTREGAR') { <div class="aviso aviso-warn" style="margin-top: 14px">Al reenviar, tu entrega anterior se reemplaza por una nueva versión.</div> }
+      @if (errorForm()) { <div class="aviso aviso-danger" style="margin-top: 14px" role="alert">{{ errorForm() }}</div> }
+    </form>
+    <ng-container footer>
+      <button type="button" class="btn" (click)="cerrar()">Cancelar</button>
+      <button type="submit" form="form-entrega" class="btn btn-primary" [disabled]="enviando()">{{ enviando() ? 'Enviando…' : 'Enviar entrega' }}</button>
+    </ng-container>
+  </app-modal>
+}

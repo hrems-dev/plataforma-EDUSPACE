@@ -1,0 +1,161 @@
+<div class="page">
+  <app-page-header titulo="Usuarios y roles" subtitulo="Cuentas de acceso al sistema. La clave temporal se muestra una sola vez.">
+    <button type="button" class="btn btn-primary" (click)="abrirCrear()">Nuevo usuario</button>
+  </app-page-header>
+
+  <form class="toolbar" [formGroup]="filtro" (ngSubmit)="buscar()">
+    <input class="input grow" type="search" formControlName="texto" placeholder="Buscar por usuario, nombre o correo" aria-label="Buscar usuario" />
+    <select class="input" formControlName="rol" aria-label="Filtrar por rol">
+      <option value="">Todos los roles</option>
+      @for (r of todosLosRoles; track r) {
+        <option [value]="r">{{ r }}</option>
+      }
+    </select>
+    <select class="input" formControlName="activo" aria-label="Filtrar por estado">
+      <option value="">Todos</option>
+      <option value="true">Activos</option>
+      <option value="false">Inactivos</option>
+    </select>
+    <button type="submit" class="btn">Buscar</button>
+  </form>
+
+  <div class="card">
+    <div class="table-wrap">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Usuario</th>
+            <th>Nombre</th>
+            <th>Roles</th>
+            <th>Estado</th>
+            <th>Último acceso</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (u of usuarios(); track u.id) {
+            <tr>
+              <td>
+                <strong>{{ u.username }}</strong>
+                <div class="muted">{{ u.email }}</div>
+              </td>
+              <td>{{ u.apellidos }}, {{ u.nombres }}</td>
+              <td>
+                @for (r of u.roles; track r) {
+                  <span class="badge" style="margin-right: 4px">{{ r }}</span>
+                }
+              </td>
+              <td>
+                @if (u.bloqueado) {
+                  <span class="badge badge-danger">Bloqueado</span>
+                } @else if (u.activo) {
+                  <span class="badge badge-ok">Activo</span>
+                } @else {
+                  <span class="badge badge-gray">Inactivo</span>
+                }
+                @if (u.debeCambiarClave) {
+                  <div class="muted">Clave temporal</div>
+                }
+              </td>
+              <td class="muted">{{ u.ultimoLogin ? (u.ultimoLogin | date: 'dd/MM/yyyy HH:mm') : 'Nunca' }}</td>
+              <td class="acciones">
+                <button type="button" class="btn btn-sm" (click)="abrirEditar(u)">Editar</button>
+                <button type="button" class="btn btn-sm" (click)="abrirRoles(u)">Roles</button>
+                @if (u.bloqueado) {
+                  <button type="button" class="btn btn-sm" (click)="desbloquear(u)">Desbloquear</button>
+                }
+                <button type="button" class="btn btn-sm" (click)="restablecer(u)">Restablecer clave</button>
+                <button type="button" class="btn btn-sm" [disabled]="yoMismo(u)" [title]="yoMismo(u) ? 'No puedes desactivar tu propia cuenta' : ''" (click)="alternarActivo(u)">
+                  {{ u.activo ? 'Desactivar' : 'Activar' }}
+                </button>
+              </td>
+            </tr>
+          } @empty {
+            <tr><td colspan="6" class="vacio">{{ cargando() ? 'Cargando…' : 'No hay usuarios con esos filtros.' }}</td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    <div class="toolbar" style="padding: 12px 16px; justify-content: space-between">
+      <span class="muted">{{ total() }} usuarios · página {{ pagina() + 1 }} de {{ paginas() }}</span>
+      <span>
+        <button type="button" class="btn btn-sm" [disabled]="pagina() === 0" (click)="irA(pagina() - 1)">Anterior</button>
+        <button type="button" class="btn btn-sm" [disabled]="pagina() + 1 >= paginas()" (click)="irA(pagina() + 1)">Siguiente</button>
+      </span>
+    </div>
+  </div>
+</div>
+
+@if (dialogo() === 'crear' || dialogo() === 'editar') {
+  <app-modal [titulo]="dialogo() === 'crear' ? 'Nuevo usuario' : 'Editar usuario'" (cerrar)="cerrar()">
+    <form [formGroup]="form" (ngSubmit)="guardar()" id="form-usuario" novalidate>
+      <div class="form-grid">
+        <div class="field full">
+          <label for="u-username">Usuario</label>
+          <input id="u-username" formControlName="username" autocomplete="off" />
+          @if (form.controls.username.touched && form.controls.username.invalid) { <span class="error">Obligatorio (máximo 50 caracteres).</span> }
+        </div>
+        <div class="field">
+          <label for="u-nombres">Nombres</label>
+          <input id="u-nombres" formControlName="nombres" />
+          @if (form.controls.nombres.touched && form.controls.nombres.invalid) { <span class="error">Obligatorio.</span> }
+        </div>
+        <div class="field">
+          <label for="u-apellidos">Apellidos</label>
+          <input id="u-apellidos" formControlName="apellidos" />
+          @if (form.controls.apellidos.touched && form.controls.apellidos.invalid) { <span class="error">Obligatorio.</span> }
+        </div>
+        <div class="field full">
+          <label for="u-email">Correo</label>
+          <input id="u-email" type="email" formControlName="email" />
+          @if (form.controls.email.touched && form.controls.email.invalid) { <span class="error">Ingresa un correo válido.</span> }
+        </div>
+        @if (dialogo() === 'crear') {
+          <div class="field full">
+            <span class="etiqueta-grupo" style="font-weight: 600; font-size: 13px">Roles</span>
+            <div class="checks" role="group" aria-label="Roles">
+              @for (r of todosLosRoles; track r) {
+                <label><input type="checkbox" [checked]="tieneRol(r)" (change)="alternarRol(r, $any($event.target).checked)" /> {{ r }}</label>
+              }
+            </div>
+            <span class="muted">Se genera una clave temporal que el usuario deberá cambiar al ingresar.</span>
+          </div>
+        }
+      </div>
+      @if (errorForm()) { <div class="aviso aviso-danger" style="margin-top: 14px" role="alert">{{ errorForm() }}</div> }
+    </form>
+    <ng-container footer>
+      <button type="button" class="btn" (click)="cerrar()">Cancelar</button>
+      <button type="submit" form="form-usuario" class="btn btn-primary" [disabled]="guardando()">{{ guardando() ? 'Guardando…' : 'Guardar' }}</button>
+    </ng-container>
+  </app-modal>
+}
+
+@if (dialogo() === 'roles' && seleccionado(); as u) {
+  <app-modal [titulo]="'Roles de ' + u.username" [ancho]="480" (cerrar)="cerrar()">
+    <div class="checks" role="group" aria-label="Roles">
+      @for (r of todosLosRoles; track r) {
+        <label><input type="checkbox" [checked]="tieneRol(r)" (change)="alternarRol(r, $any($event.target).checked)" /> {{ r }}</label>
+      }
+    </div>
+    @if (errorForm()) { <div class="aviso aviso-danger" style="margin-top: 14px" role="alert">{{ errorForm() }}</div> }
+    <ng-container footer>
+      <button type="button" class="btn" (click)="cerrar()">Cancelar</button>
+      <button type="button" class="btn btn-primary" [disabled]="guardando()" (click)="guardarRoles()">Guardar roles</button>
+    </ng-container>
+  </app-modal>
+}
+
+@if (dialogo() === 'clave') {
+  <app-modal titulo="Clave temporal" [ancho]="460" (cerrar)="cerrar()">
+    @if (claveTemporal()) {
+      <p>Entrega esta clave al usuario. <strong>No se volverá a mostrar</strong>; deberá cambiarla al ingresar.</p>
+      <div class="clave-temporal">{{ claveTemporal() }}</div>
+    } @else {
+      <p>La cuenta se guardó con la clave que indicaste.</p>
+    }
+    <ng-container footer>
+      <button type="button" class="btn btn-primary" (click)="cerrar()">Listo</button>
+    </ng-container>
+  </app-modal>
+}

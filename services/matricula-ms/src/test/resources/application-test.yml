@@ -1,0 +1,28 @@
+spring:
+  cloud:
+    config:
+      enabled: false
+  config:
+    import: ""
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+  kafka:
+    bootstrap-servers: localhost:1
+    admin:
+      auto-create: false
+    listener:
+      auto-startup: false
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          jwk-set-uri: http://localhost:1/.well-known/jwks.json
+eureka:
+  client:
+    enabled: false
+spring.cloud.discovery.enabled: false
+
+eduspace:
+  service-token: test-token

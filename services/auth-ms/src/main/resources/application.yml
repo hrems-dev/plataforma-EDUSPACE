@@ -1,0 +1,71 @@
+server:
+  port: ${PORT:8090}
+  shutdown: graceful
+
+spring:
+  application:
+    name: auth-ms
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:dev}
+  config:
+    import: "optional:configserver:${CONFIG_SERVER_URL:http://localhost:18888}"
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:15440}/${DB_NAME:auth_db}}
+    username: ${DB_USERNAME:eduspace}
+    password: ${DB_PASSWORD:eduspace}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      pool-name: AuthHikariPool
+      maximum-pool-size: 10
+      minimum-idle: 2
+      connection-timeout: 20000
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        default_schema: public
+        jdbc:
+          time_zone: America/Lima
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    locations: classpath:db/migration
+
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_URI:http://localhost:18761/eureka/}
+    register-with-eureka: ${EUREKA_REGISTER:true}
+    fetch-registry: ${EUREKA_FETCH:true}
+  instance:
+    prefer-ip-address: true
+    instance-id: ${spring.application.name}:${server.port}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus,metrics
+  endpoint:
+    health:
+      show-details: always
+
+app:
+  auth:
+    issuer: ${AUTH_ISSUER:http://localhost:8090}
+    access-token-minutos: 30
+    refresh-token-dias: 7
+    max-intentos-fallidos: 5
+    bloqueo-minutos: 15
+    clave-minima: 8
+    jwt:
+      kid: ${JWT_KID:eduspace-key-1}
+      # PROD: rutas a las claves PEM (PKCS8 privada, X.509 pública). Sin ellas el servicio no arranca.
+      private-key-path: ${JWT_PRIVATE_KEY_PATH:}
+      public-key-path: ${JWT_PUBLIC_KEY_PATH:}
+      # Rotación: clave pública anterior que se sigue publicando en el JWKS para validar tokens aún vigentes
+      public-key-anterior-path: ${JWT_PUBLIC_KEY_ANTERIOR_PATH:}
+      kid-anterior: ${JWT_KID_ANTERIOR:eduspace-key-0}
+      generar-clave-si-falta: false

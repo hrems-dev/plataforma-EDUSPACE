@@ -1,0 +1,52 @@
+<section class="card">
+  <div class="card-body" style="padding-bottom: 0">
+    <h2>{{ libreta().alumnoNombre }}</h2>
+    <div class="muted">Notas de 0 a 20. En rojo, lo que está por debajo de 11.</div>
+  </div>
+  <div class="table-wrap">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Curso</th>
+          @for (p of columnas(); track p) { <th>{{ nombrePeriodo(p) }}</th> }
+          <th>Promedio final</th>
+          <th>Resultado</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (c of libreta().cursos; track c.cursoId) {
+          <tr>
+            <td><strong>{{ c.cursoNombre }}</strong></td>
+            @for (p of columnas(); track p) { <td [style.color]="claseNota(c, p)">{{ nota(c, p) }}</td> }
+            <td>{{ c.promedioFinal !== undefined && c.promedioFinal !== null ? (c.promedioFinal | number: '1.1-1') + ' (' + c.literalFinal + ')' : '—' }}</td>
+            <td><span [class]="'badge ' + claseResultado(c.estadoFinal)">{{ c.estadoFinal ?? 'En curso' }}</span></td>
+          </tr>
+        } @empty {
+          <tr><td [attr.colspan]="columnas().length + 3" class="vacio">Aún no hay notas registradas.</td></tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section class="card">
+  <div class="card-body" style="padding-bottom: 0"><h2>Boletines</h2></div>
+  <div class="table-wrap">
+    <table class="table">
+      <thead><tr><th>Periodo</th><th>Versión</th><th>Estado</th><th>Generado</th><th></th></tr></thead>
+      <tbody>
+        @for (b of libreta().boletines; track b.id) {
+          <tr>
+            <td>{{ nombrePeriodo(b.periodoId) }}</td>
+            <td>v{{ b.version }}</td>
+            <td><span [class]="'badge ' + (b.estado === 'VIGENTE' ? 'badge-ok' : 'badge-gray')">{{ b.estado }}</span></td>
+            <td class="muted">{{ b.generadoEn | date: 'dd/MM/yyyy HH:mm' }}</td>
+            <td class="acciones"><button type="button" class="btn btn-sm" (click)="descargar(b)">Descargar PDF</button></td>
+          </tr>
+        } @empty {
+          <tr><td colspan="5" class="vacio">Todavía no hay boletines generados.</td></tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</section>

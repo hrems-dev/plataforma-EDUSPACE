@@ -1,0 +1,47 @@
+version: '3.8'
+
+services:
+  auth-db:
+    image: postgres:16-alpine
+    container_name: eduspace-auth-db-prod
+    environment:
+      POSTGRES_DB: auth_db
+      POSTGRES_USER: ${DB_USERNAME:-eduspace}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-eduspace_prod_secret}
+      TZ: America/Lima
+    volumes:
+      - auth_prod_data:/var/lib/postgresql/data
+    networks:
+      - eduspace-prod-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-eduspace} -d auth_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  auth-ms:
+    build: .
+    container_name: eduspace-auth-ms-prod
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      DB_HOST: auth-db
+      DB_PORT: 5432
+      DB_NAME: auth_db
+      DB_USERNAME: ${DB_USERNAME:-eduspace}
+      DB_PASSWORD: ${DB_PASSWORD:-eduspace_prod_secret}
+      CONFIG_SERVER_URL: http://eduspace-config-server:8888
+      EUREKA_URI: http://eduspace-eureka-server:8761/eureka/
+      TZ: America/Lima
+    depends_on:
+      auth-db:
+        condition: service_healthy
+    networks:
+      - eduspace-prod-net
+
+volumes:
+  auth_prod_data:
+
+networks:
+  eduspace-prod-net:
+    external: true
+

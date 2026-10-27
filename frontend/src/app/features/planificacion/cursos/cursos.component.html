@@ -1,0 +1,65 @@
+<div class="page">
+  <app-page-header titulo="Cursos" subtitulo="Catálogo de cursos. La malla curricular los asigna a cada grado.">@if (puedeEditar()) {
+    <button type="button" class="btn btn-primary" (click)="nuevo()">Nuevo curso</button>
+  }</app-page-header>
+  @if (!puedeEditar()) {
+    <div class="aviso aviso-warn">Solo el administrador puede modificar esta información; tú puedes consultarla.</div>
+  }
+
+  <div class="card">
+    <div class="table-wrap">
+      <table class="table">
+        <thead>
+          <tr><th>Código</th><th>Nombre</th><th>Área</th><th>Estado</th><th></th></tr>
+        </thead>
+        <tbody>
+          @for (c of cursos(); track c.id) {
+            <tr>
+              <td>{{ c.codigo }}</td>
+              <td><strong>{{ c.nombre }}</strong></td>
+              <td>{{ c.area ?? '—' }}</td>
+              <td><span [class]="'badge ' + (c.activo ? 'badge-ok' : 'badge-gray')">{{ c.activo ? 'Activo' : 'Inactivo' }}</span></td>
+              <td class="acciones">@if (puedeEditar()) {
+                <button type="button" class="btn btn-sm" (click)="editar(c)">Editar</button>
+                <button type="button" class="btn btn-sm" (click)="eliminar(c)">Eliminar</button>
+              }</td>
+            </tr>
+          } @empty {
+            <tr><td colspan="5" class="vacio">{{ cargando() ? 'Cargando…' : 'Aún no hay cursos.' }}</td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+@if (abierto()) {
+  <app-modal [titulo]="editando() ? 'Editar curso' : 'Nuevo curso'" [ancho]="480" (cerrar)="cerrar()">
+    <form [formGroup]="form" (ngSubmit)="guardar()" id="form-curso" novalidate>
+      <div class="form-grid">
+        <div class="field">
+          <label for="c-codigo">Código</label>
+          <input id="c-codigo" formControlName="codigo" placeholder="MAT" />
+          @if (form.controls.codigo.touched && form.controls.codigo.invalid) { <span class="error">Obligatorio.</span> }
+        </div>
+        <div class="field">
+          <label for="c-area">Área</label>
+          <input id="c-area" formControlName="area" placeholder="Matemática" />
+        </div>
+        <div class="field full">
+          <label for="c-nombre">Nombre</label>
+          <input id="c-nombre" formControlName="nombre" />
+          @if (form.controls.nombre.touched && form.controls.nombre.invalid) { <span class="error">Obligatorio.</span> }
+        </div>
+        <div class="field full">
+          <label class="check"><input type="checkbox" formControlName="activo" /> Curso activo</label>
+        </div>
+      </div>
+      @if (errorForm()) { <div class="aviso aviso-danger" style="margin-top: 14px" role="alert">{{ errorForm() }}</div> }
+    </form>
+    <ng-container footer>
+      <button type="button" class="btn" (click)="cerrar()">Cancelar</button>
+      <button type="submit" form="form-curso" class="btn btn-primary" [disabled]="guardando()">{{ guardando() ? 'Guardando…' : 'Guardar' }}</button>
+    </ng-container>
+  </app-modal>
+}

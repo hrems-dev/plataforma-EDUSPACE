@@ -1,0 +1,79 @@
+<div class="page">
+  <app-page-header titulo="Aulas" subtitulo="Espacios del colegio. La capacidad del aula limita los cupos de la sección que la usa.">@if (puedeEditar()) {
+    <button type="button" class="btn btn-primary" (click)="nueva()">Nueva aula</button>
+  }</app-page-header>
+  @if (!puedeEditar()) {
+    <div class="aviso aviso-warn">Solo el administrador puede modificar esta información; tú puedes consultarla.</div>
+  }
+
+  <div class="toolbar">
+    <select class="input" [formControl]="filtroTipo" (change)="cargar()" aria-label="Filtrar por tipo">
+      <option value="">Todos los tipos</option>
+      @for (t of tipos; track t) { <option [value]="t">{{ t }}</option> }
+    </select>
+  </div>
+
+  <div class="card">
+    <div class="table-wrap">
+      <table class="table">
+        <thead>
+          <tr><th>Código</th><th>Nombre</th><th>Tipo</th><th>Capacidad</th><th>Estado</th><th></th></tr>
+        </thead>
+        <tbody>
+          @for (a of aulas(); track a.id) {
+            <tr>
+              <td>{{ a.codigo }}</td>
+              <td><strong>{{ a.nombre }}</strong></td>
+              <td>{{ a.tipo }}</td>
+              <td>{{ a.capacidad }}</td>
+              <td><span [class]="'badge ' + (a.activo ? 'badge-ok' : 'badge-gray')">{{ a.activo ? 'Activa' : 'Inactiva' }}</span></td>
+              <td class="acciones">@if (puedeEditar()) {
+                <button type="button" class="btn btn-sm" (click)="editar(a)">Editar</button>
+                <button type="button" class="btn btn-sm" (click)="eliminar(a)">Eliminar</button>
+              }</td>
+            </tr>
+          } @empty {
+            <tr><td colspan="6" class="vacio">{{ cargando() ? 'Cargando…' : 'Aún no hay aulas.' }}</td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+@if (abierto()) {
+  <app-modal [titulo]="editando() ? 'Editar aula' : 'Nueva aula'" [ancho]="480" (cerrar)="cerrar()">
+    <form [formGroup]="form" (ngSubmit)="guardar()" id="form-aula" novalidate>
+      <div class="form-grid">
+        <div class="field">
+          <label for="al-codigo">Código</label>
+          <input id="al-codigo" formControlName="codigo" placeholder="A-101" />
+          @if (form.controls.codigo.touched && form.controls.codigo.invalid) { <span class="error">Obligatorio.</span> }
+        </div>
+        <div class="field">
+          <label for="al-tipo">Tipo</label>
+          <select id="al-tipo" formControlName="tipo">
+            @for (t of tipos; track t) { <option [value]="t">{{ t }}</option> }
+          </select>
+        </div>
+        <div class="field full">
+          <label for="al-nombre">Nombre</label>
+          <input id="al-nombre" formControlName="nombre" />
+          @if (form.controls.nombre.touched && form.controls.nombre.invalid) { <span class="error">Obligatorio.</span> }
+        </div>
+        <div class="field">
+          <label for="al-cap">Capacidad</label>
+          <input id="al-cap" type="number" min="1" formControlName="capacidad" />
+        </div>
+        <div class="field">
+          <label class="check" style="margin-top: 22px"><input type="checkbox" formControlName="activo" /> Aula activa</label>
+        </div>
+      </div>
+      @if (errorForm()) { <div class="aviso aviso-danger" style="margin-top: 14px" role="alert">{{ errorForm() }}</div> }
+    </form>
+    <ng-container footer>
+      <button type="button" class="btn" (click)="cerrar()">Cancelar</button>
+      <button type="submit" form="form-aula" class="btn btn-primary" [disabled]="guardando()">{{ guardando() ? 'Guardando…' : 'Guardar' }}</button>
+    </ng-container>
+  </app-modal>
+}

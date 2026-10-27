@@ -1,0 +1,71 @@
+from lib import *
+ids = json.load(open('ids.json')); ids2 = json.load(open('ids2.json'))
+hoy = datetime.date.today().isoformat(); ayer = (lambda d: d - datetime.timedelta(days=1))(datetime.date.today())
+while ayer.weekday() >= 5: ayer -= datetime.timedelta(days=1)   # último día hábil anterior (el servicio rechaza fines de semana)
+ayer = ayer.isoformat()
+SEC_ID, CURSO, PERIODO = ids['sec'], ids['curso'], ids['periodos'][3]
+print('== ASISTENCIA')
+s = call('asis','POST','/api/v1/asistencia/sesiones', DOC, {'seccionId':SEC_ID,'fecha':hoy,'tipo':'DIA'}, expect=201)
+check(s and len(s['alumnos'])==2, f"hoja con 2 alumnos matriculados ({len(s['alumnos']) if s else 0})")
+items = [{'matriculaId':a['matriculaId'],'estado':'FALTA' if a['alumnoId']==1 else 'PRESENTE'} for a in s['alumnos']]
+call('asis','PUT',f"/api/v1/asistencia/sesiones/{s['id']}/registro", DOC, {'items':items})
+call('asis','PUT',f"/api/v1/asistencia/sesiones/{s['id']}/registro", DOC, {'items':items})   # guardar dos veces
+s2 = call('asis','POST','/api/v1/asistencia/sesiones', DOC, {'seccionId':SEC_ID,'fecha':ayer,'tipo':'DIA'}, expect=201)
+call('asis','POST','/api/v1/asistencia/sesiones', CAJ, {'seccionId':SEC_ID,'fecha':hoy,'tipo':'DIA'}, expect=403)
+call('asis','POST','/api/v1/asistencia/sesiones', (6,'DOCENTE'), {'seccionId':SEC_ID,'fecha':hoy,'tipo':'DIA'}, expect=403)
+call('asis','POST','/api/v1/asistencia/sesiones', DOC, {'seccionId':SEC_ID,'fecha':(datetime.date.today()+datetime.timedelta(days=1)).isoformat(),'tipo':'DIA'}, expect=409)
+call('asis','PATCH',f"/api/v1/asistencia/sesiones/{s['id']}/cerrar", DOC)
+call('asis','PUT',f"/api/v1/asistencia/sesiones/{s['id']}/registro", DOC, {'items':items}, expect=409)
+print('  falta-registrada en Kafka:', [(e['alumnoId'], e['asistenciaDetalleId']) for e in topic('asistencia.falta-registrada')])
+check(len(topic('asistencia.falta-registrada'))==1, 'una sola notificación de falta pese a guardar 2 veces')
+print('  apoderado ve la asistencia de su hijo:')
+r = call('asis','GET','/api/v1/asistencia/mias', APO)
+check(r and r[0]['resumen']['dias']['faltas']==1, 'apoderado: 1 falta del hijo')
+call('asis','GET','/api/v1/asistencia/alumnos/2/resumen', APO, expect=403)
+j = call('asis','POST','/api/v1/asistencia/justificaciones', APO, {'alumnoId':1,'fechaDesde':hoy,'fechaHasta':hoy,'tipo':'MEDICA','motivo':'Cita médica'}, expect=201)
+call('asis','POST',f"/api/v1/asistencia/justificaciones/{j['id']}/archivo-url", APO, {'nombreArchivo':'certificado.pdf','contentType':'application/pdf'})
+call('asis','PATCH',f"/api/v1/asistencia/justificaciones/{j['id']}/resolver", SEC, {'resolucion':'APROBADA','comentario':'Certificado válido'})
+r = call('asis','GET','/api/v1/asistencia/alumnos/1/resumen', APO)
+check(r['dias']['justificadas']==1 and r['dias']['faltas']==0, 'la falta quedó JUSTIFICADA')
+print('  justificacion.resuelta:', [(e['justificacionId'], e['resultado']) for e in topic('justificacion.resuelta')])
+
+print('== TAREAS')
+t = call('tar','POST','/api/v1/tareas', DOC, {'periodoId':PERIODO,'seccionId':SEC_ID,'cursoId':CURSO,'titulo':'Ejercicios de fracciones','descripcion':'Guía 3','fechaEntrega':(datetime.datetime.now()+datetime.timedelta(days=2)).strftime('%Y-%m-%dT%H:%M:%S'),'permiteTardia':False,'puntajeMaximo':20}, expect=201)
+call('tar','PATCH',f"/api/v1/tareas/{t['id']}/publicar", DOC)
+print('  tarea.publicada:', [(e['tareaId'], e['alumnoIds'], e.get('cursoNombre')) for e in topic('tarea.publicada')])
+up = call('tar','POST',f"/api/v1/tareas/{t['id']}/entregas/archivo-url", ALU, {'nombreArchivo':'mi tarea.pdf','contentType':'application/pdf','tamanoBytes':20})
+# sube el archivo a MinIO con la URL firmada
+req = urllib.request.Request(up['uploadUrl'], data=b'%PDF-1.4 mi tarea', method='PUT', headers={'Content-Type':'application/pdf'})
+try:
+    with urllib.request.urlopen(req) as rr: print('  OK  subida firmada a MinIO ->', rr.status)
+except urllib.error.HTTPError as e: print('  ERR subida firmada ->', e.code, e.read()[:200]); FAILS.append(('minio','upload',e.code,''))
+e = call('tar','POST',f"/api/v1/tareas/{t['id']}/entregas", ALU, {'comentario':'Aquí mi tarea','archivos':[{'nombreArchivo':'mi tarea.pdf','ruta':up['ruta'],'contentType':'application/pdf','tamanoBytes':17}]}, expect=201)
+call('tar','POST',f"/api/v1/tareas/{t['id']}/entregas", (302,'ALUMNO'), {'comentario':'x'}, expect=403)   # usuario sin alumno vinculado
+d = call('tar','GET',f"/api/v1/tareas/entregas/{e['id']}/archivos/{e['archivos'][0]['id']}/url", DOC)
+try:
+    with urllib.request.urlopen(d['urlDescarga']) as rr: check(rr.read().startswith(b'%PDF'), 'descarga firmada del archivo de la entrega')
+except Exception as ex: check(False, f'descarga firmada: {ex}')
+call('tar','PATCH',f"/api/v1/tareas/entregas/{e['id']}/calificar", DOC, {'nota':17.5,'retroalimentacion':'Muy bien'})
+print('  tarea.calificada:', [(x['alumnoId'], x['nota'], x['periodoId'], x['cursoId']) for x in topic('tarea.calificada')])
+call('tar','GET','/api/v1/tareas/mias', APO)
+
+print('== EXÁMENES')
+def preg(tipo, enun, ops):
+    return call('exa','POST','/api/v1/examenes/preguntas', DOC, {'cursoId':CURSO,'tema':'Fracciones','tipo':tipo,'enunciado':enun,'puntaje':2,'opciones':ops}, expect=201)
+p1 = preg('OPCION_UNICA','1/2 + 1/2 = ?',[{'texto':'1','esCorrecta':True,'orden':1},{'texto':'2','esCorrecta':False,'orden':2}])
+p2 = preg('VERDADERO_FALSO','3/4 es mayor que 1/2',[{'texto':'Verdadero','esCorrecta':True,'orden':1},{'texto':'Falso','esCorrecta':False,'orden':2}])
+now = datetime.datetime.now()
+ex = call('exa','POST','/api/v1/examenes', DOC, {'anioId':ids['anio'],'periodoId':PERIODO,'seccionId':SEC_ID,'cursoId':CURSO,'titulo':'Examen de fracciones','duracionMin':30,'intentosMax':1,'fechaInicio':(now-datetime.timedelta(minutes=5)).strftime('%Y-%m-%dT%H:%M:%S'),'fechaFin':(now+datetime.timedelta(hours=3)).strftime('%Y-%m-%dT%H:%M:%S'),'preguntas':[{'preguntaId':p1['id'],'orden':1,'puntaje':2},{'preguntaId':p2['id'],'orden':2,'puntaje':2}]}, expect=201)
+call('exa','PATCH',f"/api/v1/examenes/{ex['id']}/publicar", DOC)
+call('exa','GET','/api/v1/examenes/disponibles', ALU)
+it = call('exa','POST',f"/api/v1/examenes/{ex['id']}/intentos", ALU, expect=201)
+check('esCorrecta' not in json.dumps(it), 'el alumno no recibe la respuesta correcta')
+for q in it['preguntas']:
+    correcta = [o for o in q['opciones']][0]['id']   # la primera opción es la correcta en ambos
+    call('exa','PUT',f"/api/v1/examenes/intentos/{it['intentoId']}/respuestas/{q['preguntaId']}", ALU, {'opcionesIds':[correcta]}, expect=204)
+res = call('exa','POST',f"/api/v1/examenes/intentos/{it['intentoId']}/enviar", ALU)
+check(res and float(res['nota'])==20.0, f"nota 20 (obtenida {res and res.get('nota')})")
+call('exa','GET',f"/api/v1/examenes/intentos/{it['intentoId']}/resultado", (302,'ALUMNO'), expect=403)
+print('  examen.calificado:', [(x['alumnoId'], x['nota'], x.get('cursoNombre')) for x in topic('examen.calificado')])
+json.dump({'tarea':t['id'],'examen':ex['id'],'intento':it['intentoId']}, open('ids3.json','w'))
+print('FAILS:', FAILS)

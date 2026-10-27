@@ -1,0 +1,65 @@
+<div class="page">
+  <app-page-header titulo="Bloques horarios" subtitulo="Las horas de clase de cada turno. Las secciones arman su horario sobre estos bloques.">@if (puedeEditar()) {
+    <button type="button" class="btn btn-primary" (click)="nuevo()">Nuevo bloque</button>
+  }</app-page-header>
+  @if (!puedeEditar()) {
+    <div class="aviso aviso-warn">Solo el administrador puede modificar esta información; tú puedes consultarla.</div>
+  }
+
+  <div class="toolbar">
+    <select class="input" [formControl]="turno" (change)="cargar()" aria-label="Turno">
+      <option value="">Todos los turnos</option>
+      <option value="MANANA">Mañana</option>
+      <option value="TARDE">Tarde</option>
+    </select>
+  </div>
+
+  <div class="card">
+    <div class="table-wrap">
+      <table class="table">
+        <thead><tr><th>Turno</th><th>Orden</th><th>Hora</th><th>Tipo</th><th></th></tr></thead>
+        <tbody>
+          @for (b of bloques(); track b.id) {
+            <tr>
+              <td>{{ b.turno === 'MANANA' ? 'Mañana' : 'Tarde' }}</td>
+              <td>{{ b.orden }}</td>
+              <td><strong>{{ hora(b.horaInicio) }} – {{ hora(b.horaFin) }}</strong></td>
+              <td><span [class]="'badge ' + (b.esReceso ? 'badge-warn' : 'badge')">{{ b.esReceso ? 'Receso' : 'Clase' }}</span></td>
+              <td class="acciones">@if (puedeEditar()) {
+                <button type="button" class="btn btn-sm" (click)="editar(b)">Editar</button>
+                <button type="button" class="btn btn-sm" (click)="eliminar(b)">Eliminar</button>
+              }</td>
+            </tr>
+          } @empty {
+            <tr><td colspan="5" class="vacio">{{ cargando() ? 'Cargando…' : 'Aún no hay bloques horarios.' }}</td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+@if (abierto()) {
+  <app-modal [titulo]="editando() ? 'Editar bloque' : 'Nuevo bloque'" [ancho]="480" (cerrar)="cerrar()">
+    <form [formGroup]="form" (ngSubmit)="guardar()" id="form-bloque" novalidate>
+      <div class="form-grid">
+        <div class="field">
+          <label for="b-turno">Turno</label>
+          <select id="b-turno" formControlName="turno"><option value="MANANA">Mañana</option><option value="TARDE">Tarde</option></select>
+        </div>
+        <div class="field">
+          <label for="b-orden">Orden</label>
+          <input id="b-orden" type="number" min="1" formControlName="orden" />
+        </div>
+        <div class="field"><label for="b-ini">Inicio</label><input id="b-ini" type="time" formControlName="horaInicio" /></div>
+        <div class="field"><label for="b-fin">Fin</label><input id="b-fin" type="time" formControlName="horaFin" /></div>
+        <div class="field full"><label class="check"><input type="checkbox" formControlName="esReceso" /> Es receso (no se asignan clases)</label></div>
+      </div>
+      @if (errorForm()) { <div class="aviso aviso-danger" style="margin-top: 14px" role="alert">{{ errorForm() }}</div> }
+    </form>
+    <ng-container footer>
+      <button type="button" class="btn" (click)="cerrar()">Cancelar</button>
+      <button type="submit" form="form-bloque" class="btn btn-primary" [disabled]="guardando()">Guardar</button>
+    </ng-container>
+  </app-modal>
+}

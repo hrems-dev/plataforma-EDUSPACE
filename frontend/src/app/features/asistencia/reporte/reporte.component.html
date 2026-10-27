@@ -1,0 +1,58 @@
+<div class="page">
+  <app-page-header titulo="Reporte de asistencia" subtitulo="Asistencia por alumno en una sección y un rango de fechas. Se marcan los alumnos con exceso de faltas." />
+
+  <form class="toolbar" [formGroup]="filtro" (ngSubmit)="generar()">
+    <select class="input" formControlName="anioId" (change)="cargarSecciones()" aria-label="Año académico">
+      @for (a of anios(); track a.id) { <option [ngValue]="a.id">Año {{ a.nombre }}</option> }
+    </select>
+    <select class="input" formControlName="seccionId" (change)="generar()" aria-label="Sección">
+      @for (s of secciones(); track s.id) { <option [ngValue]="s.id">{{ s.gradoNombre }} · {{ s.nombre }}</option> }
+    </select>
+    <label class="muted" for="rep-desde">Desde</label>
+    <input id="rep-desde" class="input" type="date" formControlName="desde" />
+    <label class="muted" for="rep-hasta">Hasta</label>
+    <input id="rep-hasta" class="input" type="date" formControlName="hasta" />
+    <button type="submit" class="btn btn-primary">Generar</button>
+  </form>
+
+  @if (reporte(); as r) {
+    @if (r.alertasExcesoFaltas.length > 0) {
+      <div class="aviso aviso-danger">
+        <strong>{{ r.alertasExcesoFaltas.length }}</strong> alumno(s) con exceso de faltas:
+        @for (a of r.alertasExcesoFaltas; track a.alumnoId) { <a [routerLink]="['/alumnos', a.alumnoId]" style="margin-left: 8px">{{ a.alumnoNombre }}</a> }
+      </div>
+    }
+    <div class="card">
+      <div class="table-wrap">
+        <table class="table">
+          <thead><tr><th>Alumno</th><th>Sesiones</th><th>Presente</th><th>Tardanzas</th><th>Faltas</th><th>Justificadas</th><th>Asistencia</th></tr></thead>
+          <tbody>
+            @for (f of r.alumnos; track f.alumnoId) {
+              <tr>
+                <td>
+                  <a [routerLink]="['/alumnos', f.alumnoId]"><strong>{{ f.alumnoNombre }}</strong></a>
+                  @if (f.excesoFaltas) { <span class="badge badge-danger" style="margin-left: 6px">Exceso de faltas</span> }
+                </td>
+                <td>{{ f.dias.sesiones }}</td>
+                <td>{{ f.dias.presentes }}</td>
+                <td>{{ f.dias.tardanzas }}</td>
+                <td [style.color]="f.dias.faltas > 0 ? 'var(--danger)' : ''">{{ f.dias.faltas }}</td>
+                <td>{{ f.dias.justificadas }}</td>
+                <td>
+                  <div style="display: flex; align-items: center; gap: 10px">
+                    <div [class]="'barra-cupo ' + nivel(f.dias.porcentajeAsistencia)" style="flex: 1; min-width: 80px" role="img" [attr.aria-label]="f.dias.porcentajeAsistencia + ' por ciento de asistencia'"><span [style.width.%]="f.dias.porcentajeAsistencia"></span></div>
+                    <span style="width: 48px">{{ f.dias.porcentajeAsistencia | number: '1.0-0' }} %</span>
+                  </div>
+                </td>
+              </tr>
+            } @empty {
+              <tr><td colspan="7" class="vacio">Esta sección aún no tiene alumnos matriculados ni asistencia registrada.</td></tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  } @else {
+    <div class="muted">{{ cargando() ? 'Generando…' : 'Elige una sección.' }}</div>
+  }
+</div>

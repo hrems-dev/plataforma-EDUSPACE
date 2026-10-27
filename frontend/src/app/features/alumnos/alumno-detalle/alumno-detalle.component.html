@@ -1,0 +1,272 @@
+<div class="page">
+  @if (noExiste()) {
+    <div class="aviso aviso-warn">No se encontró el alumno. <a routerLink="/alumnos">Volver a la lista</a></div>
+  }
+
+  @if (alumno(); as a) {
+    <app-page-header [titulo]="a.nombreCompleto" [subtitulo]="a.codigo + ' · ' + (a.tipoDocumento ?? 'DNI') + ' ' + a.numeroDocumento">
+      <span [class]="'badge ' + clase(a.estado)">{{ a.estado }}</span>
+      <a class="btn" routerLink="/alumnos">Volver</a>
+      <button type="button" class="btn" (click)="cambiarEstado()">Cambiar estado</button>
+      <button type="button" class="btn btn-primary" (click)="editarDatos()">Editar datos</button>
+    </app-page-header>
+
+    <section class="card">
+      <div class="card-body">
+        <h2 style="margin-bottom: 12px">Datos personales</h2>
+        <dl class="datos">
+          <div><dt>Fecha de nacimiento</dt><dd>{{ a.fechaNacimiento | date: 'dd/MM/yyyy' }}</dd></div>
+          <div><dt>Sexo</dt><dd>{{ a.sexo === 'F' ? 'Femenino' : 'Masculino' }}</dd></div>
+          <div><dt>Nacionalidad</dt><dd>{{ a.nacionalidad ?? '—' }}</dd></div>
+          <div><dt>Dirección</dt><dd>{{ a.direccion ?? '—' }}{{ a.distrito ? ', ' + a.distrito : '' }}</dd></div>
+          <div><dt>Teléfono</dt><dd>{{ a.telefono ?? '—' }}</dd></div>
+          <div><dt>Correo</dt><dd>{{ a.email ?? '—' }}</dd></div>
+          <div><dt>Colegio de procedencia</dt><dd>{{ a.colegioProcedencia ?? '—' }}</dd></div>
+          <div><dt>Cuenta de acceso</dt><dd>{{ a.usuarioId ? 'Vinculada' : 'Sin cuenta' }}</dd></div>
+        </dl>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="card-body">
+        <div class="toolbar" style="justify-content: space-between; margin-bottom: 14px">
+          <h2>Expediente y documentos</h2>
+          <span [class]="'badge ' + (expedienteCompleto() ? 'badge-ok' : 'badge-warn')">{{ expedienteCompleto() ? 'Expediente completo' : 'Expediente incompleto' }}</span>
+        </div>
+        <p class="muted" style="margin: 0 0 12px">Para matricularlo, estos documentos deben estar <strong>subidos y verificados</strong>.</p>
+        <div class="checks" style="margin-bottom: 18px">
+          @for (c of checklist(); track c.tipo) {
+            <span [class]="'badge ' + claseDoc(c.estado)" style="padding: 6px 12px">{{ c.tipo.replaceAll('_', ' ') }}: {{ textoDoc(c.estado) }}</span>
+          }
+        </div>
+
+        <div class="toolbar" style="margin-bottom: 14px">
+          <select class="input" [formControl]="tipoSubida" aria-label="Tipo de documento a subir">
+            @for (t of tiposDocumento; track t) { <option [value]="t">{{ t.replaceAll('_', ' ') }}</option> }
+          </select>
+          <input #entrada class="input grow" type="file" accept=".pdf,.jpg,.jpeg,.png" (change)="elegirArchivo($event)" aria-label="Archivo del documento" />
+          <button type="button" class="btn btn-primary" [disabled]="subiendo() || !archivo()" (click)="subir(entrada)">{{ subiendo() ? 'Subiendo…' : 'Subir' }}</button>
+        </div>
+
+        <div class="table-wrap">
+          <table class="table">
+            <thead><tr><th>Tipo</th><th>Archivo</th><th>Tamaño</th><th>Subido</th><th>Estado</th><th></th></tr></thead>
+            <tbody>
+              @for (d of documentos(); track d.id) {
+                <tr>
+                  <td>{{ d.tipo.replaceAll('_', ' ') }}</td>
+                  <td>{{ d.nombreArchivo }}</td>
+                  <td>{{ kb(d.tamanoBytes) }}</td>
+                  <td class="muted">{{ d.subidoEn | date: 'dd/MM/yyyy HH:mm' }}</td>
+                  <td><span [class]="'badge ' + (d.verificado ? 'badge-ok' : 'badge-warn')">{{ d.verificado ? 'Verificado' : 'Sin verificar' }}</span></td>
+                  <td class="acciones">
+                    <button type="button" class="btn btn-sm" (click)="alternarVerificado(d)">{{ d.verificado ? 'Quitar verificación' : 'Verificar' }}</button>
+                    <button type="button" class="btn btn-sm" (click)="descargar(d)">Descargar</button>
+                    <button type="button" class="btn btn-sm" (click)="eliminarDocumento(d)">Eliminar</button>
+                  </td>
+                </tr>
+              } @empty {
+                <tr><td colspan="6" class="vacio">Aún no hay documentos.</td></tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="card-body toolbar" style="justify-content: space-between">
+        <h2>Apoderados</h2>
+        <button type="button" class="btn btn-sm btn-primary" (click)="agregarApoderado()">Agregar apoderado</button>
+      </div>
+      <div class="table-wrap">
+        <table class="table">
+          <thead><tr><th>Apoderado</th><th>Parentesco</th><th>Contacto</th><th>Roles</th><th></th></tr></thead>
+          <tbody>
+            @for (v of a.apoderados; track v.id) {
+              <tr>
+                <td><strong>{{ v.apoderado.apellidos }}, {{ v.apoderado.nombres }}</strong><div class="muted">{{ v.apoderado.tipoDocumento ?? 'DNI' }} {{ v.apoderado.numeroDocumento }}</div></td>
+                <td>{{ v.parentesco }}</td>
+                <td>{{ v.apoderado.telefono ?? '—' }}<div class="muted">{{ v.apoderado.email ?? '' }}</div></td>
+                <td>
+                  @if (v.esPrincipal) { <span class="badge" style="margin-right: 4px">Principal</span> }
+                  @if (v.esResponsablePago) { <span class="badge badge-ok" style="margin-right: 4px">Responsable de pago</span> }
+                  @if (v.viveConAlumno) { <span class="badge badge-gray" style="margin-right: 4px">Vive con él</span> }
+                  @if (v.puedeRecoger) { <span class="badge badge-gray">Puede recoger</span> }
+                </td>
+                <td class="acciones">
+                  <button type="button" class="btn btn-sm" (click)="editarVinculo(v)">Editar</button>
+                  <button type="button" class="btn btn-sm" (click)="quitarVinculo(v)">Quitar</button>
+                </td>
+              </tr>
+            } @empty {
+              <tr><td colspan="5" class="vacio">Sin apoderados registrados.</td></tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="card-body">
+        <div class="toolbar" style="justify-content: space-between; margin-bottom: 12px">
+          <h2>Ficha de salud</h2>
+          <button type="button" class="btn btn-sm" (click)="editarSalud()">{{ salud() ? 'Editar' : 'Registrar ficha' }}</button>
+        </div>
+        @if (salud(); as s) {
+          <dl class="datos">
+            <div><dt>Grupo sanguíneo</dt><dd>{{ s.grupoSanguineo ?? '—' }}</dd></div>
+            <div><dt>Alergias</dt><dd>{{ s.alergias ?? '—' }}</dd></div>
+            <div><dt>Seguro médico</dt><dd>{{ s.seguroMedico ?? '—' }}</dd></div>
+            <div><dt>Contacto de emergencia</dt><dd>{{ s.contactoEmergenciaNombre ?? '—' }} {{ s.contactoEmergenciaTelefono ?? '' }}</dd></div>
+            <div style="grid-column: 1 / -1"><dt>Observaciones</dt><dd>{{ s.observaciones ?? '—' }}</dd></div>
+          </dl>
+        } @else {
+          <p class="muted" style="margin: 0">Todavía no hay ficha de salud. Son datos sensibles de un menor: solo se muestran al personal autorizado.</p>
+        }
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="card-body" style="padding-bottom: 0"><h2>Historial de estado</h2></div>
+      <div class="table-wrap">
+        <table class="table">
+          <thead><tr><th>Fecha</th><th>Cambio</th><th>Motivo</th></tr></thead>
+          <tbody>
+            @for (h of historial(); track h.id) {
+              <tr>
+                <td class="muted">{{ h.cambiadoEn | date: 'dd/MM/yyyy HH:mm' }}</td>
+                <td>{{ h.estadoAnterior }} → <strong>{{ h.estadoNuevo }}</strong></td>
+                <td>{{ h.motivo }}</td>
+              </tr>
+            } @empty {
+              <tr><td colspan="3" class="vacio">Sin cambios de estado.</td></tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </section>
+  } @else if (cargando()) {
+    <div class="muted">Cargando…</div>
+  }
+</div>
+
+@if (dialogo() === 'datos') {
+  <app-modal titulo="Editar datos del alumno" [ancho]="720" (cerrar)="cerrar()">
+    <form [formGroup]="formDatos" (ngSubmit)="guardarDatos()" id="form-datos" novalidate>
+      <div class="form-grid">
+        <div class="field"><label for="d-tipo">Tipo de documento</label>
+          <select id="d-tipo" formControlName="tipoDocumento"><option value="DNI">DNI</option><option value="CE">Carné de extranjería</option><option value="PASAPORTE">Pasaporte</option></select></div>
+        <div class="field"><label for="d-num">Número de documento</label><input id="d-num" formControlName="numeroDocumento" />
+          @if (formDatos.controls.numeroDocumento.touched && formDatos.controls.numeroDocumento.invalid) { <span class="error">Obligatorio.</span> }</div>
+        <div class="field"><label for="d-nom">Nombres</label><input id="d-nom" formControlName="nombres" />
+          @if (formDatos.controls.nombres.touched && formDatos.controls.nombres.invalid) { <span class="error">Obligatorio.</span> }</div>
+        <div class="field"><label for="d-ap">Apellido paterno</label><input id="d-ap" formControlName="apellidoPaterno" />
+          @if (formDatos.controls.apellidoPaterno.touched && formDatos.controls.apellidoPaterno.invalid) { <span class="error">Obligatorio.</span> }</div>
+        <div class="field"><label for="d-am">Apellido materno</label><input id="d-am" formControlName="apellidoMaterno" /></div>
+        <div class="field"><label for="d-fn">Fecha de nacimiento</label><input id="d-fn" type="date" formControlName="fechaNacimiento" /></div>
+        <div class="field"><label for="d-sexo">Sexo</label>
+          <select id="d-sexo" formControlName="sexo"><option value="F">Femenino</option><option value="M">Masculino</option></select></div>
+        <div class="field"><label for="d-nac">Nacionalidad</label><input id="d-nac" formControlName="nacionalidad" /></div>
+        <div class="field"><label for="d-dir">Dirección</label><input id="d-dir" formControlName="direccion" /></div>
+        <div class="field"><label for="d-dis">Distrito</label><input id="d-dis" formControlName="distrito" /></div>
+        <div class="field"><label for="d-tel">Teléfono</label><input id="d-tel" formControlName="telefono" /></div>
+        <div class="field"><label for="d-mail">Correo</label><input id="d-mail" type="email" formControlName="email" />
+          @if (formDatos.controls.email.invalid) { <span class="error">Correo no válido.</span> }</div>
+        <div class="field full"><label for="d-col">Colegio de procedencia</label><input id="d-col" formControlName="colegioProcedencia" /></div>
+      </div>
+      @if (errorForm()) { <div class="aviso aviso-danger" style="margin-top: 14px" role="alert">{{ errorForm() }}</div> }
+    </form>
+    <ng-container footer>
+      <button type="button" class="btn" (click)="cerrar()">Cancelar</button>
+      <button type="submit" form="form-datos" class="btn btn-primary" [disabled]="guardando()">{{ guardando() ? 'Guardando…' : 'Guardar' }}</button>
+    </ng-container>
+  </app-modal>
+}
+
+@if (dialogo() === 'estado') {
+  <app-modal titulo="Cambiar estado del alumno" [ancho]="480" (cerrar)="cerrar()">
+    <form [formGroup]="formEstado" (ngSubmit)="guardarEstado()" id="form-estado" novalidate>
+      <div class="form-grid">
+        <div class="field full"><label for="e-estado">Nuevo estado</label>
+          <select id="e-estado" formControlName="estado">@for (e of estados; track e) { <option [value]="e">{{ e }}</option> }</select></div>
+        <div class="field full"><label for="e-motivo">Motivo</label><textarea id="e-motivo" rows="3" formControlName="motivo" style="padding: 10px 12px; min-height: 80px"></textarea>
+          @if (formEstado.controls.motivo.touched && formEstado.controls.motivo.invalid) { <span class="error">El motivo es obligatorio.</span> }</div>
+      </div>
+      @if (errorForm()) { <div class="aviso aviso-danger" style="margin-top: 14px" role="alert">{{ errorForm() }}</div> }
+    </form>
+    <ng-container footer>
+      <button type="button" class="btn" (click)="cerrar()">Cancelar</button>
+      <button type="submit" form="form-estado" class="btn btn-primary" [disabled]="guardando()">Guardar</button>
+    </ng-container>
+  </app-modal>
+}
+
+@if (dialogo() === 'vinculo' || dialogo() === 'nuevoVinculo') {
+  <app-modal [titulo]="dialogo() === 'vinculo' ? 'Editar vínculo con el apoderado' : 'Agregar apoderado'" [ancho]="640" (cerrar)="cerrar()">
+    <form [formGroup]="formVinculo" (ngSubmit)="dialogo() === 'vinculo' ? guardarVinculo() : guardarNuevoVinculo()" id="form-vinculo" novalidate>
+      @if (dialogo() === 'nuevoVinculo') {
+        <div class="checks" role="group" aria-label="Origen del apoderado" style="margin-bottom: 12px">
+          <label><input type="radio" name="origen2" [checked]="!usarExistente()" (change)="modoApoderado(false)" /> Apoderado nuevo</label>
+          <label><input type="radio" name="origen2" [checked]="usarExistente()" (change)="modoApoderado(true)" /> Ya registrado</label>
+        </div>
+        @if (usarExistente()) {
+          <div class="field" style="margin-bottom: 12px">
+            <label for="v-buscar">Buscar apoderado</label>
+            <div class="toolbar">
+              <input id="v-buscar" class="input grow" [formControl]="busquedaApoderado" placeholder="Nombre o documento" (keydown.enter)="$event.preventDefault(); buscarApoderado()" />
+              <button type="button" class="btn" (click)="buscarApoderado()">Buscar</button>
+            </div>
+          </div>
+          @if (apoderadoElegido(); as ap) { <div class="aviso aviso-ok" style="margin-bottom: 12px">Elegido: <strong>{{ ap.apellidos }}, {{ ap.nombres }}</strong> · {{ ap.numeroDocumento }}</div> }
+          @for (ap of resultadosApoderado(); track ap.id) {
+            <button type="button" class="btn btn-sm" style="margin: 0 8px 8px 0" (click)="elegirApoderado(ap)">{{ ap.apellidos }}, {{ ap.nombres }} · {{ ap.numeroDocumento }}</button>
+          }
+        } @else {
+          <div class="form-grid" [formGroup]="formApoderado" style="margin-bottom: 12px">
+            <div class="field"><label for="n-tipo">Tipo de documento</label>
+              <select id="n-tipo" formControlName="tipoDocumento"><option value="DNI">DNI</option><option value="CE">Carné de extranjería</option><option value="PASAPORTE">Pasaporte</option></select></div>
+            <div class="field"><label for="n-num">Número de documento</label><input id="n-num" formControlName="numeroDocumento" /></div>
+            <div class="field"><label for="n-nom">Nombres</label><input id="n-nom" formControlName="nombres" /></div>
+            <div class="field"><label for="n-ape">Apellidos</label><input id="n-ape" formControlName="apellidos" /></div>
+            <div class="field"><label for="n-tel">Teléfono</label><input id="n-tel" formControlName="telefono" /></div>
+            <div class="field"><label for="n-mail">Correo</label><input id="n-mail" type="email" formControlName="email" /></div>
+          </div>
+        }
+      }
+      <div class="form-grid">
+        <div class="field full"><label for="v-par">Parentesco</label>
+          <select id="v-par" formControlName="parentesco">@for (p of parentescos; track p) { <option [value]="p">{{ p }}</option> }</select></div>
+        <div class="field"><label class="check"><input type="checkbox" formControlName="esPrincipal" /> Apoderado principal</label></div>
+        <div class="field"><label class="check"><input type="checkbox" formControlName="esResponsablePago" /> Responsable de pago</label></div>
+        <div class="field"><label class="check"><input type="checkbox" formControlName="viveConAlumno" /> Vive con el alumno</label></div>
+        <div class="field"><label class="check"><input type="checkbox" formControlName="puedeRecoger" /> Puede recoger al alumno</label></div>
+      </div>
+      @if (errorForm()) { <div class="aviso aviso-danger" style="margin-top: 14px" role="alert">{{ errorForm() }}</div> }
+    </form>
+    <ng-container footer>
+      <button type="button" class="btn" (click)="cerrar()">Cancelar</button>
+      <button type="submit" form="form-vinculo" class="btn btn-primary" [disabled]="guardando()">Guardar</button>
+    </ng-container>
+  </app-modal>
+}
+
+@if (dialogo() === 'salud') {
+  <app-modal titulo="Ficha de salud" [ancho]="560" (cerrar)="cerrar()">
+    <form [formGroup]="formSalud" (ngSubmit)="guardarSalud()" id="form-salud" novalidate>
+      <div class="form-grid">
+        <div class="field"><label for="s-gs">Grupo sanguíneo</label><input id="s-gs" formControlName="grupoSanguineo" placeholder="O+" /></div>
+        <div class="field"><label for="s-seg">Seguro médico</label><input id="s-seg" formControlName="seguroMedico" /></div>
+        <div class="field full"><label for="s-al">Alergias</label><input id="s-al" formControlName="alergias" /></div>
+        <div class="field"><label for="s-cen">Contacto de emergencia</label><input id="s-cen" formControlName="contactoEmergenciaNombre" /></div>
+        <div class="field"><label for="s-cet">Teléfono de emergencia</label><input id="s-cet" formControlName="contactoEmergenciaTelefono" /></div>
+        <div class="field full"><label for="s-obs">Observaciones</label><textarea id="s-obs" rows="3" formControlName="observaciones" style="padding: 10px 12px; min-height: 80px"></textarea></div>
+      </div>
+      @if (errorForm()) { <div class="aviso aviso-danger" style="margin-top: 14px" role="alert">{{ errorForm() }}</div> }
+    </form>
+    <ng-container footer>
+      <button type="button" class="btn" (click)="cerrar()">Cancelar</button>
+      <button type="submit" form="form-salud" class="btn btn-primary" [disabled]="guardando()">Guardar</button>
+    </ng-container>
+  </app-modal>
+}

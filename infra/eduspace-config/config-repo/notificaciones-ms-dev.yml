@@ -1,0 +1,85 @@
+# DEV: las aplicaciones corren con Maven; solo las bases, Kafka, MinIO y Mailpit corren en Docker.
+server:
+  port: 8099
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:15449/notificaciones_db
+    username: ${DB_USER:eduspace}
+    password: ${DB_PASSWORD:eduspace}
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: America/Lima
+  flyway:
+    enabled: true
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP:localhost:19092}
+    consumer:
+      group-id: notificaciones-ms
+      auto-offset-reset: earliest
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          jwk-set-uri: ${JWK_SET_URI:http://localhost:8090/.well-known/jwks.json}
+  mail:
+    host: ${SMTP_HOST:localhost}
+    port: ${SMTP_PORT:11025}
+  cloud:
+    openfeign:
+      client:
+        config:
+          default:
+            connect-timeout: 2000
+            read-timeout: 3000
+eureka:
+  client:
+    registry-fetch-interval-seconds: 5      # DEV: ve a los demás servicios en segundos, no en 30 s
+    service-url:
+      defaultZone: ${EUREKA_URL:http://localhost:18761/eureka}
+  instance:
+    hostname: localhost
+    instance-id: ${spring.application.name}:${server.port}
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+  endpoint:
+    health:
+      probes:
+        enabled: true
+app:
+  security:
+    swagger-public: true
+  clients:
+    alumnos:
+      url: ''
+  mail:
+    from: ${MAIL_FROM:notificaciones@eduspace.pe}
+  reintentos:
+    max-intentos: 3
+    intervalo: PT1M
+    lote: 100
+  contactos:
+    cache-ttl: PT5M
+    cache-max-size: 5000
+  limpieza:
+    dias-eventos-procesados: 30
+resilience4j:
+  circuitbreaker:
+    instances:
+      alumnosClient:
+        sliding-window-size: 5
+        minimum-number-of-calls: 5
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 10s
+        permitted-number-of-calls-in-half-open-state: 3
+
+# Token compartido entre servicios para /internal/** (header X-Service-Token). Sin él, /internal responde 401.
+eduspace:
+  service-token: ${SERVICE_TOKEN:eduspace-dev-service-token}

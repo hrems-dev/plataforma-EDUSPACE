@@ -1,0 +1,60 @@
+services:
+  eduspace-prometheus:
+    image: prom/prometheus:v3.14.0
+    container_name: eduspace-prometheus
+    restart: unless-stopped
+    ports:
+      - "19090:9090"
+    volumes:
+      - ./prometheus/prometheus-dev.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--web.enable-lifecycle"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  eduspace-loki:
+    image: grafana/loki:3.7.6
+    container_name: eduspace-loki
+    restart: unless-stopped
+    ports:
+      - "13100:3100"
+    command: -config.file=/etc/loki/local-config.yaml
+    volumes:
+      - loki_data:/loki
+
+  eduspace-promtail:
+    image: grafana/promtail:3.6.8
+    container_name: eduspace-promtail
+    restart: unless-stopped
+    volumes:
+      - ./promtail/promtail-config-dev.yml:/etc/promtail/promtail.yml:ro
+      - ../services:/var/log/eduspace:ro
+    command: -config.file=/etc/promtail/promtail.yml
+    depends_on:
+      - eduspace-loki
+
+  eduspace-grafana:
+    image: grafana/grafana:11.4.0
+    container_name: eduspace-grafana
+    restart: unless-stopped
+    ports:
+      - "13000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - grafana_data:/var/lib/grafana
+    depends_on:
+      - eduspace-prometheus
+      - eduspace-loki
+
+volumes:
+  prometheus_data:
+  loki_data:
+  grafana_data:
+

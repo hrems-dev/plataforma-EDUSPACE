@@ -1,0 +1,23 @@
+# DEV: solo la base de datos de este servicio; la aplicación corre con Maven.
+name: eduspace-planificacion-dev
+services:
+  planificacion-db:
+    image: postgres:16-alpine
+    container_name: eduspace-planificacion-db
+    environment:
+      POSTGRES_DB: planificacion_db
+      POSTGRES_USER: ${DB_USER:-eduspace}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-eduspace}
+      TZ: America/Lima
+    ports:
+      - "15441:5432"
+    volumes:
+      - planificacion-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-eduspace} -d planificacion_db"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  planificacion-db-data:

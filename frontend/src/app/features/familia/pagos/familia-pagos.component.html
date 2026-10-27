@@ -1,0 +1,66 @@
+<div class="page">
+  <app-page-header titulo="Pagos" [subtitulo]="ctx.seleccionado()?.nombreCompleto ?? ''">
+    <button type="button" class="btn" (click)="elegirVencidas()" [disabled]="pagables().length === 0">Elegir vencidas</button>
+    <button type="button" class="btn btn-primary" [disabled]="elegidas().size === 0" (click)="abrirPago()">Pagar S/ {{ totalElegido() | number: '1.2-2' }}</button>
+  </app-page-header>
+
+  <app-selector-hijo />
+
+  @if (cuenta(); as c) {
+    <section class="kpis" aria-label="Resumen de la cuenta">
+      <div class="kpi"><div class="etiqueta">Pagado</div><div class="valor" style="color: var(--ok)">S/ {{ c.totalCobrado | number: '1.2-2' }}</div></div>
+      <div class="kpi"><div class="etiqueta">Por pagar</div><div class="valor">S/ {{ c.totalPendiente | number: '1.2-2' }}</div></div>
+      <div class="kpi"><div class="etiqueta">Vencido</div><div class="valor" [style.color]="c.totalVencido > 0 ? 'var(--danger)' : ''">S/ {{ c.totalVencido | number: '1.2-2' }}</div></div>
+    </section>
+
+    <div class="card">
+      <div class="table-wrap">
+        <table class="table">
+          <thead><tr><th style="width: 44px"></th><th>Concepto</th><th>Vence</th><th>Monto</th><th>Mora</th><th>Saldo</th><th>Estado</th></tr></thead>
+          <tbody>
+            @for (q of c.cuotas; track q.id) {
+              <tr>
+                <td>
+                  @if (pagable(q.estado)) {
+                    <input type="checkbox" [checked]="elegidas().has(q.id)" (change)="alternar(q.id, $any($event.target).checked)" [attr.aria-label]="'Elegir ' + q.descripcion" style="width: 18px; height: 18px" />
+                  }
+                </td>
+                <td><strong>{{ q.descripcion }}</strong></td>
+                <td>{{ q.fechaVencimiento | date: 'dd/MM/yyyy' }}@if (q.diasAtraso > 0) { <div class="muted" style="color: var(--danger)">{{ q.diasAtraso }} días de atraso</div> }</td>
+                <td>{{ q.montoTotal | number: '1.2-2' }}</td>
+                <td [style.color]="q.mora > 0 ? 'var(--danger)' : ''">{{ q.mora | number: '1.2-2' }}</td>
+                <td><strong>{{ q.saldo | number: '1.2-2' }}</strong></td>
+                <td><span [class]="'badge ' + clase(q.estado)">{{ q.estado }}</span></td>
+              </tr>
+            } @empty {
+              <tr><td colspan="7" class="vacio">Todavía no hay cuotas.</td></tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  } @else if (cargando()) {
+    <div class="muted">Cargando…</div>
+  }
+</div>
+
+@if (confirmando() && recibo(); as r) {
+  <app-modal titulo="Pago realizado" [ancho]="480" (cerrar)="cerrar()">
+    <div class="aviso aviso-ok" role="status">Pagaste <strong>S/ {{ r.montoTotal | number: '1.2-2' }}</strong>.</div>
+    <dl class="datos" style="margin-top: 14px">
+      <div><dt>Comprobante</dt><dd>{{ r.comprobante?.numeroCompleto ?? 'En proceso' }}</dd></div>
+      <div><dt>Fecha</dt><dd>{{ r.pagadoEn | date: 'dd/MM/yyyy HH:mm' }}</dd></div>
+    </dl>
+    <ng-container footer><button type="button" class="btn btn-primary" (click)="cerrar()">Listo</button></ng-container>
+  </app-modal>
+} @else if (confirmando()) {
+  <app-modal titulo="Confirmar pago" [ancho]="480" (cerrar)="cerrar()">
+    <p style="margin-top: 0">Vas a pagar <strong>{{ elegidas().size }}</strong> cuota(s) de {{ ctx.seleccionado()?.nombreCompleto }} por un total de <strong>S/ {{ totalElegido() | number: '1.2-2' }}</strong>.</p>
+    <div class="aviso aviso-warn">Es un pago en línea de demostración: no se hace ningún cargo real.</div>
+    @if (errorPago()) { <div class="aviso aviso-danger" style="margin-top: 12px" role="alert">{{ errorPago() }}</div> }
+    <ng-container footer>
+      <button type="button" class="btn" (click)="cerrar()">Cancelar</button>
+      <button type="button" class="btn btn-primary" [disabled]="pagando()" (click)="pagar()">{{ pagando() ? 'Procesando…' : 'Pagar ahora' }}</button>
+    </ng-container>
+  </app-modal>
+}

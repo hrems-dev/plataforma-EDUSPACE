@@ -1,0 +1,11 @@
+.cabecera-examen {
+  position: sticky; top: 0; z-index: 5; display: flex; flex-wrap: wrap; gap: 16px; align-items: center; justify-content: space-between;
+  background: #fff; border: 1px solid var(--line); border-radius: 14px; padding: 12px 18px; box-shadow: 0 6px 18px rgba(20, 33, 61, 0.08);
+}
+.reloj { font-size: 28px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--ink); }
+.reloj.poco { color: var(--danger); }
+.opcion { display: flex; align-items: center; gap: 12px; min-height: 48px; padding: 0 14px; border: 1px solid var(--line-2); border-radius: 10px; cursor: pointer; }
+.opcion:hover { background: var(--bg); }
+.opcion.marcada { border-color: var(--primary); background: var(--primary-soft); font-weight: 600; }
+.opcion input { width: 18px; height: 18px; }
+.respuesta { width: 100%; padding: 12px; border: 1px solid var(--line-2); border-radius: 10px; font: inherit; resize: vertical; }

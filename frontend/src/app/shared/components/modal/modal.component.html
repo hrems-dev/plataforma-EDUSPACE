@@ -1,0 +1,10 @@
+<div class="fondo" (click)="onFondo($event)" (keydown)="onTecla($event)" role="presentation">
+  <div class="dialogo" role="dialog" aria-modal="true" [attr.aria-label]="titulo()" [style.max-width.px]="ancho()">
+    <header class="cabecera">
+      <h2>{{ titulo() }}</h2>
+      <button type="button" class="cerrar" (click)="cerrar.emit()" aria-label="Cerrar">×</button>
+    </header>
+    <div class="cuerpo"><ng-content /></div>
+    <footer class="pie"><ng-content select="[footer]" /></footer>
+  </div>
+</div>

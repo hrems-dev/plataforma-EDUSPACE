@@ -1,0 +1,79 @@
+<div class="page">
+  <app-page-header titulo="Plantillas y envío de avisos" subtitulo="Textos de los avisos automáticos y comunicados manuales. En el texto, {{ '{{variable}}' }} se reemplaza con los datos del evento." />
+
+  <section class="card">
+    <div class="card-body">
+      <h2 style="margin-bottom: 12px">Enviar un aviso manual</h2>
+      <form [formGroup]="formEnvio" (ngSubmit)="enviar()" novalidate>
+        <div class="form-grid">
+          <div class="field full">
+            <label for="e-ids">Destinatarios (números de usuario separados por coma)</label>
+            <input id="e-ids" formControlName="usuarioIds" placeholder="4, 5, 6" />
+            @if (formEnvio.controls.usuarioIds.touched && formEnvio.controls.usuarioIds.invalid) { <span class="error">Indica al menos un destinatario.</span> }
+          </div>
+          <div class="field full">
+            <label for="e-tit">Título</label>
+            <input id="e-tit" formControlName="titulo" />
+          </div>
+          <div class="field full">
+            <label for="e-msg">Mensaje</label>
+            <textarea id="e-msg" rows="3" formControlName="mensaje" style="padding: 10px 12px; min-height: 90px"></textarea>
+          </div>
+          <div class="field full">
+            <div class="checks" role="group" aria-label="Canales">
+              <label><input type="checkbox" formControlName="inApp" /> En la app</label>
+              <label><input type="checkbox" formControlName="email" /> Correo</label>
+              <label><input type="checkbox" formControlName="push" /> Push</label>
+            </div>
+          </div>
+        </div>
+        @if (resultado()) { <div class="aviso aviso-ok" style="margin-top: 14px" role="status">{{ resultado() }}</div> }
+        <button type="submit" class="btn btn-primary" style="margin-top: 14px" [disabled]="enviando()">{{ enviando() ? 'Enviando…' : 'Enviar aviso' }}</button>
+      </form>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="card-body" style="padding-bottom: 0"><h2>Plantillas ({{ plantillas().length }})</h2></div>
+    <div class="table-wrap">
+      <table class="table">
+        <thead><tr><th>Código</th><th>Canal</th><th>Asunto</th><th>Texto</th><th>Estado</th><th></th></tr></thead>
+        <tbody>
+          @for (p of plantillas(); track p.id) {
+            <tr>
+              <td><strong>{{ p.codigo }}</strong></td>
+              <td>{{ canalTexto(p.canal) }}</td>
+              <td>{{ p.asunto ?? '—' }}</td>
+              <td class="muted" style="max-width: 360px">{{ p.cuerpo }}</td>
+              <td><span [class]="'badge ' + (p.activa ? 'badge-ok' : 'badge-gray')">{{ p.activa ? 'Activa' : 'Inactiva' }}</span></td>
+              <td class="acciones"><button type="button" class="btn btn-sm" (click)="editar(p)">Editar</button></td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </section>
+</div>
+
+@if (editando(); as p) {
+  <app-modal [titulo]="'Plantilla ' + p.codigo + ' · ' + canalTexto(p.canal)" [ancho]="620" (cerrar)="cerrar()">
+    <form [formGroup]="formPlantilla" (ngSubmit)="guardarPlantilla()" id="form-plantilla" novalidate>
+      <div class="form-grid">
+        @if (p.canal === 'EMAIL') {
+          <div class="field full"><label for="p-asunto">Asunto</label><input id="p-asunto" formControlName="asunto" /></div>
+        }
+        <div class="field full">
+          <label for="p-cuerpo">Texto</label>
+          <textarea id="p-cuerpo" rows="5" formControlName="cuerpo" style="padding: 10px 12px; min-height: 120px"></textarea>
+          @if (formPlantilla.controls.cuerpo.touched && formPlantilla.controls.cuerpo.invalid) { <span class="error">El texto es obligatorio.</span> }
+        </div>
+        <div class="field full"><label class="check"><input type="checkbox" formControlName="activa" /> Plantilla activa</label></div>
+      </div>
+      @if (errorForm()) { <div class="aviso aviso-danger" style="margin-top: 14px" role="alert">{{ errorForm() }}</div> }
+    </form>
+    <ng-container footer>
+      <button type="button" class="btn" (click)="cerrar()">Cancelar</button>
+      <button type="submit" form="form-plantilla" class="btn btn-primary" [disabled]="guardando()">Guardar</button>
+    </ng-container>
+  </app-modal>
+}

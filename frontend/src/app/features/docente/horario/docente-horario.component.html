@@ -1,0 +1,36 @@
+<div class="page">
+  <app-page-header titulo="Mi horario" subtitulo="Tus clases de la semana. El horario lo arma y publica Secretaría." />
+
+  <div class="card">
+    <div class="table-wrap">
+      <table class="grilla">
+        <thead>
+          <tr>
+            <th scope="col">Hora</th>
+            @for (d of dias; track d) { <th scope="col" [style.color]="hoy === d ? 'var(--primary)' : ''">{{ nombreDia(d) }}{{ hoy === d ? ' (hoy)' : '' }}</th> }
+          </tr>
+        </thead>
+        <tbody>
+          @for (f of filas(); track f.orden) {
+            <tr>
+              <th scope="row" class="hora">{{ f.inicio }}<br /><span class="muted">{{ f.fin }}</span></th>
+              @for (d of dias; track d) {
+                <td>
+                  @for (c of en(f.orden, d); track c.id) {
+                    <div class="clase" style="cursor: default">
+                      <strong>{{ c.cursoNombre }}</strong>
+                      <span>{{ c.seccionNombre }}</span>
+                      @if (c.aulaNombre) { <span class="muted">{{ c.aulaNombre }}</span> }
+                    </div>
+                  }
+                </td>
+              }
+            </tr>
+          } @empty {
+            <tr><td [attr.colspan]="dias.length + 1" class="vacio">{{ cargando() ? 'Cargando…' : 'Todavía no tienes clases en el horario.' }}</td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>

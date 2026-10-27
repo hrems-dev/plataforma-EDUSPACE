@@ -1,0 +1,186 @@
+<div class="page">
+  <app-page-header titulo="Alumnos" subtitulo="Expediente de cada alumno: datos, apoderados, documentos, salud y estado.">
+    <button type="button" class="btn btn-primary" (click)="nuevo()">Nuevo alumno</button>
+  </app-page-header>
+
+  <form class="toolbar" [formGroup]="filtro" (ngSubmit)="buscar()">
+    <input class="input grow" type="search" formControlName="q" placeholder="Buscar por nombre, código o documento" aria-label="Buscar alumno" />
+    <select class="input" formControlName="estado" (change)="buscar()" aria-label="Filtrar por estado">
+      <option value="">Todos los estados</option>
+      @for (e of estados; track e) { <option [value]="e">{{ e }}</option> }
+    </select>
+    <button type="submit" class="btn">Buscar</button>
+  </form>
+
+  <div class="card">
+    <div class="table-wrap">
+      <table class="table">
+        <thead>
+          <tr><th>Código</th><th>Alumno</th><th>Documento</th><th>Estado</th><th></th></tr>
+        </thead>
+        <tbody>
+          @for (a of alumnos(); track a.id) {
+            <tr>
+              <td>{{ a.codigo }}</td>
+              <td><strong>{{ a.nombreCompleto }}</strong></td>
+              <td>{{ a.tipoDocumento ?? 'DNI' }} {{ a.numeroDocumento }}</td>
+              <td><span [class]="'badge ' + clase(a.estado)">{{ a.estado }}</span></td>
+              <td class="acciones"><a class="btn btn-sm" [routerLink]="['/alumnos', a.id]">Ver expediente</a></td>
+            </tr>
+          } @empty {
+            <tr><td colspan="5" class="vacio">{{ cargando() ? 'Cargando…' : 'No hay alumnos con esa búsqueda.' }}</td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    <div class="toolbar" style="padding: 12px 16px; justify-content: space-between">
+      <span class="muted">{{ total() }} alumnos · página {{ pagina() + 1 }} de {{ paginas() }}</span>
+      <span>
+        <button type="button" class="btn btn-sm" [disabled]="pagina() === 0" (click)="irA(pagina() - 1)">Anterior</button>
+        <button type="button" class="btn btn-sm" [disabled]="pagina() + 1 >= paginas()" (click)="irA(pagina() + 1)">Siguiente</button>
+      </span>
+    </div>
+  </div>
+</div>
+
+@if (abierto()) {
+  <app-modal titulo="Nuevo alumno" [ancho]="760" (cerrar)="cerrar()">
+    <form [formGroup]="form" (ngSubmit)="guardar()" id="form-alumno" novalidate>
+      <h2 style="margin-bottom: 10px">Datos del alumno</h2>
+      <div class="form-grid">
+        <div class="field">
+          <label for="al-tipo">Tipo de documento</label>
+          <select id="al-tipo" formControlName="tipoDocumento">
+            <option value="DNI">DNI</option><option value="CE">Carné de extranjería</option><option value="PASAPORTE">Pasaporte</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="al-num">Número de documento</label>
+          <input id="al-num" formControlName="numeroDocumento" />
+          @if (form.controls.numeroDocumento.touched && form.controls.numeroDocumento.invalid) { <span class="error">Obligatorio.</span> }
+        </div>
+        <div class="field">
+          <label for="al-nombres">Nombres</label>
+          <input id="al-nombres" formControlName="nombres" />
+          @if (form.controls.nombres.touched && form.controls.nombres.invalid) { <span class="error">Obligatorio.</span> }
+        </div>
+        <div class="field">
+          <label for="al-ap">Apellido paterno</label>
+          <input id="al-ap" formControlName="apellidoPaterno" />
+          @if (form.controls.apellidoPaterno.touched && form.controls.apellidoPaterno.invalid) { <span class="error">Obligatorio.</span> }
+        </div>
+        <div class="field">
+          <label for="al-am">Apellido materno</label>
+          <input id="al-am" formControlName="apellidoMaterno" />
+        </div>
+        <div class="field">
+          <label for="al-nac">Fecha de nacimiento</label>
+          <input id="al-nac" type="date" formControlName="fechaNacimiento" />
+          @if (form.controls.fechaNacimiento.touched && form.controls.fechaNacimiento.invalid) { <span class="error">Obligatoria.</span> }
+        </div>
+        <div class="field">
+          <label for="al-sexo">Sexo</label>
+          <select id="al-sexo" formControlName="sexo">
+            <option value="" disabled>Elige…</option><option value="F">Femenino</option><option value="M">Masculino</option>
+          </select>
+          @if (form.controls.sexo.touched && form.controls.sexo.invalid) { <span class="error">Obligatorio.</span> }
+        </div>
+        <div class="field">
+          <label for="al-nacio">Nacionalidad</label>
+          <input id="al-nacio" formControlName="nacionalidad" />
+        </div>
+        <div class="field">
+          <label for="al-dir">Dirección</label>
+          <input id="al-dir" formControlName="direccion" />
+        </div>
+        <div class="field">
+          <label for="al-dis">Distrito</label>
+          <input id="al-dis" formControlName="distrito" />
+        </div>
+        <div class="field">
+          <label for="al-tel">Teléfono</label>
+          <input id="al-tel" formControlName="telefono" />
+        </div>
+        <div class="field">
+          <label for="al-mail">Correo</label>
+          <input id="al-mail" type="email" formControlName="email" />
+          @if (form.controls.email.invalid) { <span class="error">Correo no válido.</span> }
+        </div>
+        <div class="field full">
+          <label for="al-col">Colegio de procedencia</label>
+          <input id="al-col" formControlName="colegioProcedencia" />
+        </div>
+      </div>
+
+      <h2 style="margin: 22px 0 10px">Apoderado principal y responsable de pago</h2>
+      <div class="checks" role="group" aria-label="Origen del apoderado" style="margin-bottom: 12px">
+        <label><input type="radio" name="origen" [checked]="!usarExistente()" (change)="modoApoderado(false)" /> Apoderado nuevo</label>
+        <label><input type="radio" name="origen" [checked]="usarExistente()" (change)="modoApoderado(true)" /> Ya registrado (hermanos)</label>
+      </div>
+
+      <div class="form-grid">
+        <div class="field full">
+          <label for="al-parentesco">Parentesco con el alumno</label>
+          <select id="al-parentesco" formControlName="parentesco">
+            @for (p of parentescos; track p) { <option [value]="p">{{ p }}</option> }
+          </select>
+        </div>
+      </div>
+
+      @if (usarExistente()) {
+        <div class="field" style="margin-top: 12px">
+          <label for="al-buscar-apo">Buscar apoderado</label>
+          <div class="toolbar">
+            <input id="al-buscar-apo" class="input grow" [formControl]="busquedaApoderado" placeholder="Nombre o documento (mín. 2 letras)" (keydown.enter)="$event.preventDefault(); buscarApoderado()" />
+            <button type="button" class="btn" (click)="buscarApoderado()">Buscar</button>
+          </div>
+        </div>
+        @if (apoderadoElegido(); as a) {
+          <div class="aviso aviso-ok" style="margin-top: 10px">Elegido: <strong>{{ a.apellidos }}, {{ a.nombres }}</strong> · {{ a.tipoDocumento ?? 'DNI' }} {{ a.numeroDocumento }}</div>
+        }
+        @for (a of resultadosApoderado(); track a.id) {
+          <button type="button" class="btn btn-sm" style="margin: 8px 8px 0 0" (click)="elegirApoderado(a)">{{ a.apellidos }}, {{ a.nombres }} · {{ a.numeroDocumento }}</button>
+        }
+      } @else {
+        <div class="form-grid" [formGroup]="formApoderado" style="margin-top: 12px">
+          <div class="field">
+            <label for="ap-tipo">Tipo de documento</label>
+            <select id="ap-tipo" formControlName="tipoDocumento">
+              <option value="DNI">DNI</option><option value="CE">Carné de extranjería</option><option value="PASAPORTE">Pasaporte</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="ap-num">Número de documento</label>
+            <input id="ap-num" formControlName="numeroDocumento" />
+            @if (formApoderado.controls.numeroDocumento.touched && formApoderado.controls.numeroDocumento.invalid) { <span class="error">Obligatorio.</span> }
+          </div>
+          <div class="field">
+            <label for="ap-nombres">Nombres</label>
+            <input id="ap-nombres" formControlName="nombres" />
+            @if (formApoderado.controls.nombres.touched && formApoderado.controls.nombres.invalid) { <span class="error">Obligatorio.</span> }
+          </div>
+          <div class="field">
+            <label for="ap-apellidos">Apellidos</label>
+            <input id="ap-apellidos" formControlName="apellidos" />
+            @if (formApoderado.controls.apellidos.touched && formApoderado.controls.apellidos.invalid) { <span class="error">Obligatorio.</span> }
+          </div>
+          <div class="field">
+            <label for="ap-tel">Teléfono</label>
+            <input id="ap-tel" formControlName="telefono" />
+          </div>
+          <div class="field">
+            <label for="ap-mail">Correo</label>
+            <input id="ap-mail" type="email" formControlName="email" />
+            @if (formApoderado.controls.email.invalid) { <span class="error">Correo no válido.</span> }
+          </div>
+        </div>
+      }
+
+      @if (errorForm()) { <div class="aviso aviso-danger" style="margin-top: 14px" role="alert">{{ errorForm() }}</div> }
+    </form>
+    <ng-container footer>
+      <button type="button" class="btn" (click)="cerrar()">Cancelar</button>
+      <button type="submit" form="form-alumno" class="btn btn-primary" [disabled]="guardando()">{{ guardando() ? 'Guardando…' : 'Registrar alumno' }}</button>
+    </ng-container>
+  </app-modal>
+}

@@ -1,0 +1,13 @@
+# Ajustes para Podman en hosts con SELinux (Fedora): los contenedores no pueden leer los bind mounts
+# sin relabel. Se usa encima de compose-dev.yml:
+#   podman compose -f compose-dev.yml -f compose-podman.yml up -d
+services:
+  eduspace-prometheus:
+    security_opt:
+      - label=disable
+  eduspace-promtail:
+    security_opt:
+      - label=disable
+  eduspace-grafana:
+    security_opt:
+      - label=disable

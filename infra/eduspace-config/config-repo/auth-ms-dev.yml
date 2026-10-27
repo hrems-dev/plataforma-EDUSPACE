@@ -1,0 +1,24 @@
+# DEV: la aplicación corre con Maven; solo la base corre en contenedor.
+server:
+  port: 8090
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:15440/auth_db
+    username: ${DB_USER:eduspace}
+    password: ${DB_PASSWORD:eduspace}
+app:
+  auth:
+    issuer: http://localhost:8090
+    access-token-minutos: 30
+    refresh-token-dias: 7
+    jwt:
+      generar-clave-si-falta: true     # DEV: par RSA nuevo en cada arranque (los tokens no sobreviven al reinicio)
+eureka:
+  client:
+    registry-fetch-interval-seconds: 5
+    service-url:
+      defaultZone: ${EUREKA_URI:http://localhost:18761/eureka/}
+  instance:
+    hostname: localhost
+    prefer-ip-address: false
+    instance-id: ${spring.application.name}:${server.port}

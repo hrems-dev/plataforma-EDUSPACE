@@ -1,0 +1,30 @@
+spring:
+  cloud:
+    config:
+      enabled: false
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+  kafka:
+    admin:
+      auto-create: false
+    bootstrap-servers: localhost:1
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          jwk-set-uri: http://localhost:1/.well-known/jwks.json
+eureka:
+  client:
+    enabled: false
+app:
+  security:
+    swagger-public: false
+  storage:
+    crear-bucket-al-arrancar: false
+  salud:
+    docentes-pueden-leer: true
+
+eduspace:
+  service-token: test-token

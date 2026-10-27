@@ -1,0 +1,252 @@
+<div class="page">
+  <app-page-header titulo="Matrículas" subtitulo="La pre-matrícula pasa a matrícula cuando se registra el pago. Aquí se crean, se trasladan, se retiran y se ratifican.">
+    <button type="button" class="btn" (click)="ratificar()">Ratificación masiva</button>
+    <button type="button" class="btn btn-primary" (click)="nueva()">Nueva matrícula</button>
+  </app-page-header>
+
+  <form class="toolbar" [formGroup]="filtro" (ngSubmit)="buscar()">
+    <select class="input" formControlName="anioId" (change)="alCambiarAnio()" aria-label="Año académico">
+      @for (a of anios(); track a.id) { <option [ngValue]="a.id">Año {{ a.nombre }}</option> }
+    </select>
+    <select class="input" formControlName="gradoId" (change)="alCambiarGrado()" aria-label="Grado">
+      <option [ngValue]="0">Todos los grados</option>
+      @for (g of grados(); track g.id) { <option [ngValue]="g.id">{{ g.nivelNombre }} · {{ g.nombre }}</option> }
+    </select>
+    <select class="input" formControlName="seccionId" (change)="buscar()" aria-label="Sección">
+      <option [ngValue]="0">Todas las secciones</option>
+      @for (s of seccionesFiltradas(); track s.id) { <option [ngValue]="s.id">{{ s.gradoNombre }} · {{ s.nombre }}</option> }
+    </select>
+    <select class="input" formControlName="estado" (change)="buscar()" aria-label="Estado">
+      <option value="">Todos los estados</option>
+      @for (e of estados; track e) { <option [value]="e">{{ e.replace('_', '-') }}</option> }
+    </select>
+    <input class="input grow" type="search" formControlName="texto" placeholder="Buscar alumno o código" aria-label="Buscar matrícula" />
+    <button type="submit" class="btn">Buscar</button>
+  </form>
+
+  <div class="card">
+    <div class="table-wrap">
+      <table class="table">
+        <thead><tr><th>Código</th><th>Alumno</th><th>Sección</th><th>Tipo</th><th>Estado</th><th>Creada</th><th></th></tr></thead>
+        <tbody>
+          @for (m of matriculas(); track m.id) {
+            <tr>
+              <td>{{ m.codigo }}</td>
+              <td><strong>{{ m.alumnoNombre }}</strong></td>
+              <td>{{ nombreSeccion(m.seccionId) }}</td>
+              <td>{{ m.tipo }}</td>
+              <td>
+                <span [class]="'badge ' + clase(m.estado)">{{ m.estado.replace('_', '-') }}</span>
+                @if (m.estado === 'PRE_MATRICULA' && m.venceEn) { <div class="muted">vence {{ m.venceEn | date: 'dd/MM' }}</div> }
+              </td>
+              <td class="muted">{{ m.creadoEn | date: 'dd/MM/yyyy' }}</td>
+              <td class="acciones">
+                <button type="button" class="btn btn-sm" (click)="verDetalle(m)">Detalle</button>
+                @if (m.estado === 'PRE_MATRICULA') {
+                  <button type="button" class="btn btn-sm" (click)="pedirMotivo(m, 'anular')">Anular</button>
+                }
+                @if (m.estado === 'MATRICULADO') {
+                  <button type="button" class="btn btn-sm" (click)="pedirTraslado(m)">Trasladar</button>
+                  <button type="button" class="btn btn-sm" (click)="pedirMotivo(m, 'retirar')">Retirar</button>
+                }
+              </td>
+            </tr>
+          } @empty {
+            <tr><td colspan="7" class="vacio">{{ cargando() ? 'Cargando…' : 'No hay matrículas con esos filtros.' }}</td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    <div class="toolbar" style="padding: 12px 16px; justify-content: space-between">
+      <span class="muted">{{ total() }} matrículas · página {{ pagina() + 1 }} de {{ paginas() }}</span>
+      <span>
+        <button type="button" class="btn btn-sm" [disabled]="pagina() === 0" (click)="irA(pagina() - 1)">Anterior</button>
+        <button type="button" class="btn btn-sm" [disabled]="pagina() + 1 >= paginas()" (click)="irA(pagina() + 1)">Siguiente</button>
+      </span>
+    </div>
+  </div>
+</div>
+
+@if (dialogo() === 'nueva') {
+  <app-modal titulo="Nueva matrícula" [ancho]="600" (cerrar)="cerrar()">
+    <div class="aviso aviso-warn" style="margin-bottom: 14px">
+      Requiere una campaña de matrícula <strong>abierta</strong>, cupo en la sección y el expediente del alumno completo (documentos subidos y verificados).
+    </div>
+    <div class="field">
+      <label for="n-alumno">Alumno</label>
+      <div class="toolbar">
+        <input id="n-alumno" class="input grow" [formControl]="busquedaAlumno" placeholder="Nombre, código o documento" (keydown.enter)="$event.preventDefault(); buscarAlumno()" />
+        <button type="button" class="btn" (click)="buscarAlumno()">Buscar</button>
+      </div>
+    </div>
+    @if (alumnoElegido(); as a) { <div class="aviso aviso-ok" style="margin-top: 10px">Elegido: <strong>{{ a.nombreCompleto }}</strong> · {{ a.codigo }}</div> }
+    @for (a of resultadosAlumno(); track a.id) {
+      <button type="button" class="btn btn-sm" style="margin: 8px 8px 0 0" (click)="elegirAlumno(a)">{{ a.nombreCompleto }} · {{ a.numeroDocumento }}</button>
+    }
+    <form [formGroup]="formNueva" (ngSubmit)="guardarNueva()" id="form-matricula" novalidate style="margin-top: 14px">
+      <div class="form-grid">
+        <div class="field full">
+          <label for="n-seccion">Sección</label>
+          <select id="n-seccion" formControlName="seccionId">
+            <option [ngValue]="0" disabled>Elige…</option>
+            @for (s of secciones(); track s.id) { <option [ngValue]="s.id">{{ s.gradoNombre }} · {{ s.nombre }} (cap. {{ s.capacidad }})</option> }
+          </select>
+        </div>
+        <div class="field">
+          <label for="n-tipo">Tipo</label>
+          <select id="n-tipo" formControlName="tipo">@for (t of tipos; track t) { <option [value]="t">{{ t }}</option> }</select>
+        </div>
+        <div class="field full">
+          <label for="n-obs">Observaciones</label>
+          <input id="n-obs" formControlName="observaciones" />
+        </div>
+      </div>
+      @if (errorForm()) { <div class="aviso aviso-danger" style="margin-top: 14px" role="alert">{{ errorForm() }}</div> }
+    </form>
+    <ng-container footer>
+      <button type="button" class="btn" (click)="cerrar()">Cancelar</button>
+      <button type="submit" form="form-matricula" class="btn btn-primary" [disabled]="guardando()">{{ guardando() ? 'Creando…' : 'Crear pre-matrícula' }}</button>
+    </ng-container>
+  </app-modal>
+}
+
+@if (dialogo() === 'detalle' && seleccionada(); as m) {
+  <app-modal [titulo]="'Matrícula ' + m.codigo" [ancho]="720" (cerrar)="cerrar()">
+    <dl class="datos" style="margin-bottom: 20px">
+      <div><dt>Alumno</dt><dd>{{ m.alumnoNombre }}</dd></div>
+      <div><dt>Sección</dt><dd>{{ nombreSeccion(m.seccionId) }}</dd></div>
+      <div><dt>Tipo</dt><dd>{{ m.tipo }}</dd></div>
+      <div><dt>Estado</dt><dd><span [class]="'badge ' + clase(m.estado)">{{ m.estado.replace('_', '-') }}</span></dd></div>
+      <div><dt>Creada</dt><dd>{{ m.creadoEn | date: 'dd/MM/yyyy HH:mm' }}</dd></div>
+      <div><dt>Confirmada</dt><dd>{{ m.confirmadaEn ? (m.confirmadaEn | date: 'dd/MM/yyyy HH:mm') : '—' }}</dd></div>
+    </dl>
+    @if (errorForm()) { <div class="aviso aviso-danger" role="alert">{{ errorForm() }}</div> }
+    @if (detalle(); as d) {
+      <h2 style="margin-bottom: 8px">Requisitos</h2>
+      <div class="table-wrap" style="margin-bottom: 20px">
+        <table class="table" style="min-width: 0">
+          <tbody>
+            @for (r of d.requisitos; track r.id) {
+              <tr>
+                <td>{{ r.tipo.replaceAll('_', ' ') }}</td>
+                <td><span [class]="'badge ' + (r.cumplido ? 'badge-ok' : 'badge-gray')">{{ r.cumplido ? 'Cumplido' : 'Pendiente' }}</span></td>
+                <td class="acciones"><button type="button" class="btn btn-sm" (click)="alternarRequisito(r)">{{ r.cumplido ? 'Desmarcar' : 'Marcar cumplido' }}</button></td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      <h2 style="margin-bottom: 8px">Historial</h2>
+      <div class="table-wrap">
+        <table class="table" style="min-width: 0">
+          <thead><tr><th>Fecha</th><th>Cambio</th><th>Motivo</th></tr></thead>
+          <tbody>
+            @for (h of d.historial; track h.id) {
+              <tr>
+                <td class="muted">{{ h.fecha | date: 'dd/MM/yyyy HH:mm' }}</td>
+                <td>{{ h.tipoCambio.replaceAll('_', ' ') }}@if (h.estadoNuevo) { → {{ h.estadoNuevo }} }</td>
+                <td>{{ h.motivo ?? '' }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    } @else if (!errorForm()) {
+      <div class="muted">Cargando…</div>
+    }
+    <ng-container footer>
+      <button type="button" class="btn btn-primary" (click)="cerrar()">Cerrar</button>
+    </ng-container>
+  </app-modal>
+}
+
+@if (dialogo() === 'motivo' && seleccionada(); as m) {
+  <app-modal [titulo]="(accionMotivo() === 'anular' ? 'Anular pre-matrícula ' : 'Retirar matrícula ') + m.codigo" [ancho]="480" (cerrar)="cerrar()">
+    <form [formGroup]="formMotivo" (ngSubmit)="guardarMotivo()" id="form-motivo" novalidate>
+      <p style="margin-top: 0">{{ m.alumnoNombre }}. {{ accionMotivo() === 'retirar' ? 'Al retirarlo se liberan su cupo y sus cuotas pendientes.' : 'Se libera el cupo.' }}</p>
+      <div class="field">
+        <label for="m-motivo">Motivo</label>
+        <textarea id="m-motivo" rows="3" formControlName="motivo" style="padding: 10px 12px; min-height: 80px"></textarea>
+        @if (formMotivo.controls.motivo.touched && formMotivo.controls.motivo.invalid) { <span class="error">El motivo es obligatorio.</span> }
+      </div>
+      @if (errorForm()) { <div class="aviso aviso-danger" style="margin-top: 14px" role="alert">{{ errorForm() }}</div> }
+    </form>
+    <ng-container footer>
+      <button type="button" class="btn" (click)="cerrar()">Cancelar</button>
+      <button type="submit" form="form-motivo" class="btn btn-danger" [disabled]="guardando()">{{ accionMotivo() === 'anular' ? 'Anular' : 'Retirar' }}</button>
+    </ng-container>
+  </app-modal>
+}
+
+@if (dialogo() === 'traslado' && seleccionada(); as m) {
+  <app-modal [titulo]="'Trasladar de sección · ' + m.codigo" [ancho]="480" (cerrar)="cerrar()">
+    <form [formGroup]="formTraslado" (ngSubmit)="guardarTraslado()" id="form-traslado" novalidate>
+      <p style="margin-top: 0">{{ m.alumnoNombre }} está en <strong>{{ nombreSeccion(m.seccionId) }}</strong>. Solo se puede trasladar a otra sección del mismo grado y año.</p>
+      <div class="form-grid">
+        <div class="field full">
+          <label for="t-sec">Nueva sección</label>
+          <select id="t-sec" formControlName="nuevaSeccionId">
+            <option [ngValue]="0" disabled>Elige…</option>
+            @for (s of seccionesParaTraslado(); track s.id) { <option [ngValue]="s.id">{{ s.gradoNombre }} · {{ s.nombre }} (cap. {{ s.capacidad }})</option> }
+          </select>
+        </div>
+        <div class="field full">
+          <label for="t-motivo">Motivo</label>
+          <textarea id="t-motivo" rows="3" formControlName="motivo" style="padding: 10px 12px; min-height: 80px"></textarea>
+        </div>
+      </div>
+      @if (errorForm()) { <div class="aviso aviso-danger" style="margin-top: 14px" role="alert">{{ errorForm() }}</div> }
+    </form>
+    <ng-container footer>
+      <button type="button" class="btn" (click)="cerrar()">Cancelar</button>
+      <button type="submit" form="form-traslado" class="btn btn-primary" [disabled]="guardando()">Trasladar</button>
+    </ng-container>
+  </app-modal>
+}
+
+@if (dialogo() === 'ratificacion') {
+  <app-modal titulo="Ratificación masiva" [ancho]="560" (cerrar)="cerrar()">
+    <p class="muted" style="margin-top: 0">Crea la matrícula del año siguiente para todos los alumnos matriculados de una sección. Cada alumno se valida por separado (deuda vencida, cupo).</p>
+    <form [formGroup]="formRatificacion" (ngSubmit)="guardarRatificacion()" id="form-ratificacion" novalidate>
+      <div class="form-grid">
+        <div class="field full">
+          <label for="r-anio">Año de destino</label>
+          <select id="r-anio" formControlName="anioDestinoId" (change)="cargarSeccionesDestino()">
+            <option [ngValue]="0" disabled>Elige…</option>
+            @for (a of anios(); track a.id) { <option [ngValue]="a.id">Año {{ a.nombre }} ({{ a.estado.toLowerCase() }})</option> }
+          </select>
+        </div>
+        <div class="field full">
+          <label for="r-origen">Sección de origen</label>
+          <select id="r-origen" formControlName="seccionOrigenId">
+            <option [ngValue]="0" disabled>Elige…</option>
+            @for (s of seccionesOrigen(); track s.id) { <option [ngValue]="s.id">{{ s.gradoNombre }} · {{ s.nombre }}</option> }
+          </select>
+        </div>
+        <div class="field full">
+          <label for="r-destino">Sección de destino (opcional)</label>
+          <select id="r-destino" formControlName="seccionDestinoId">
+            <option [ngValue]="0">Que el sistema la elija</option>
+            @for (s of seccionesDestino(); track s.id) { <option [ngValue]="s.id">{{ s.gradoNombre }} · {{ s.nombre }}</option> }
+          </select>
+        </div>
+      </div>
+      @if (errorForm()) { <div class="aviso aviso-danger" style="margin-top: 14px" role="alert">{{ errorForm() }}</div> }
+    </form>
+    @if (resultadoRatificacion(); as r) {
+      <div class="aviso aviso-ok" style="margin-top: 14px">Se crearon <strong>{{ r.creadas }}</strong> de {{ r.solicitadas }} matrículas.</div>
+      @if (r.errores.length) {
+        <div class="table-wrap" style="margin-top: 10px">
+          <table class="table" style="min-width: 0">
+            <thead><tr><th>Matrícula anterior</th><th>Motivo</th></tr></thead>
+            <tbody>@for (e of r.errores; track e.matriculaAnteriorId) { <tr><td>{{ e.matriculaAnteriorId }}</td><td>{{ e.motivo }}</td></tr> }</tbody>
+          </table>
+        </div>
+      }
+    }
+    <ng-container footer>
+      <button type="button" class="btn" (click)="cerrar()">Cerrar</button>
+      <button type="submit" form="form-ratificacion" class="btn btn-primary" [disabled]="guardando()">{{ guardando() ? 'Procesando…' : 'Ratificar' }}</button>
+    </ng-container>
+  </app-modal>
+}

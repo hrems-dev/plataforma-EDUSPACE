@@ -1,0 +1,6 @@
+.clave-prueba.pem
+ids*.json
+logs/
+boletin.pdf
+__pycache__/
+.kafka-port

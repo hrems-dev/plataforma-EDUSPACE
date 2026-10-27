@@ -1,0 +1,158 @@
+<div class="page">
+  <app-page-header titulo="Caja" [subtitulo]="'Cajero: ' + (usuario()?.username ?? '')">
+    @if (caja()) { <button type="button" class="btn" (click)="pedirCierre()">Cerrar caja</button> }
+  </app-page-header>
+
+  @if (cargandoCaja()) {
+    <div class="muted">Cargando…</div>
+  } @else if (!caja()) {
+    @if (cierre(); as c) {
+      <section class="card">
+        <div class="card-body">
+          <h2 style="margin-bottom: 12px">Caja cerrada · arqueo</h2>
+          <dl class="datos">
+            <div><dt>Apertura</dt><dd>S/ {{ c.montoApertura | number: '1.2-2' }}</dd></div>
+            <div><dt>Cobros en efectivo</dt><dd>S/ {{ c.cobrosEfectivo | number: '1.2-2' }}</dd></div>
+            <div><dt>Otros medios</dt><dd>S/ {{ c.cobrosOtrosMedios | number: '1.2-2' }}</dd></div>
+            <div><dt>Total cobrado</dt><dd><strong>S/ {{ c.totalCobrado | number: '1.2-2' }}</strong></dd></div>
+            <div><dt>Efectivo esperado</dt><dd>S/ {{ c.efectivoEsperado | number: '1.2-2' }}</dd></div>
+            <div><dt>Efectivo declarado</dt><dd>S/ {{ (c.montoDeclarado ?? 0) | number: '1.2-2' }}</dd></div>
+            <div><dt>Diferencia</dt><dd [style.color]="(c.diferencia ?? 0) !== 0 ? 'var(--danger)' : 'var(--ok)'"><strong>S/ {{ (c.diferencia ?? 0) | number: '1.2-2' }}</strong></dd></div>
+          </dl>
+        </div>
+      </section>
+    }
+    <section class="card">
+      <div class="card-body">
+        <h2 style="margin-bottom: 6px">Abrir caja</h2>
+        <p class="muted" style="margin-top: 0">Para cobrar hay que abrir caja con el efectivo inicial.</p>
+        <div class="toolbar">
+          <label class="muted" for="ap-monto">Efectivo inicial (S/)</label>
+          <input id="ap-monto" class="input" type="number" min="0" step="0.10" [formControl]="montoApertura" style="width: 140px" />
+          <button type="button" class="btn btn-primary" [disabled]="ocupado()" (click)="abrirCaja()">Abrir caja</button>
+        </div>
+        @if (errorCaja()) { <div class="aviso aviso-danger" style="margin-top: 12px" role="alert">{{ errorCaja() }}</div> }
+      </div>
+    </section>
+  } @else {
+    @if (parcial(); as p) {
+      <section class="kpis" aria-label="Caja abierta">
+        <div class="kpi"><div class="etiqueta">Abierta desde</div><div class="valor" style="font-size: 20px">{{ p.aperturaEn | date: 'HH:mm' }}</div></div>
+        <div class="kpi"><div class="etiqueta">Cobrado hoy</div><div class="valor" style="color: var(--ok)">S/ {{ p.totalCobrado | number: '1.2-2' }}</div></div>
+        <div class="kpi"><div class="etiqueta">Efectivo esperado en caja</div><div class="valor">S/ {{ p.efectivoEsperado | number: '1.2-2' }}</div></div>
+      </section>
+    }
+
+    <section class="card">
+      <div class="card-body">
+        <h2 style="margin-bottom: 12px">Nuevo cobro</h2>
+        <app-buscador-alumno [soloActivos]="false" (elegidoAlumno)="elegirAlumno($event)" />
+      </div>
+    </section>
+
+    @if (cuenta(); as c) {
+      <div class="card">
+        <div class="card-body" style="padding-bottom: 0">
+          <div class="toolbar" style="justify-content: space-between">
+            <h2>Cuotas de {{ c.alumnoNombre }}</h2>
+            <span class="muted">Responsable de pago: {{ c.responsableNombre ?? '—' }} · Vencido: <strong style="color: var(--danger)">S/ {{ c.totalVencido | number: '1.2-2' }}</strong></span>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table class="table">
+            <thead><tr><th style="width: 44px"></th><th>Concepto</th><th>Vence</th><th>Saldo</th><th>A cobrar (S/)</th><th>Estado</th></tr></thead>
+            <tbody>
+              @for (q of pagables(); track q.id) {
+                <tr>
+                  <td><input type="checkbox" [checked]="elegida(q.id)" (change)="alternar(q, $any($event.target).checked)" [attr.aria-label]="'Cobrar ' + q.descripcion" style="width: 18px; height: 18px" /></td>
+                  <td><strong>{{ q.descripcion }}</strong></td>
+                  <td>{{ q.fechaVencimiento | date: 'dd/MM/yyyy' }}@if (q.diasAtraso > 0) { <div class="muted" style="color: var(--danger)">{{ q.diasAtraso }} días · mora S/ {{ q.mora | number: '1.2-2' }}</div> }</td>
+                  <td>{{ q.saldo | number: '1.2-2' }}</td>
+                  <td>
+                    @if (elegida(q.id)) { <input class="input" type="number" min="0.01" [max]="q.saldo" step="0.10" style="width: 110px; min-height: 36px" [value]="montos()[q.id]" (input)="cambiarMonto(q, $any($event.target).value)" [attr.aria-label]="'Monto a cobrar de ' + q.descripcion" /> }
+                    @else { <span class="muted">—</span> }
+                  </td>
+                  <td><span [class]="'badge ' + (q.estado === 'VENCIDA' ? 'badge-danger' : q.estado === 'PARCIAL' ? 'badge-violet' : 'badge-warn')">{{ q.estado }}</span></td>
+                </tr>
+              } @empty {
+                <tr><td colspan="6" class="vacio">Este alumno no tiene cuotas pendientes.</td></tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      @if (nElegidas() > 0) {
+        <section class="card">
+          <div class="card-body">
+            <form [formGroup]="cobro" (ngSubmit)="cobrar()" novalidate>
+              <div class="form-grid">
+                <div class="field"><label for="c-pagador">Pagador</label><input id="c-pagador" formControlName="pagadorNombre" /></div>
+                <div class="field"><label for="c-doc">Documento del pagador</label><input id="c-doc" formControlName="pagadorDocumento" /></div>
+                <div class="field">
+                  <label for="c-medio">Medio de pago</label>
+                  <select id="c-medio" formControlName="medio">@for (m of medios; track m) { <option [value]="m">{{ m.replace('_', ' / ') }}</option> }</select>
+                </div>
+                <div class="field">
+                  <label for="c-ref">N.º de operación {{ cobro.controls.medio.value === 'EFECTIVO' ? '(opcional)' : '' }}</label>
+                  <input id="c-ref" formControlName="referencia" />
+                </div>
+                <div class="field">
+                  <label for="c-comp">Comprobante</label>
+                  <select id="c-comp" formControlName="tipoComprobante"><option value="RECIBO">Recibo</option><option value="BOLETA">Boleta</option></select>
+                </div>
+                <div class="field" style="justify-content: flex-end">
+                  <div style="font-size: 12px; color: var(--ink-2)">Total a cobrar ({{ nElegidas() }} cuota(s))</div>
+                  <div style="font-size: 28px; font-weight: 700">S/ {{ total() | number: '1.2-2' }}</div>
+                </div>
+              </div>
+              @if (errorCobro()) { <div class="aviso aviso-danger" style="margin-top: 14px" role="alert">{{ errorCobro() }}</div> }
+              <div class="toolbar" style="margin-top: 16px">
+                <button type="submit" class="btn btn-primary" [disabled]="cobrando() || total() <= 0" style="min-height: 52px; padding: 0 28px; font-size: 16px">{{ cobrando() ? 'Cobrando…' : 'Cobrar S/ ' + (total() | number: '1.2-2') }}</button>
+                <button type="button" class="btn" (click)="anularCobroVacio()">Quitar selección</button>
+              </div>
+              <p class="muted" style="margin-bottom: 0">Cada cobro lleva una clave única: si se pulsa dos veces o se corta la conexión, no se cobra dos veces ni se emiten dos comprobantes.</p>
+            </form>
+          </div>
+        </section>
+      }
+    }
+  }
+</div>
+
+@if (cerrando()) {
+  <app-modal titulo="Cerrar caja" [ancho]="460" (cerrar)="cancelarCierre()">
+    <p style="margin-top: 0">Cuenta el efectivo que hay en caja y anótalo. El sistema calcula la diferencia con lo esperado
+      @if (parcial(); as p) { (<strong>S/ {{ p.efectivoEsperado | number: '1.2-2' }}</strong>) }.</p>
+    <div class="field">
+      <label for="cd-monto">Efectivo contado (S/)</label>
+      <input id="cd-monto" class="input" type="number" min="0" step="0.10" [formControl]="montoDeclarado" />
+    </div>
+    @if (errorCaja()) { <div class="aviso aviso-danger" style="margin-top: 14px" role="alert">{{ errorCaja() }}</div> }
+    <ng-container footer>
+      <button type="button" class="btn" (click)="cancelarCierre()">Cancelar</button>
+      <button type="button" class="btn btn-danger" [disabled]="ocupado()" (click)="cerrarCaja()">Cerrar caja</button>
+    </ng-container>
+  </app-modal>
+}
+
+@if (recibo(); as p) {
+  <app-modal titulo="Cobro registrado" [ancho]="460" (cerrar)="cerrarRecibo()">
+    <div class="aviso aviso-ok" role="status">Se cobraron <strong>S/ {{ p.montoTotal | number: '1.2-2' }}</strong> por {{ p.medio.replace('_', ' / ') }}.</div>
+    <dl class="datos" style="margin-top: 14px">
+      <div><dt>{{ p.comprobante?.tipo ?? 'Comprobante' }}</dt><dd><strong>{{ p.comprobante?.numeroCompleto ?? 'En proceso' }}</strong></dd></div>
+      <div><dt>Fecha</dt><dd>{{ p.pagadoEn | date: 'dd/MM/yyyy HH:mm' }}</dd></div>
+      <div><dt>Pagador</dt><dd>{{ p.pagadorNombre ?? '—' }}</dd></div>
+    </dl>
+    <div class="table-wrap" style="margin-top: 12px">
+      <table class="table" style="min-width: 0">
+        <thead><tr><th>Cuota</th><th>Aplicado</th><th>Saldo</th></tr></thead>
+        <tbody>@for (d of p.detalles; track d.id) { <tr><td>{{ d.cuotaDescripcion }}</td><td>S/ {{ d.montoAplicado | number: '1.2-2' }}</td><td>S/ {{ d.nuevoSaldoCuota | number: '1.2-2' }}</td></tr> }</tbody>
+      </table>
+    </div>
+    <ng-container footer>
+      <button type="button" class="btn" (click)="imprimir()">Imprimir</button>
+      <button type="button" class="btn btn-primary" (click)="cerrarRecibo()">Listo</button>
+    </ng-container>
+  </app-modal>
+}

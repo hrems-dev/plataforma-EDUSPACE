@@ -1,0 +1,16 @@
+.grilla { width: 100%; border-collapse: collapse; min-width: 760px; table-layout: fixed; }
+.grilla th, .grilla td { border: 1px solid var(--line); padding: 4px; vertical-align: top; }
+.grilla thead th { background: var(--bg); font-size: 12px; color: var(--ink-2); padding: 10px; }
+.grilla .hora { width: 84px; font-size: 13px; text-align: center; background: var(--bg); }
+.grilla tr.receso td, .grilla tr.receso th { background: #fafbfe; }
+.receso-txt { text-align: center; color: var(--ink-2); font-size: 12px; font-style: italic; padding: 8px; }
+.clase {
+  width: 100%; min-height: 64px; display: flex; flex-direction: column; gap: 2px; align-items: flex-start; text-align: left;
+  padding: 8px 10px; border: 0; border-left: 4px solid var(--primary); border-radius: 8px; background: var(--primary-soft); color: var(--ink); cursor: pointer; font-size: 12px;
+}
+.clase:hover { background: #d5e0ff; }
+.vacia { width: 100%; min-height: 64px; border: 1px dashed var(--line-2); border-radius: 8px; background: transparent; color: var(--line-2); font-size: 20px; cursor: pointer; }
+.vacia:hover { border-color: var(--primary); color: var(--primary); background: #f7f9ff; }
+.clase:focus-visible, .vacia:focus-visible { outline: 2px solid var(--primary); outline-offset: 1px; }
+.curso-horas { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; font-size: 13px; }
+.curso-horas > span:first-child { width: 200px; }

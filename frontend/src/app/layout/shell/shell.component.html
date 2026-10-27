@@ -1,0 +1,86 @@
+<div class="app">
+  <aside class="lateral" [class.abierto]="menuAbierto()">
+    <div class="marca">
+      <div class="logo">E</div>
+      <div class="nombre">EduSpace</div>
+    </div>
+
+    <button type="button" class="buscar-menu" (click)="abrirPaleta()" aria-label="Buscar pantallas o alumnos (Ctrl+K)">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="M20 20l-3.5-3.5" /></svg>
+      <span>Buscar…</span><kbd>Ctrl K</kbd>
+    </button>
+
+    <nav class="menu" aria-label="Menú principal">
+      @for (g of menu(); track g.titulo) {
+        <div class="grupo">{{ g.titulo }}</div>
+        @for (i of g.items; track i.ruta) {
+          <a class="item" [routerLink]="i.ruta" routerLinkActive="activo" (click)="cerrarMenu()">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path [attr.d]="i.icono" /></svg>
+            <span>{{ i.etiqueta }}</span>
+            @if (i.conContador && noLeidas() > 0) {
+              <span class="contador" [attr.aria-label]="noLeidas() + ' sin leer'">{{ noLeidas() > 99 ? '99+' : noLeidas() }}</span>
+            }
+          </a>
+        }
+      }
+      @if (esKeycloak && esAdmin()) {
+        <div class="grupo">Administración</div>
+        <a class="item" [href]="consolaAdmin" target="_blank" rel="noopener noreferrer">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z" /></svg>
+          <span>Cuentas y roles (Keycloak)</span>
+        </a>
+      }
+    </nav>
+
+    <div class="sesion">
+      <div class="quien">{{ usuario()?.username }}</div>
+      <div class="roles">{{ rolPrincipal() }}</div>
+      <div class="acciones">
+        <a class="link" routerLink="/" title="Ver el sitio público del colegio">Sitio web</a>
+        <button type="button" class="link" (click)="irACambiarClave()">Cambiar clave</button>
+        <button type="button" class="link" (click)="salir()">Salir</button>
+      </div>
+    </div>
+  </aside>
+
+  @if (menuAbierto()) {
+    <div class="velo" (click)="cerrarMenu()" role="presentation"></div>
+  }
+
+  <div class="contenido">
+    <header class="barra">
+      <button type="button" class="hamburguesa" (click)="alternarMenu()" aria-label="Abrir menú">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16" /></svg>
+      </button>
+      <span class="titulo-barra">EduSpace</span>
+      <button type="button" class="hamburguesa" style="margin-left: auto" (click)="abrirPaleta()" aria-label="Buscar">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="M20 20l-3.5-3.5" /></svg>
+      </button>
+    </header>
+    <main class="principal">
+      <router-outlet />
+    </main>
+  </div>
+</div>
+
+@if (paletaAbierta()) {
+  <div class="paleta-velo" (click)="cerrarPaleta()" role="presentation">
+    <div class="paleta" role="dialog" aria-modal="true" aria-label="Buscar" (click)="$event.stopPropagation()">
+      <input id="paleta-texto" class="paleta-input" type="text" autocomplete="off" role="combobox" aria-expanded="true" aria-controls="paleta-lista"
+        [placeholder]="puedeBuscarAlumnos() ? 'Ir a una pantalla o buscar un alumno por nombre o documento…' : 'Ir a una pantalla…'"
+        [value]="texto()" (input)="escribir($any($event.target).value)" (keydown)="teclaPaleta($event)" />
+      <ul id="paleta-lista" class="paleta-lista" role="listbox">
+        @for (o of opciones(); track o.ruta + o.etiqueta; let i = $index) {
+          <li role="option" [attr.aria-selected]="i === seleccion()" [class.sel]="i === seleccion()" (mouseenter)="seleccion.set(i)" (click)="irA(o.ruta)">
+            <span class="paleta-tipo" [class.alumno]="o.tipo === 'alumno'">{{ o.tipo === 'alumno' ? 'Alumno' : 'Ir a' }}</span>
+            <strong>{{ o.etiqueta }}</strong>
+            <span class="muted">{{ o.detalle }}</span>
+          </li>
+        } @empty {
+          <li class="paleta-vacio">Sin resultados para «{{ texto() }}».</li>
+        }
+      </ul>
+      <div class="paleta-pie muted">↑↓ moverse · Enter abrir · Esc cerrar</div>
+    </div>
+  </div>
+}

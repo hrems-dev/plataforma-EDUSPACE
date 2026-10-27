@@ -1,0 +1,71 @@
+<div class="page">
+  <app-page-header titulo="Asistencia" subtitulo="Pasa lista de tu sección. Guardar dos veces no duplica las faltas.">
+    @if (sesion() && !cerrada) {
+      <button type="button" class="btn" (click)="todosPresentes()">Todos presentes</button>
+      <button type="button" class="btn btn-primary" [disabled]="guardando() || !cambios()" (click)="guardar()">{{ guardando() ? 'Guardando…' : 'Guardar asistencia' }}</button>
+      <button type="button" class="btn" (click)="cerrarSesion()">Cerrar hoja</button>
+    }
+  </app-page-header>
+
+  <form class="toolbar" [formGroup]="form" (ngSubmit)="abrir()">
+    <select class="input" formControlName="seccionId" (change)="alCambiarSeccion()" aria-label="Sección">
+      @for (s of secciones(); track s.id) { <option [ngValue]="s.id">{{ s.nombre }}</option> }
+    </select>
+    <input class="input" type="date" formControlName="fecha" aria-label="Fecha" />
+    <select class="input" formControlName="tipo" aria-label="Tipo de hoja">
+      <option value="DIA">Asistencia del día</option>
+      <option value="CURSO">Por curso y bloque</option>
+    </select>
+    @if (form.controls.tipo.value === 'CURSO') {
+      <select class="input" formControlName="cursoId" aria-label="Curso">
+        @for (c of cursosDeSeccion(); track c.id) { <option [ngValue]="c.id">{{ c.nombre }}</option> }
+      </select>
+      <select class="input" formControlName="bloqueId" aria-label="Bloque">
+        @for (b of bloques(); track b.id) { <option [ngValue]="b.id">Bloque {{ b.orden }} · {{ b.horaInicio.slice(0, 5) }}</option> }
+      </select>
+    }
+    <button type="submit" class="btn btn-primary" [disabled]="cargando() || !form.controls.seccionId.value">{{ sesion() ? 'Actualizar' : 'Abrir hoja' }}</button>
+  </form>
+
+  @if (error()) { <div class="aviso aviso-danger" role="alert">{{ error() }}</div> }
+
+  @if (sesion(); as s) {
+    @if (cerrada) { <div class="aviso aviso-warn">Esta hoja está cerrada: solo se puede consultar. Las correcciones las hace Secretaría.</div> }
+    <div class="toolbar">
+      <span class="badge badge-ok">Presentes {{ resumen().presentes }}</span>
+      <span class="badge badge-warn">Tardanzas {{ resumen().tardanzas }}</span>
+      <span class="badge badge-danger">Faltas {{ resumen().faltas }}</span>
+      @if (resumen().justificados > 0) { <span class="badge badge-violet">Justificados {{ resumen().justificados }}</span> }
+      @if (cambios()) { <span class="muted">Hay cambios sin guardar</span> }
+    </div>
+
+    <div class="card">
+      @for (f of filas(); track f.matriculaId) {
+        <div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: center; padding: 10px 20px; border-top: 1px solid #eef1f8">
+          <div style="flex: 1 1 220px; font-weight: 600">{{ f.alumnoNombre }}</div>
+          @if (f.estado === 'JUSTIFICADO') {
+            <span class="badge badge-violet">Justificado</span>
+          } @else {
+            <div style="display: flex; gap: 6px" role="group" [attr.aria-label]="'Asistencia de ' + f.alumnoNombre">
+              <button type="button" class="btn btn-sm" [disabled]="cerrada" [attr.aria-pressed]="f.estado === 'PRESENTE'" (click)="marcar(f, 'PRESENTE')"
+                [style.background]="f.estado === 'PRESENTE' ? 'var(--ok-soft)' : ''" [style.color]="f.estado === 'PRESENTE' ? 'var(--ok)' : ''" style="min-width: 92px">Presente</button>
+              <button type="button" class="btn btn-sm" [disabled]="cerrada" [attr.aria-pressed]="f.estado === 'TARDANZA'" (click)="marcar(f, 'TARDANZA')"
+                [style.background]="f.estado === 'TARDANZA' ? 'var(--warn-soft)' : ''" [style.color]="f.estado === 'TARDANZA' ? 'var(--warn)' : ''" style="min-width: 92px">Tardanza</button>
+              <button type="button" class="btn btn-sm" [disabled]="cerrada" [attr.aria-pressed]="f.estado === 'FALTA'" (click)="marcar(f, 'FALTA')"
+                [style.background]="f.estado === 'FALTA' ? 'var(--danger-soft)' : ''" [style.color]="f.estado === 'FALTA' ? '#8e1c12' : ''" style="min-width: 92px">Falta</button>
+            </div>
+            @if (f.estado === 'TARDANZA') {
+              <label class="muted" style="display: flex; align-items: center; gap: 6px">min
+                <input class="input" type="number" min="1" style="width: 70px; min-height: 36px" [value]="f.minutosTarde ?? 10" [disabled]="cerrada" (input)="minutos(f, $any($event.target).value)" [attr.aria-label]="'Minutos de tardanza de ' + f.alumnoNombre" />
+              </label>
+            }
+          }
+        </div>
+      } @empty {
+        <div class="vacio">Esta sección no tiene alumnos matriculados.</div>
+      }
+    </div>
+  } @else if (!cargando() && !error()) {
+    <div class="muted">Elige la sección y la fecha, y abre la hoja.</div>
+  }
+</div>

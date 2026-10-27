@@ -1,0 +1,24 @@
+version: '3.8'
+
+services:
+  pago-db:
+    image: postgres:16-alpine
+    container_name: eduspace-pago-db-dev
+    environment:
+      POSTGRES_DB: pago_db
+      POSTGRES_USER: eduspace
+      POSTGRES_PASSWORD: eduspace
+      TZ: America/Lima
+    ports:
+      - "15446:5432"
+    volumes:
+      - pago_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U eduspace -d pago_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  pago_db_data:
+

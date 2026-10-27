@@ -1,0 +1,24 @@
+# PROD local: cada servicio escucha en 8080 dentro de Docker y no publica puerto (solo el Gateway se expone).
+# Las credenciales llegan por variables de entorno, nunca por este repositorio.
+server:
+  port: 8080
+spring:
+  datasource:
+    url: jdbc:postgresql://examenes-ms-db:5432/examenes_db
+    username: ${DB_USER}
+    password: ${DB_PASSWORD}
+
+# PROD: SERVICE_TOKEN es obligatorio (sin valor por defecto): el servicio no arranca sin él.
+eduspace:
+  service-token: ${SERVICE_TOKEN}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+  endpoint:
+    health:
+      show-details: never
+      probes:
+        enabled: true

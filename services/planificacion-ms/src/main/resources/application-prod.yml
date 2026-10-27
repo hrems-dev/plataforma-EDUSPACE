@@ -1,0 +1,8 @@
+# PROD: sin 'optional:'. Si el Config Server no responde, el servicio falla al arrancar en lugar de
+# iniciar en silencio con valores por defecto.
+spring:
+  config:
+    import: "configserver:${CONFIG_SERVER_URL}"
+  cloud:
+    config:
+      fail-fast: true

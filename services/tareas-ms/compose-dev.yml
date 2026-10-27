@@ -1,0 +1,24 @@
+version: '3.8'
+
+services:
+  tareas-db:
+    image: postgres:16-alpine
+    container_name: eduspace-tareas-db-dev
+    environment:
+      POSTGRES_DB: tareas_db
+      POSTGRES_USER: eduspace
+      POSTGRES_PASSWORD: eduspace
+      TZ: America/Lima
+    ports:
+      - "15448:5432"
+    volumes:
+      - tareas_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U eduspace -d tareas_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  tareas_db_data:
+

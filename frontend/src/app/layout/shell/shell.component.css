@@ -1,0 +1,56 @@
+.app { display: flex; min-height: 100vh; }
+
+.lateral {
+  flex: 0 0 248px; background: #14213d; color: #fff; padding: 22px 14px; display: flex; flex-direction: column; gap: 4px;
+  position: sticky; top: 0; height: 100vh; overflow-y: auto;
+}
+.marca { display: flex; align-items: center; gap: 10px; padding: 0 8px 18px; }
+.logo { width: 34px; height: 34px; border-radius: 9px; background: #2f5bea; display: flex; align-items: center; justify-content: center; font-weight: 700; }
+.nombre { font-weight: 700; font-size: 18px; }
+
+.grupo { margin: 14px 10px 4px; font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #9fb0d6; }
+.item {
+  display: flex; align-items: center; gap: 12px; min-height: 44px; padding: 0 12px; border-radius: 10px;
+  color: #c9d2ea; text-decoration: none; font-weight: 500;
+}
+.item:hover { background: rgba(255, 255, 255, 0.08); color: #fff; }
+.item.activo { background: rgba(255, 255, 255, 0.16); color: #fff; }
+.item:focus-visible { outline: 2px solid #fff; outline-offset: -2px; }
+
+.sesion { margin-top: auto; padding: 14px 12px; border-radius: 12px; background: rgba(255, 255, 255, 0.08); font-size: 12px; }
+.quien { font-weight: 600; font-size: 13px; }
+.roles { opacity: 0.8; }
+.acciones { display: flex; gap: 14px; margin-top: 8px; }
+.link { border: 0; background: transparent; color: #cfe0ff; text-decoration: underline; cursor: pointer; padding: 6px 0; min-height: 32px; }
+
+.contenido { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.barra { display: none; align-items: center; gap: 10px; background: #fff; border-bottom: 1px solid var(--line); padding: 4px 10px; }
+.hamburguesa { width: 44px; height: 44px; border: 0; background: transparent; border-radius: 10px; cursor: pointer; }
+.titulo-barra { font-weight: 700; }
+.principal { padding: 28px 32px; flex: 1; }
+.velo { display: none; }
+
+@media (max-width: 900px) {
+  .lateral { position: fixed; z-index: 40; left: 0; transform: translateX(-100%); transition: transform 0.2s; width: 264px; }
+  .lateral.abierto { transform: translateX(0); }
+  .velo { display: block; position: fixed; inset: 0; background: rgba(20, 33, 61, 0.5); z-index: 30; }
+  .barra { display: flex; }
+  .principal { padding: 18px 16px; }
+}
+
+.contador { margin-left: auto; min-width: 20px; height: 20px; padding: 0 6px; border-radius: 99px; background: #e5484d; color: #fff; font-size: 11px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; }
+
+.buscar-menu { margin: 0 12px 8px; display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 9px; border: 1px solid rgba(255,255,255,.18); background: rgba(255,255,255,.08); color: inherit; cursor: pointer; font: inherit; font-size: .88rem; }
+.buscar-menu:hover, .buscar-menu:focus-visible { background: rgba(255,255,255,.16); }
+.buscar-menu kbd { margin-left: auto; font-size: .7rem; padding: 0 5px; border: 1px solid rgba(255,255,255,.3); border-radius: 4px; background: transparent; color: inherit; }
+.paleta-velo { position: fixed; inset: 0; background: rgba(20,33,61,.45); display: flex; justify-content: center; align-items: flex-start; padding: 12vh 16px 16px; z-index: 1000; }
+.paleta { width: min(620px, 100%); background: #fff; border-radius: 14px; box-shadow: 0 20px 60px rgba(20,33,61,.35); overflow: hidden; }
+.paleta-input { width: 100%; border: 0; border-bottom: 1px solid var(--line); padding: 16px 18px; font: inherit; font-size: 1.02rem; outline: none; }
+.paleta-lista { list-style: none; margin: 0; padding: 6px; max-height: 50vh; overflow: auto; }
+.paleta-lista li { display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: 9px; cursor: pointer; }
+.paleta-lista li.sel { background: var(--primary-soft); }
+.paleta-lista .muted { margin-left: auto; font-size: .82rem; }
+.paleta-tipo { font-size: .7rem; font-weight: 700; text-transform: uppercase; padding: 2px 7px; border-radius: 99px; background: var(--bg); color: var(--ink-2); }
+.paleta-tipo.alumno { background: var(--violet-soft); color: var(--violet); }
+.paleta-vacio { color: var(--ink-2); cursor: default !important; }
+.paleta-pie { padding: 8px 16px; border-top: 1px solid var(--line); font-size: .78rem; }

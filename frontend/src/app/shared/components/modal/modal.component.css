@@ -1,0 +1,11 @@
+.fondo {
+  position: fixed; inset: 0; background: rgba(20, 33, 61, 0.55); z-index: 50;
+  display: flex; align-items: flex-start; justify-content: center; padding: 48px 16px; overflow-y: auto;
+}
+.dialogo { background: #fff; border-radius: 16px; width: 100%; box-shadow: 0 24px 60px rgba(20, 33, 61, 0.35); }
+.cabecera { display: flex; align-items: center; justify-content: space-between; padding: 18px 22px; border-bottom: 1px solid var(--line); }
+.cerrar { width: 44px; height: 44px; border: 0; background: transparent; font-size: 26px; line-height: 1; cursor: pointer; color: var(--ink-2); border-radius: 10px; }
+.cerrar:hover { background: var(--bg); }
+.cuerpo { padding: 22px; }
+.pie { display: flex; justify-content: flex-end; gap: 10px; padding: 14px 22px 20px; }
+.pie:empty { display: none; }

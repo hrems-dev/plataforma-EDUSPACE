@@ -1,0 +1,117 @@
+<div class="page">
+  <app-page-header titulo="Horarios" subtitulo="Arma el horario semanal de cada sección. El sistema rechaza choques de docente, aula y sección.">
+    <button type="button" class="btn" [disabled]="!horario()" (click)="validar()">Validar</button>
+    <button type="button" class="btn btn-primary" [disabled]="!horario()" (click)="publicar()">Publicar</button>
+  </app-page-header>
+
+  <div class="toolbar">
+    <select class="input" [formControl]="anioId" (change)="cargarSecciones()" aria-label="Año académico">
+      @for (a of anios(); track a.id) { <option [ngValue]="a.id">Año {{ a.nombre }}</option> }
+    </select>
+    <select class="input" [formControl]="seccionId" (change)="cargar()" aria-label="Sección">
+      @for (s of secciones(); track s.id) { <option [ngValue]="s.id">{{ s.gradoNombre }} · {{ s.nombre }} ({{ s.turno === 'MANANA' ? 'mañana' : 'tarde' }})</option> }
+    </select>
+    @if (publicaciones().length > 0) {
+      <span class="badge badge-ok">Publicado: versión {{ publicaciones()[0].version }} · {{ publicaciones()[0].publicadoEn | date: 'dd/MM HH:mm' }}</span>
+    } @else if (horario()) {
+      <span class="badge badge-warn">Sin publicar</span>
+    }
+  </div>
+
+  @if (asignaciones().length === 0 && seccionId.value) {
+    <div class="aviso aviso-warn">Esta sección no tiene asignaciones de docente. Créalas en <strong>Asignaciones</strong> para poder programar clases.</div>
+  }
+
+  @if (validacion(); as v) {
+    <div class="card">
+      <div class="card-body">
+        <div class="toolbar" style="justify-content: space-between; margin-bottom: 10px">
+          <h2>Validación</h2>
+          <span [class]="'badge ' + (v.valido ? 'badge-ok' : 'badge-danger')">{{ v.valido ? 'Horario válido' : 'Hay problemas' }}</span>
+        </div>
+        @for (c of v.choques; track c) { <div class="aviso aviso-danger" style="margin-bottom: 8px">{{ c }}</div> }
+        @if (v.cursosIncompletos.length > 0) {
+          <p class="muted" style="margin: 8px 0">Cursos con horas pendientes de programar:</p>
+          @for (h of v.cursosIncompletos; track h.cursoId) {
+            <div class="curso-horas">
+              <span>{{ h.cursoNombre }}</span>
+              <div class="barra-cupo" style="flex: 1" role="img" [attr.aria-label]="h.horasProgramadas + ' de ' + h.horasRequeridas + ' horas'"><span [style.width.%]="pct(h)"></span></div>
+              <span class="muted">{{ h.horasProgramadas }}/{{ h.horasRequeridas }} h</span>
+            </div>
+          }
+        } @else if (v.valido) {
+          <p class="muted" style="margin: 0">Todos los cursos de la malla tienen sus horas programadas y no hay choques.</p>
+        }
+      </div>
+    </div>
+  }
+
+  <div class="card">
+    <div class="table-wrap">
+      <table class="grilla">
+        <thead>
+          <tr>
+            <th scope="col">Hora</th>
+            @for (d of dias; track d) { <th scope="col">{{ nombreDia(d) }}</th> }
+          </tr>
+        </thead>
+        <tbody>
+          @for (b of horario()?.bloques ?? []; track b.id) {
+            <tr [class.receso]="b.esReceso">
+              <th scope="row" class="hora">{{ hora(b.horaInicio) }}<br /><span class="muted">{{ hora(b.horaFin) }}</span></th>
+              @if (b.esReceso) {
+                <td [attr.colspan]="dias.length" class="receso-txt">Receso</td>
+              } @else {
+                @for (d of dias; track d) {
+                  <td>
+                    @if (claseEn(b, d); as c) {
+                      <button type="button" class="clase" (click)="abrirCelda(b, d)" [attr.aria-label]="c.cursoNombre + ', ' + c.docenteNombre + ', ' + nombreDia(d)">
+                        <strong>{{ c.cursoNombre }}</strong>
+                        <span>{{ c.docenteNombre }}</span>
+                        @if (c.aulaNombre) { <span class="muted">{{ c.aulaNombre }}</span> }
+                      </button>
+                    } @else {
+                      <button type="button" class="vacia" (click)="abrirCelda(b, d)" [attr.aria-label]="'Agregar clase ' + nombreDia(d) + ' ' + hora(b.horaInicio)">+</button>
+                    }
+                  </td>
+                }
+              }
+            </tr>
+          } @empty {
+            <tr><td [attr.colspan]="dias.length + 1" class="vacio">{{ cargando() ? 'Cargando…' : 'No hay bloques horarios para el turno de esta sección. Créalos en Bloques horarios.' }}</td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+@if (celda(); as c) {
+  <app-modal [titulo]="(clase() ? 'Clase' : 'Agregar clase') + ' · ' + nombreDia(c.dia) + ' ' + hora(c.bloque.horaInicio) + '–' + hora(c.bloque.horaFin)" [ancho]="480" (cerrar)="cerrar()">
+    <form [formGroup]="form" (ngSubmit)="guardar()" id="form-clase" novalidate>
+      <div class="form-grid">
+        <div class="field full">
+          <label for="h-asig">Curso y docente</label>
+          <select id="h-asig" formControlName="asignacionId">
+            <option [ngValue]="0" disabled>Elige…</option>
+            @for (a of asignaciones(); track a.id) { <option [ngValue]="a.id">{{ a.cursoNombre }} · {{ a.docenteNombre }}</option> }
+          </select>
+          @if (form.controls.asignacionId.touched && form.controls.asignacionId.invalid) { <span class="error">Elige un curso.</span> }
+        </div>
+        <div class="field full">
+          <label for="h-aula">Aula (opcional)</label>
+          <select id="h-aula" formControlName="aulaId">
+            <option [ngValue]="0">Aula de la sección</option>
+            @for (a of aulas(); track a.id) { <option [ngValue]="a.id">{{ a.nombre }} ({{ a.tipo }})</option> }
+          </select>
+        </div>
+      </div>
+      @if (errorForm()) { <div class="aviso aviso-danger" style="margin-top: 14px" role="alert">{{ errorForm() }}</div> }
+    </form>
+    <ng-container footer>
+      @if (clase()) { <button type="button" class="btn" (click)="quitar()" style="margin-right: auto">Quitar clase</button> }
+      <button type="button" class="btn" (click)="cerrar()">Cancelar</button>
+      <button type="submit" form="form-clase" class="btn btn-primary" [disabled]="guardando()">Guardar</button>
+    </ng-container>
+  </app-modal>
+}

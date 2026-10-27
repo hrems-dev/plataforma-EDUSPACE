@@ -1,0 +1,54 @@
+# PROD local: cada servicio escucha en 8080 dentro de Docker y no publica puerto (solo el Gateway se expone).
+# Las credenciales llegan por variables de entorno, nunca por este repositorio.
+server:
+  port: 8080
+spring:
+  datasource:
+    url: jdbc:postgresql://planificacion-ms-db:5432/planificacion_db
+    username: ${DB_USER}
+    password: ${DB_PASSWORD}
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: America/Lima
+  flyway:
+    enabled: true
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP:kafka:9092}
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          jwk-set-uri: ${JWK_SET_URI:http://auth-ms:8080/.well-known/jwks.json}
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_URL:http://eureka-server:8761/eureka}
+  instance:
+    prefer-ip-address: true
+    instance-id: ${spring.application.name}:${random.value}
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+  endpoint:
+    health:
+      probes:
+        enabled: true
+app:
+  security:
+    swagger-public: false
+  kafka:
+    topic:
+      horario-publicado: horario.publicado
+      anio-activado: anio.activado
+      periodo-cambiado: periodo.cambiado
+
+# PROD: SERVICE_TOKEN es obligatorio (sin valor por defecto): el servicio no arranca sin él.
+eduspace:
+  service-token: ${SERVICE_TOKEN}

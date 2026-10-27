@@ -1,0 +1,24 @@
+version: '3.8'
+
+# PROD: único servicio que se publica hacia fuera. Los microservicios no publican puertos: solo los alcanza el Gateway
+# dentro de eduspace-prod-net.
+services:
+  eduspace-gateway:
+    build: .
+    container_name: eduspace-gateway-prod
+    restart: unless-stopped
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      CONFIG_SERVER_URL: http://eduspace-config-server:8888
+      EUREKA_URI: http://eduspace-eureka-server:8761/eureka/
+      JWK_SET_URI: http://auth-ms:8080/.well-known/jwks.json
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:?defina CORS_ALLOWED_ORIGINS con el origen real del front}
+      TZ: America/Lima
+    ports:
+      - "28080:18080"
+    networks:
+      - eduspace-prod-net
+
+networks:
+  eduspace-prod-net:
+    external: true

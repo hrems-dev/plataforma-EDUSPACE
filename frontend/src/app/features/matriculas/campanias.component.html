@@ -1,0 +1,65 @@
+<div class="page">
+  <app-page-header titulo="Campañas de matrícula" subtitulo="Solo se puede matricular mientras haya una campaña abierta para el año.">
+    @if (esAdmin()) {
+      <button type="button" class="btn btn-primary" [disabled]="!anioId.value" (click)="nueva()">Nueva campaña</button>
+    }
+  </app-page-header>
+
+  <div class="toolbar">
+    <select class="input" [formControl]="anioId" (change)="cargar()" aria-label="Año académico">
+      @for (a of anios(); track a.id) { <option [ngValue]="a.id">Año {{ a.nombre }}</option> }
+    </select>
+  </div>
+
+  @if (!esAdmin()) {
+    <div class="aviso aviso-warn">Crear, abrir y cerrar campañas es una acción del administrador.</div>
+  }
+
+  <div class="card">
+    <div class="table-wrap">
+      <table class="table">
+        <thead><tr><th>Campaña</th><th>Inicio</th><th>Fin</th><th>Estado</th><th></th></tr></thead>
+        <tbody>
+          @for (c of campanias(); track c.id) {
+            <tr>
+              <td><strong>{{ c.nombre }}</strong></td>
+              <td>{{ c.fechaInicio | date: 'dd/MM/yyyy' }}</td>
+              <td>{{ c.fechaFin | date: 'dd/MM/yyyy' }}</td>
+              <td><span [class]="'badge ' + clase(c.estado)">{{ c.estado }}</span></td>
+              <td class="acciones">
+                @if (esAdmin()) {
+                  @if (c.estado !== 'CERRADA') { <button type="button" class="btn btn-sm" (click)="editar(c)">Editar</button> }
+                  @if (c.estado === 'PLANIFICADA') { <button type="button" class="btn btn-sm btn-primary" (click)="abrirCampania(c)">Abrir</button> }
+                  @if (c.estado === 'ABIERTA') { <button type="button" class="btn btn-sm" (click)="cerrarCampania(c)">Cerrar</button> }
+                }
+              </td>
+            </tr>
+          } @empty {
+            <tr><td colspan="5" class="vacio">{{ cargando() ? 'Cargando…' : 'Este año aún no tiene campañas.' }}</td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+@if (abierto()) {
+  <app-modal [titulo]="editando() ? 'Editar campaña' : 'Nueva campaña'" [ancho]="480" (cerrar)="cerrar()">
+    <form [formGroup]="form" (ngSubmit)="guardar()" id="form-campania" novalidate>
+      <div class="form-grid">
+        <div class="field full">
+          <label for="c-nombre">Nombre</label>
+          <input id="c-nombre" formControlName="nombre" />
+          @if (form.controls.nombre.touched && form.controls.nombre.invalid) { <span class="error">Obligatorio.</span> }
+        </div>
+        <div class="field"><label for="c-ini">Inicio</label><input id="c-ini" type="date" formControlName="fechaInicio" /></div>
+        <div class="field"><label for="c-fin">Fin</label><input id="c-fin" type="date" formControlName="fechaFin" /></div>
+      </div>
+      @if (errorForm()) { <div class="aviso aviso-danger" style="margin-top: 14px" role="alert">{{ errorForm() }}</div> }
+    </form>
+    <ng-container footer>
+      <button type="button" class="btn" (click)="cerrar()">Cancelar</button>
+      <button type="submit" form="form-campania" class="btn btn-primary" [disabled]="guardando()">{{ guardando() ? 'Guardando…' : 'Guardar' }}</button>
+    </ng-container>
+  </app-modal>
+}

@@ -1,0 +1,96 @@
+<div class="page">
+  <app-page-header titulo="Asistencia" [subtitulo]="ctx.seleccionado()?.nombreCompleto ?? ''">
+    @if (ctx.esApoderado() && ctx.seleccionado()) { <button type="button" class="btn btn-primary" (click)="nueva()">Justificar inasistencia</button> }
+  </app-page-header>
+
+  <app-selector-hijo />
+
+  @if (hijo(); as h) {
+    <section class="kpis" aria-label="Resumen de asistencia">
+      <div class="kpi">
+        <div class="etiqueta">Asistencia</div>
+        <div class="valor">{{ h.resumen.dias.porcentajeAsistencia | number: '1.0-0' }} %</div>
+        <div class="barra-cupo" [class]="'barra-cupo ' + nivel(h.resumen.dias.porcentajeAsistencia)" style="margin-top: 8px" role="img" [attr.aria-label]="h.resumen.dias.porcentajeAsistencia + ' por ciento'"><span [style.width.%]="h.resumen.dias.porcentajeAsistencia"></span></div>
+      </div>
+      <div class="kpi"><div class="etiqueta">Presente</div><div class="valor" style="color: var(--ok)">{{ h.resumen.dias.presentes }}</div></div>
+      <div class="kpi"><div class="etiqueta">Tardanzas</div><div class="valor" [style.color]="h.resumen.dias.tardanzas ? 'var(--warn)' : ''">{{ h.resumen.dias.tardanzas }}</div></div>
+      <div class="kpi"><div class="etiqueta">Faltas</div><div class="valor" [style.color]="h.resumen.dias.faltas ? 'var(--danger)' : ''">{{ h.resumen.dias.faltas }}</div></div>
+      <div class="kpi"><div class="etiqueta">Justificadas</div><div class="valor">{{ h.resumen.dias.justificadas }}</div></div>
+    </section>
+
+    <section class="card">
+      <div class="card-body" style="padding-bottom: 0"><h2>Últimos registros</h2></div>
+      <div class="table-wrap">
+        <table class="table">
+          <thead><tr><th>Fecha</th><th>Tipo</th><th>Estado</th></tr></thead>
+          <tbody>
+            @for (d of h.ultimos; track d.fecha + d.tipo + (d.cursoId ?? 0)) {
+              <tr>
+                <td>{{ d.fecha | date: 'EEEE dd/MM/yyyy' }}</td>
+                <td>{{ d.tipo === 'DIA' ? 'Del día' : 'Por curso' }}</td>
+                <td><span [class]="'badge ' + clase(d.estado)">{{ d.estado }}</span>@if (d.minutosTarde) { <span class="muted"> · {{ d.minutosTarde }} min</span> }</td>
+              </tr>
+            } @empty {
+              <tr><td colspan="3" class="vacio">Todavía no hay registros de asistencia.</td></tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </section>
+  } @else if (cargando()) {
+    <div class="muted">Cargando…</div>
+  }
+
+  @if (ctx.esApoderado()) {
+    <section class="card">
+      <div class="card-body" style="padding-bottom: 0"><h2>Justificaciones</h2></div>
+      <div class="table-wrap">
+        <table class="table">
+          <thead><tr><th>Rango</th><th>Tipo</th><th>Motivo</th><th>Estado</th></tr></thead>
+          <tbody>
+            @for (j of justificacionesHijo(); track j.id) {
+              <tr>
+                <td>{{ j.fechaDesde | date: 'dd/MM' }}{{ j.fechaHasta !== j.fechaDesde ? ' – ' + (j.fechaHasta | date: 'dd/MM') : '' }}</td>
+                <td>{{ j.tipo }}</td>
+                <td style="max-width: 320px">{{ j.motivo }}@if (j.comentarioResolucion) { <div class="muted">Respuesta: {{ j.comentarioResolucion }}</div> }</td>
+                <td><span [class]="'badge ' + claseJ(j.estado)">{{ j.estado }}</span>@if (j.estado === 'APROBADA') { <div class="muted">{{ j.faltasJustificadas ?? 0 }} faltas justificadas</div> }</td>
+              </tr>
+            } @empty {
+              <tr><td colspan="4" class="vacio">No hay justificaciones para este alumno.</td></tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </section>
+  }
+</div>
+
+@if (abierto()) {
+  <app-modal titulo="Justificar inasistencia" [ancho]="520" (cerrar)="cerrar()">
+    <form [formGroup]="form" (ngSubmit)="enviar()" id="form-just" novalidate>
+      <p style="margin-top: 0">Alumno: <strong>{{ ctx.seleccionado()?.nombreCompleto }}</strong></p>
+      <div class="form-grid">
+        <div class="field"><label for="j-desde">Desde</label><input id="j-desde" type="date" formControlName="fechaDesde" /></div>
+        <div class="field"><label for="j-hasta">Hasta</label><input id="j-hasta" type="date" formControlName="fechaHasta" /></div>
+        <div class="field full">
+          <label for="j-tipo">Motivo</label>
+          <select id="j-tipo" formControlName="tipo"><option value="MEDICA">Médico</option><option value="FAMILIAR">Familiar</option><option value="OTRO">Otro</option></select>
+        </div>
+        <div class="field full">
+          <label for="j-det">Detalle</label>
+          <textarea id="j-det" rows="3" formControlName="motivo" style="padding: 10px 12px; min-height: 80px"></textarea>
+          @if (form.controls.motivo.touched && form.controls.motivo.invalid) { <span class="error">Cuéntanos brevemente el motivo.</span> }
+        </div>
+        <div class="field full">
+          <label for="j-arch">Constancia o sustento (opcional, máx. 5 MB)</label>
+          <input id="j-arch" type="file" accept=".pdf,.jpg,.jpeg,.png" (change)="elegirArchivo($event)" />
+        </div>
+      </div>
+      @if (errorForm()) { <div class="aviso aviso-danger" style="margin-top: 14px" role="alert">{{ errorForm() }}</div> }
+    </form>
+    <ng-container footer>
+      <button type="button" class="btn" (click)="cerrar()">Cancelar</button>
+      <button type="submit" form="form-just" class="btn btn-primary" [disabled]="guardando()">{{ guardando() ? 'Enviando…' : 'Enviar' }}</button>
+    </ng-container>
+  </app-modal>
+}

@@ -1,0 +1,52 @@
+version: '3.8'
+
+services:
+  tareas-db:
+    image: postgres:16-alpine
+    container_name: eduspace-tareas-db-prod
+    environment:
+      POSTGRES_DB: tareas_db
+      POSTGRES_USER: ${DB_USERNAME:-eduspace}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-eduspace_prod_secret}
+      TZ: America/Lima
+    volumes:
+      - tareas_prod_data:/var/lib/postgresql/data
+    networks:
+      - eduspace-prod-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-eduspace} -d tareas_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  tareas-ms:
+    build: .
+    container_name: eduspace-tareas-ms-prod
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      DB_HOST: tareas-db
+      DB_PORT: 5432
+      DB_NAME: tareas_db
+      DB_USERNAME: ${DB_USERNAME:-eduspace}
+      DB_PASSWORD: ${DB_PASSWORD:-eduspace_prod_secret}
+      CONFIG_SERVER_URL: http://eduspace-config-server:8888
+      EUREKA_URI: http://eduspace-eureka-server:8761/eureka/
+      KAFKA_BOOTSTRAP_SERVERS: eduspace-kafka:9092
+      MINIO_ENDPOINT: http://eduspace-minio:9000
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:-minioadmin}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:-minioadmin}
+      JWK_SET_URI: http://eduspace-auth-ms:8080/.well-known/jwks.json
+      TZ: America/Lima
+    depends_on:
+      tareas-db:
+        condition: service_healthy
+    networks:
+      - eduspace-prod-net
+
+volumes:
+  tareas_prod_data:
+
+networks:
+  eduspace-prod-net:
+    external: true
+

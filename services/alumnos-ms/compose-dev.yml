@@ -1,0 +1,23 @@
+# DEV: solo la base de datos de este servicio; la aplicación corre con Maven.
+name: eduspace-alumnos-dev
+services:
+  alumnos-db:
+    image: postgres:16-alpine
+    container_name: eduspace-alumnos-db
+    environment:
+      POSTGRES_DB: alumnos_db
+      POSTGRES_USER: ${DB_USER:-eduspace}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-eduspace}
+      TZ: America/Lima
+    ports:
+      - "15442:5432"
+    volumes:
+      - alumnos-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-eduspace} -d alumnos_db"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  alumnos-db-data:

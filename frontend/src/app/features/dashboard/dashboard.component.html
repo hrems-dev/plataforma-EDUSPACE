@@ -1,0 +1,142 @@
+<div class="page">
+  <app-page-header
+    [titulo]="saludo() + ', ' + (nombre()?.username ?? '')"
+    [subtitulo]="datos().anio ? 'Año académico ' + datos().anio!.nombre + ' · resumen de hoy' : 'No hay un año académico activo'"
+  />
+
+  <!-- 1. Lo que necesita atención -->
+  <div class="atencion-barra">
+    <button type="button" class="campana" [class.activa]="verAtencion()" (click)="verAtencion.set(!verAtencion())"
+            [attr.aria-expanded]="verAtencion()" aria-controls="t-pend"
+            [attr.aria-label]="(verAtencion() ? 'Ocultar' : 'Mostrar') + ' notificaciones de atención'">
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+      @if (!cargando() && pendientes().length > 0) { <span class="campana-num">{{ pendientes().length }}</span> }
+    </button>
+  </div>
+
+  @if (verAtencion()) {
+  <section class="card atencion-flotante" aria-labelledby="t-pend">
+    <div class="card-body">
+      <h2 id="t-pend" class="sec-titulo">Necesita tu atención</h2>
+      @if (cargando()) {
+        <p class="muted">Revisando matrículas, cobranza, cupos y justificaciones…</p>
+      } @else if (pendientes().length === 0) {
+        <div class="aviso aviso-ok">Todo al día: no hay pendientes urgentes. Buen momento para revisar los accesos rápidos.</div>
+      } @else {
+        <ul class="pend">
+          @for (p of pendientes(); track p.titulo) {
+            <li [class]="'pend-item ' + p.nivel">
+              <span class="pend-punto" aria-hidden="true"></span>
+              <div class="pend-txt">
+                <strong>{{ p.titulo }}</strong>
+                <span class="muted">{{ p.detalle }}</span>
+              </div>
+              <span class="pend-falta" tabindex="0" role="button" [attr.aria-label]="'Qué falta: ' + p.falta.join(', ')">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+                <span class="pend-falta-pop" role="tooltip">
+                  <strong>Qué falta por hacer</strong>
+                  <ol>
+                    @for (f of p.falta; track f) { <li>{{ f }}</li> }
+                  </ol>
+                </span>
+              </span>
+              <a class="btn btn-sm" [routerLink]="camino(p.ruta)" [queryParams]="consulta(p.ruta)">{{ p.accion }}</a>
+            </li>
+          }
+        </ul>
+      }
+    </div>
+  </section>
+  }
+
+  <!-- 2. Indicadores -->
+  <section class="kpis" aria-label="Indicadores">
+    <div class="kpi">
+      <div class="kpi-header"><div class="etiqueta">Alumnos matriculados</div></div>
+      <div class="valor">{{ valor(datos().matriculados) }}</div>
+      <div class="kpi-footer"><a class="nota" routerLink="/matriculas">Ver matrículas →</a></div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-header"><div class="etiqueta">Vacantes disponibles</div></div>
+      <div class="valor" [style.color]="datos().cupos && vacantes() === 0 ? 'var(--danger)' : 'var(--ink)'">{{ datos().cupos ? vacantes() : '—' }}</div>
+      <div class="kpi-footer"><a class="nota" routerLink="/matriculas/cupos">Ver cupos →</a></div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-header"><div class="etiqueta">Secciones del año</div></div>
+      <div class="valor">{{ datos().secciones ? datos().secciones!.length : '—' }}</div>
+      <div class="kpi-footer"><a class="nota" routerLink="/planificacion/secciones">Ver secciones →</a></div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-header"><div class="etiqueta">Docentes</div></div>
+      <div class="valor">{{ valor(datos().docentes) }}</div>
+      <div class="kpi-footer"><a class="nota" routerLink="/planificacion/docentes">Ver docentes →</a></div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-header"><div class="etiqueta">Por cobrar (vencido)</div></div>
+      <div class="valor" [style.color]="(datos().deuda ?? 0) > 0 ? 'var(--danger)' : 'var(--ink)'">{{ soles(datos().deuda) }}</div>
+      <div class="kpi-footer"><a class="nota" routerLink="/pagos/morosos">{{ valor(datos().morosos) }} alumno(s) →</a></div>
+    </div>
+    @if (esAdmin() && datos().usuarios !== null) {
+      <div class="kpi">
+        <div class="kpi-header"><div class="etiqueta">Usuarios activos</div></div>
+        <div class="valor">{{ valor(datos().usuarios) }}</div>
+        <div class="kpi-footer"><a class="nota" routerLink="/usuarios">Administrar →</a></div>
+      </div>
+    }
+  </section>
+
+  <div class="dos-col">
+    <!-- 3. Cupos -->
+    <section class="card" aria-labelledby="t-cupos">
+      <div class="card-body">
+        <div class="sec-cab">
+          <h2 id="t-cupos" class="sec-titulo">Ocupación de las secciones</h2>
+          <a class="btn btn-sm" routerLink="/matriculas/cupos">Ver todo</a>
+        </div>
+        @if (cuposTop().length === 0) {
+          <p class="muted">{{ cargando() ? 'Cargando…' : 'Aún no hay secciones con cupos. Crea secciones para el año activo.' }}</p>
+        }
+        @for (c of cuposTop(); track c.seccionId) {
+          <div class="cupo-fila">
+            <span class="cupo-nom">{{ nombreCupo(c) }}</span>
+            <div [class]="'barra-cupo ' + nivelCupo(c)" role="img" [attr.aria-label]="porcentaje(c) + ' por ciento ocupado'"><span [style.width.%]="porcentaje(c)"></span></div>
+            <span class="muted cupo-num">{{ c.ocupados }}/{{ c.capacidad }}</span>
+          </div>
+        }
+      </div>
+    </section>
+
+    <!-- 4. Puesta en marcha / accesos rápidos -->
+    <section class="card" aria-labelledby="t-acc">
+      <div class="card-body">
+        @if (!configurado() && !cargando()) {
+          <div class="sec-cab">
+            <h2 class="sec-titulo">Puesta en marcha</h2>
+            <span class="badge badge-gray">{{ pasosHechos() }} de {{ pasos().length }}</span>
+          </div>
+          <ul class="pasos">
+            @for (p of pasos(); track p.titulo) {
+              <li [class.hecho]="p.hecho">
+                <span class="paso-marca" aria-hidden="true">{{ p.hecho ? '✓' : '' }}</span>
+                <div class="pend-txt">
+                  @if (p.hecho) { <span>{{ p.titulo }}</span> } @else { <a [routerLink]="p.ruta"><strong>{{ p.titulo }}</strong></a> }
+                  @if (!p.hecho) { <span class="muted">{{ p.ayuda }}</span> }
+                </div>
+              </li>
+            }
+          </ul>
+        }
+        <h2 id="t-acc" class="sec-titulo" [style.margin-top.px]="configurado() ? 0 : 18">Accesos rápidos</h2>
+        <div class="accesos">
+          @for (a of accesos(); track a.ruta) {
+            <a class="acceso" [routerLink]="camino(a.ruta)" [queryParams]="consulta(a.ruta)">
+              <strong>{{ a.etiqueta }}</strong>
+              <span class="muted">{{ a.ayuda }}</span>
+            </a>
+          }
+        </div>
+        <p class="muted atajo">Consejo: pulsa <kbd>Ctrl</kbd> + <kbd>K</kbd> en cualquier pantalla para ir a donde quieras o buscar un alumno.</p>
+      </div>
+    </section>
+  </div>
+</div>

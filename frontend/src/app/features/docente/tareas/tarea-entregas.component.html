@@ -1,0 +1,63 @@
+<div class="page">
+  @if (tarea(); as t) {
+    <app-page-header [titulo]="t.titulo" [subtitulo]="'Entrega: ' + (t.fechaEntrega | date: 'dd/MM/yyyy HH:mm') + ' · puntaje máximo ' + t.puntajeMaximo">
+      <span [class]="'badge ' + (t.estado === 'PUBLICADA' ? 'badge-ok' : t.estado === 'CERRADA' ? 'badge-warn' : 'badge-gray')">{{ t.estado }}</span>
+      <a class="btn" routerLink="/docente/tareas">Volver</a>
+    </app-page-header>
+    @if (t.descripcion) { <div class="card"><div class="card-body" style="white-space: pre-line">{{ t.descripcion }}</div></div> }
+  }
+
+  <div class="card">
+    <div class="table-wrap">
+      <table class="table">
+        <thead><tr><th>Alumno</th><th>Estado</th><th>Entregada</th><th>Archivos</th><th>Nota</th><th></th></tr></thead>
+        <tbody>
+          @for (f of entregas(); track f.matriculaId) {
+            <tr>
+              <td><strong>{{ f.alumnoNombre }}</strong></td>
+              <td><span [class]="'badge ' + clase(f.estado)">{{ texto(f.estado) }}</span>@if (f.entrega?.esTardia) { <span class="badge badge-danger" style="margin-left: 4px">Tardía</span> }</td>
+              <td class="muted">{{ f.entrega ? (f.entrega.entregadaEn | date: 'dd/MM HH:mm') : '—' }}@if (f.entrega && f.entrega.version > 1) { <div>versión {{ f.entrega.version }}</div> }</td>
+              <td>
+                @for (a of f.entrega?.archivos ?? []; track a.id) { <button type="button" class="btn btn-sm" style="margin: 0 6px 4px 0" (click)="descargar(f, a.id)">{{ a.nombreArchivo }}</button> }
+                @if (f.entrega?.comentario) { <div class="muted">“{{ f.entrega!.comentario }}”</div> }
+              </td>
+              <td>{{ f.entrega?.nota ?? '—' }}</td>
+              <td class="acciones">
+                @if (f.entrega) {
+                  <button type="button" class="btn btn-sm btn-primary" (click)="abrir(f, false)">{{ f.entrega.estado === 'CALIFICADA' ? 'Recalificar' : 'Calificar' }}</button>
+                  <button type="button" class="btn btn-sm" (click)="abrir(f, true)">Devolver</button>
+                }
+              </td>
+            </tr>
+          } @empty {
+            <tr><td colspan="6" class="vacio">{{ cargando() ? 'Cargando…' : 'No hay alumnos matriculados en la sección.' }}</td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+@if (calificando(); as c) {
+  <app-modal [titulo]="(c.devolver ? 'Devolver tarea · ' : 'Calificar · ') + c.fila.alumnoNombre" [ancho]="480" (cerrar)="cerrar()">
+    <form [formGroup]="form" (ngSubmit)="guardar()" id="form-calificar" novalidate>
+      <div class="form-grid">
+        @if (!c.devolver) {
+          <div class="field full">
+            <label for="c-nota">Nota (0 a {{ tarea()?.puntajeMaximo }})</label>
+            <input id="c-nota" type="number" min="0" [max]="tarea()?.puntajeMaximo ?? 20" step="0.5" formControlName="nota" />
+          </div>
+        }
+        <div class="field full">
+          <label for="c-retro">{{ c.devolver ? 'Qué debe corregir (obligatorio)' : 'Retroalimentación (opcional)' }}</label>
+          <textarea id="c-retro" rows="3" formControlName="retroalimentacion" style="padding: 10px 12px; min-height: 90px"></textarea>
+        </div>
+      </div>
+      @if (errorForm()) { <div class="aviso aviso-danger" style="margin-top: 14px" role="alert">{{ errorForm() }}</div> }
+    </form>
+    <ng-container footer>
+      <button type="button" class="btn" (click)="cerrar()">Cancelar</button>
+      <button type="submit" form="form-calificar" class="btn btn-primary" [disabled]="guardando()">{{ c.devolver ? 'Devolver' : 'Guardar nota' }}</button>
+    </ng-container>
+  </app-modal>
+}

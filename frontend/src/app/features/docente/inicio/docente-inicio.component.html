@@ -1,0 +1,86 @@
+<div class="page">
+  <app-page-header [titulo]="'Hola, ' + saludo()" [subtitulo]="ctx() ? 'Año ' + ctx()!.anio.nombre + (ctx()!.periodoActivo ? ' · ' + ctx()!.periodoActivo!.nombre : '') : ''" />
+
+  @if (error()) {
+    <div class="aviso aviso-warn" role="alert">
+      {{ error() }} Si tu cuenta es nueva, pide a Secretaría que vincule tu usuario con tu ficha de docente.
+    </div>
+  }
+
+  @if (ctx(); as c) {
+    <section class="kpis" aria-label="Resumen">
+      <div class="kpi"><div class="etiqueta">Cursos que dictas</div><div class="valor">{{ c.asignaciones.length }}</div></div>
+      <div class="kpi"><div class="etiqueta">Clases hoy ({{ nombreDia }})</div><div class="valor">{{ clasesHoy().length }}</div></div>
+      <div class="kpi"><div class="etiqueta">Tareas con entregas por calificar</div><div class="valor" [style.color]="tareasPorCalificar().length ? 'var(--warn)' : ''">{{ tareasPorCalificar().length }}</div></div>
+    </section>
+
+    <section class="card">
+      <div class="card-body">
+        <h2 style="margin-bottom: 12px">Tu horario de hoy</h2>
+        @for (k of clasesHoy(); track k.id) {
+          <div style="display: flex; gap: 14px; align-items: center; padding: 10px 0; border-top: 1px solid var(--line)">
+            <div style="width: 96px; font-weight: 600">{{ hora(k.horaInicio) }} – {{ hora(k.horaFin) }}</div>
+            <div style="flex: 1"><strong>{{ k.cursoNombre }}</strong><div class="muted">{{ k.seccionNombre }}{{ k.aulaNombre ? ' · ' + k.aulaNombre : '' }}</div></div>
+            <a class="btn btn-sm" routerLink="/docente/asistencia">Pasar lista</a>
+          </div>
+        } @empty {
+          <div class="muted">{{ diaHoy === 0 || diaHoy === 6 ? 'Hoy no hay clases.' : 'No tienes clases programadas hoy.' }}</div>
+        }
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="card-body">
+        <h2 style="margin-bottom: 12px">Por calificar</h2>
+        @for (t of tareasPorCalificar(); track t.id) {
+          <div style="display: flex; gap: 14px; align-items: center; padding: 10px 0; border-top: 1px solid var(--line)">
+            <div style="flex: 1"><strong>{{ t.titulo }}</strong><div class="muted">{{ t.entregadas }} entregadas · {{ t.calificadas }} calificadas</div></div>
+            <a class="btn btn-sm btn-primary" [routerLink]="['/docente/tareas', t.id]">Calificar</a>
+          </div>
+        } @empty {
+          <div class="muted">No hay entregas pendientes de calificar.</div>
+        }
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="card-body">
+        <div class="toolbar" style="justify-content: space-between; margin-bottom: 14px">
+          <h2>Mis cursos asignados</h2>
+          <span class="muted">{{ c.asignaciones.length }} curso(s)</span>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px">
+          @for (a of c.asignaciones; track a.id) {
+            <div style="border: 1px solid var(--line); border-radius: 12px; padding: 14px; display: flex; flex-direction: column; justify-content: space-between; gap: 12px; background: var(--bg)">
+              <div>
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 8px">
+                  <strong style="font-size: 15px; color: var(--ink)">{{ a.cursoNombre }}</strong>
+                  <span class="badge" style="background: var(--primary-soft); color: var(--primary); font-weight: 600">{{ a.seccionNombre }}</span>
+                </div>
+                <div class="muted" style="font-size: 12px; margin-top: 6px">
+                  @if (infoCurso(a.seccionId); as info) {
+                    <span>{{ info.alumnos }} alumno(s) matriculado(s)</span>
+                    @if (info.aula) { <span> · {{ info.aula }}</span> }
+                    @if (info.turno) { <span> · Turno {{ info.turno.toLowerCase() }}</span> }
+                  } @else {
+                    <span>Cargando datos de la sección…</span>
+                  }
+                </div>
+              </div>
+
+              <div class="toolbar" style="gap: 6px">
+                <a class="btn btn-sm btn-primary" routerLink="/docente/notas">Notas</a>
+                <a class="btn btn-sm" routerLink="/docente/asistencia">Asistencia</a>
+                <a class="btn btn-sm" routerLink="/docente/tareas">Tareas</a>
+                <a class="btn btn-sm" routerLink="/docente/examenes">Exámenes</a>
+              </div>
+            </div>
+          } @empty {
+            <div class="muted">No tienes cursos asignados para este año académico.</div>
+          }
+        </div>
+      </div>
+    </section>
+  }
+</div>

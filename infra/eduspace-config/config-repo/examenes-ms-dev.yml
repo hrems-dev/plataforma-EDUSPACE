@@ -1,0 +1,28 @@
+# DEV: la aplicación corre con Maven; solo la base, Kafka y MinIO corren en Docker.
+server:
+  port: 8097
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:15447/examenes_db
+    username: ${DB_USER:eduspace}
+    password: ${DB_PASSWORD:eduspace}
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:19092}
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          jwk-set-uri: ${JWK_SET_URI:http://localhost:8090/.well-known/jwks.json}
+eureka:
+  client:
+    registry-fetch-interval-seconds: 5      # DEV: ve a los demás servicios en segundos, no en 30 s
+    service-url:
+      defaultZone: ${EUREKA_URI:http://localhost:18761/eureka/}
+  instance:
+    hostname: localhost          # en DEV todo corre en la misma máquina: evita registrar una IP que cambia
+    prefer-ip-address: false
+    instance-id: ${spring.application.name}:${server.port}
+
+# Token compartido entre servicios para /internal/** (header X-Service-Token). Sin él, /internal responde 401.
+eduspace:
+  service-token: ${SERVICE_TOKEN:eduspace-dev-service-token}

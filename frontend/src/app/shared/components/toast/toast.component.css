@@ -1,0 +1,7 @@
+.lista { position: fixed; top: 16px; right: 16px; z-index: 100; display: flex; flex-direction: column; gap: 10px; width: min(380px, calc(100vw - 32px)); }
+.toast { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 14px; border-radius: 12px; font-weight: 600; box-shadow: 0 10px 30px rgba(20, 33, 61, 0.2); }
+.toast button { border: 0; background: transparent; font-size: 20px; cursor: pointer; min-width: 32px; min-height: 32px; }
+.success { background: #ddf3ea; color: #0b5d41; }
+.error { background: #fde3e0; color: #8e1c12; }
+.warning { background: #fff1d6; color: #8a4b08; }
+.info { background: #e3eaff; color: #1f3fb0; }
