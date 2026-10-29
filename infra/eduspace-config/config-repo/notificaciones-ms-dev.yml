@@ -25,7 +25,7 @@ spring:
     oauth2:
       resourceserver:
         jwt:
-          jwk-set-uri: ${JWK_SET_URI:http://localhost:8090/.well-known/jwks.json}
+          jwk-set-uri: ${JWK_SET_URI:http://localhost:18090/realms/eduspace/protocol/openid-connect/certs}
   mail:
     host: ${SMTP_HOST:localhost}
     port: ${SMTP_PORT:11025}

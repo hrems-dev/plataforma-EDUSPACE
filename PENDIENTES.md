@@ -28,6 +28,9 @@ aforo del aula, importación CSV, ficha de salud cerrada por defecto.
 
 - Keycloak (DEV) como emisor alterno: `infra/keycloak/` (realm `eduspace`, clientes `eduspace-web` con PKCE y `eduspace-e2e`, usuarios con atributo `usuarioId`) y modo `keycloak` en el front. Verificado contra el sistema real: 13/13 comprobaciones por el Gateway (401 sin token y con firma alterada, 403 por rol, claim `usuarioId` en pago-ms y planificacion-ms, token de auth-ms rechazado), flujo código+PKCE completo, refresh con rotación y reuso rechazado, redirect_uri ajena y *password grant* rechazados, bloqueo por fuerza bruta.
 
+## Hecho el 2026-10-27/28
+- Inicio del admin (estadísticas, pre-matrículas, aulas con ficha, cursos y docentes), sitio público, datos para matricular, alineación con pagatu (Keycloak por defecto en DEV, `X-Trace-ID`), CRUD de notificaciones con selector de destinatarios y **armado automático de horarios**. Detalle, estado de los datos y pendientes: `docs/08-avance-2026-10-28.md`.
+
 ## Pendiente
 
 | Pendiente | Motivo / qué lo destraba |

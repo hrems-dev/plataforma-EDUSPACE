@@ -15,6 +15,10 @@ Resumen cronológico de lo hecho sobre `eduspace-completo/`. El detalle técnico
 | 9 | Corrida de punta a punta (`tools/e2e/`) | 6 escenarios, ~150 verificaciones, todos OK; encontró 6 bugs más que los mocks no ven. |
 | 10 | Consumidor de `tarea.recordatorio` en notificaciones | Plantilla `V4` + prueba. |
 | 11 | Construir `auth-ms` | Login, JWT RS256/JWKS, refresh rotativo, bloqueo, ABM de usuarios; 15 pruebas; los escenarios e2e ahora usan tokens reales. |
+| 12 | Front web completo, Keycloak y sitio público (oct. 26–27) | Panel por rol, login con Keycloak (PKCE), sitio público y páginas por rol. |
+| 13 | Inicio, matrícula y notificaciones del ADMIN (oct. 27–28) | Inicio con estadísticas, aulas y cursos/docentes; datos para matricular; CRUD de plantillas y avisos con selector de destinatarios. |
+| 14 | Armado automático de horarios (oct. 28) | Algoritmo sin cruces, malla en lote y generación por secciones. Detalle en `08-avance-2026-10-28.md`. |
+| 15 | Menú por espacios de trabajo (oct. 29) | 8 entradas con pestañas, paneles de aulas y cursos, aulas disponibles. Detalle en `09-espacios-de-trabajo.md`. |
 
 ## Estado final
 - 10 servicios con base de datos + Config Server, Eureka y Gateway funcionando juntos.

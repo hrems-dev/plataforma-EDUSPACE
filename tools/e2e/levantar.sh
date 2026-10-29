@@ -3,8 +3,22 @@
 # Config Server, Eureka, auth-ms (:8090), los 9 servicios y el Gateway.
 # Requisitos: podman (o docker) y jars compilados (./compilar.sh).
 # Uso: ./levantar.sh        (recrea las bases desde cero)   |   ./levantar.sh --sin-reset  (solo arranca las aplicaciones)
+# Emisor de tokens (como Pagatu: Keycloak en DEV, auth-ms en PROD): por defecto Keycloak (se levanta si no está) y el frontend en
+# modo keycloak. Con --auth-propio los servicios confían en auth-ms (lo que necesitan los escenarios de tools/e2e: ./levantar.sh --auth-propio)
+# y el frontend debe estar en `npm run auth:eduspace`.
 AQUI="$(cd "$(dirname "$0")" && pwd)"; RAIZ="$(cd "$AQUI/../.." && pwd)"; LOGS="$AQUI/logs"; mkdir -p "$LOGS"
 CT=${CONTENEDORES:-podman}
+ARGS=(); AUTH_PROPIO=0
+for a in "$@"; do [ "$a" = "--auth-propio" ] && AUTH_PROPIO=1 || ARGS+=("$a"); done
+set -- "${ARGS[@]}"
+if [ $AUTH_PROPIO = 1 ]; then
+  export JWK_SET_URI=http://localhost:8090/.well-known/jwks.json
+  echo "Emisor de tokens: auth-ms (login propio)"
+else
+  unset JWK_SET_URI   # el config-repo de DEV apunta a Keycloak
+  curl -sf localhost:18090/realms/eduspace >/dev/null || "$RAIZ/infra/keycloak/levantar-dev.sh" || exit 1
+  echo "Emisor de tokens: Keycloak (http://localhost:18090/realms/eduspace)"
+fi
 # Si el 19092 ya lo usa otro Kafka (p. ej. el de pagatu) se usa el 19093 para no pisarlo.
 [ "$1" != "--sin-reset" ] && "$AQUI/detener.sh" >/dev/null 2>&1
 KP=19092; ss -ltn 2>/dev/null | grep -q ":19092 " && [ "$1" != "--sin-reset" ] && KP=19093

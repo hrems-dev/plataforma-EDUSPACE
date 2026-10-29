@@ -1,66 +1,153 @@
 <div class="page">
-  <app-page-header titulo="Plantillas y envío de avisos" subtitulo="Textos de los avisos automáticos y comunicados manuales. En el texto, {{ '{{variable}}' }} se reemplaza con los datos del evento." />
+  <app-page-header titulo="Avisos y plantillas" subtitulo="Envía comunicados a quien elijas, administra los textos de los avisos automáticos y revisa lo ya enviado." />
 
-  <section class="card">
-    <div class="card-body">
-      <h2 style="margin-bottom: 12px">Enviar un aviso manual</h2>
-      <form [formGroup]="formEnvio" (ngSubmit)="enviar()" novalidate>
-        <div class="form-grid">
-          <div class="field full">
-            <label for="e-ids">Destinatarios (números de usuario separados por coma)</label>
-            <input id="e-ids" formControlName="usuarioIds" placeholder="4, 5, 6" />
-            @if (formEnvio.controls.usuarioIds.touched && formEnvio.controls.usuarioIds.invalid) { <span class="error">Indica al menos un destinatario.</span> }
-          </div>
-          <div class="field full">
-            <label for="e-tit">Título</label>
-            <input id="e-tit" formControlName="titulo" />
-          </div>
-          <div class="field full">
-            <label for="e-msg">Mensaje</label>
-            <textarea id="e-msg" rows="3" formControlName="mensaje" style="padding: 10px 12px; min-height: 90px"></textarea>
-          </div>
-          <div class="field full">
-            <div class="checks" role="group" aria-label="Canales">
-              <label><input type="checkbox" formControlName="inApp" /> En la app</label>
-              <label><input type="checkbox" formControlName="email" /> Correo</label>
-              <label><input type="checkbox" formControlName="push" /> Push</label>
+  <div class="chips" role="tablist" aria-label="Secciones">
+    <button type="button" role="tab" class="chip" [class.on]="pestana() === 'enviar'" [attr.aria-selected]="pestana() === 'enviar'" (click)="ir('enviar')">Enviar un aviso</button>
+    <button type="button" role="tab" class="chip" [class.on]="pestana() === 'plantillas'" [attr.aria-selected]="pestana() === 'plantillas'" (click)="ir('plantillas')">Plantillas ({{ plantillas().length }})</button>
+    <button type="button" role="tab" class="chip" [class.on]="pestana() === 'enviados'" [attr.aria-selected]="pestana() === 'enviados'" (click)="ir('enviados')">Avisos enviados</button>
+  </div>
+
+  @if (pestana() === 'enviar') {
+    <section class="card">
+      <div class="card-body">
+        <app-destinatarios (cambio)="alCambiarDestino($event)" />
+        <form [formGroup]="formEnvio" (ngSubmit)="enviar()" novalidate style="margin-top: 16px">
+          <div class="form-grid">
+            <div class="field full">
+              <label for="e-tit">Título</label>
+              <input id="e-tit" formControlName="titulo" maxlength="200" />
+              @if (formEnvio.controls.titulo.touched && formEnvio.controls.titulo.invalid) { <span class="error">El título es obligatorio.</span> }
+            </div>
+            <div class="field full">
+              <label for="e-msg">Mensaje</label>
+              <textarea id="e-msg" rows="3" formControlName="mensaje" style="padding: 10px 12px; min-height: 90px"></textarea>
+              @if (formEnvio.controls.mensaje.touched && formEnvio.controls.mensaje.invalid) { <span class="error">Escribe el mensaje.</span> }
+            </div>
+            <div class="field full">
+              <div class="checks" role="group" aria-label="Canales">
+                <label class="check"><input type="checkbox" formControlName="inApp" /> En la app</label>
+                <label class="check"><input type="checkbox" formControlName="push" /> Push (solo a quien tenga el celular registrado)</label>
+              </div>
+              <span class="muted">El correo no está disponible para avisos manuales.</span>
             </div>
           </div>
-        </div>
-        @if (resultado()) { <div class="aviso aviso-ok" style="margin-top: 14px" role="status">{{ resultado() }}</div> }
-        <button type="submit" class="btn btn-primary" style="margin-top: 14px" [disabled]="enviando()">{{ enviando() ? 'Enviando…' : 'Enviar aviso' }}</button>
-      </form>
-    </div>
-  </section>
+          @if (resultado(); as r) { <div [class]="'aviso ' + (r.ok ? 'aviso-ok' : 'aviso-danger')" style="margin-top: 14px" role="status">{{ r.texto }}</div> }
+          <button type="submit" class="btn btn-primary" style="margin-top: 14px" [disabled]="enviando() || !destino() || destino()!.usuarioIds.length === 0 || destino()!.calculando">
+            {{ enviando() ? 'Enviando…' : 'Enviar aviso' + (destino() && destino()!.usuarioIds.length ? ' a ' + destino()!.usuarioIds.length : '') }}
+          </button>
+        </form>
+      </div>
+    </section>
+  }
 
-  <section class="card">
-    <div class="card-body" style="padding-bottom: 0"><h2>Plantillas ({{ plantillas().length }})</h2></div>
-    <div class="table-wrap">
-      <table class="table">
-        <thead><tr><th>Código</th><th>Canal</th><th>Asunto</th><th>Texto</th><th>Estado</th><th></th></tr></thead>
-        <tbody>
-          @for (p of plantillas(); track p.id) {
-            <tr>
-              <td><strong>{{ p.codigo }}</strong></td>
-              <td>{{ canalTexto(p.canal) }}</td>
-              <td>{{ p.asunto ?? '—' }}</td>
-              <td class="muted" style="max-width: 360px">{{ p.cuerpo }}</td>
-              <td><span [class]="'badge ' + (p.activa ? 'badge-ok' : 'badge-gray')">{{ p.activa ? 'Activa' : 'Inactiva' }}</span></td>
-              <td class="acciones"><button type="button" class="btn btn-sm" (click)="editar(p)">Editar</button></td>
-            </tr>
-          }
-        </tbody>
-      </table>
-    </div>
-  </section>
+  @if (pestana() === 'plantillas') {
+    <section class="card">
+      <div class="card-body">
+        <div class="sec-cab">
+          <h2 class="sec-titulo">Plantillas</h2>
+          <button type="button" class="btn btn-primary btn-sm" (click)="nuevaPlantilla()">Nueva plantilla</button>
+        </div>
+        <p class="muted" style="margin: 0 0 8px">En el texto, {{ '{{variable}}' }} se reemplaza con los datos del evento. Las plantillas del sistema se pueden editar o desactivar, pero no eliminar.</p>
+      </div>
+      <div class="table-wrap">
+        <table class="table">
+          <thead><tr><th>Código</th><th>Canal</th><th>Asunto</th><th>Texto</th><th>Estado</th><th></th></tr></thead>
+          <tbody>
+            @for (p of plantillas(); track p.id) {
+              <tr>
+                <td><strong>{{ p.codigo }}</strong> @if (esDelSistema(p)) { <span class="badge badge-gray">Sistema</span> }</td>
+                <td>{{ canalTexto(p.canal) }}</td>
+                <td>{{ p.asunto ?? '—' }}</td>
+                <td class="muted" style="max-width: 360px">{{ p.cuerpo }}</td>
+                <td><span [class]="'badge ' + (p.activa ? 'badge-ok' : 'badge-gray')">{{ p.activa ? 'Activa' : 'Inactiva' }}</span></td>
+                <td class="acciones">
+                  <button type="button" class="btn btn-sm" (click)="editar(p)">Editar</button>
+                  @if (!esDelSistema(p)) { <button type="button" class="btn btn-sm" (click)="eliminarPlantilla(p)">Eliminar</button> }
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </section>
+  }
+
+  @if (pestana() === 'enviados') {
+    <section class="card">
+      <div class="card-body">
+        <div class="sec-cab"><h2 class="sec-titulo">Avisos enviados</h2><span class="muted">{{ total() }} en total</span></div>
+        <div class="toolbar">
+          <input class="input grow" type="search" placeholder="Buscar en el título o mensaje…" aria-label="Buscar" (change)="filtrar('texto', valor($event))" />
+          <select class="input" aria-label="Tipo" (change)="filtrar('tipo', valor($event))">
+            <option value="">Todos los tipos</option>
+            @for (t of tipos; track t.codigo) { <option [value]="t.codigo">{{ t.etiqueta }}</option> }
+          </select>
+          <select class="input" aria-label="Canal" (change)="filtrar('canal', valor($event))">
+            <option value="">Todos los canales</option>
+            @for (c of canales; track c) { <option [value]="c">{{ canalTexto(c) }}</option> }
+          </select>
+          <select class="input" aria-label="Estado" (change)="filtrar('estado', valor($event))">
+            <option value="">Todos los estados</option>
+            <option value="ENVIADA">Enviada</option><option value="PENDIENTE">Pendiente</option><option value="FALLIDA">Fallida</option><option value="DESCARTADA">Descartada</option>
+          </select>
+          <input class="input" type="number" min="1" placeholder="N.º de usuario" aria-label="Número de usuario" style="max-width: 150px" (change)="filtrar('usuarioId', valor($event))" />
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table class="table">
+          <thead><tr><th>Fecha</th><th>Usuario</th><th>Tipo</th><th>Canal</th><th>Aviso</th><th>Estado</th><th></th></tr></thead>
+          <tbody>
+            @for (n of lista(); track n.id) {
+              <tr>
+                <td class="muted">{{ n.creadaEn | date: 'dd/MM/yyyy HH:mm' }}</td>
+                <td>{{ n.usuarioId || 'sin resolver' }}</td>
+                <td>{{ tipoTexto(n.tipo) }}</td>
+                <td>{{ canalTexto(n.canal) }}</td>
+                <td style="max-width: 340px"><strong>{{ n.titulo }}</strong><br /><span class="muted">{{ n.mensaje }}</span></td>
+                <td><span [class]="'badge ' + claseEstado(n.estado)">{{ n.estado.toLowerCase() }}</span>@if (n.canal === 'IN_APP') { <br /><span class="muted">{{ n.leida ? 'leída' : 'sin leer' }}</span> }</td>
+                <td class="acciones">
+                  <button type="button" class="btn btn-sm" (click)="editarAviso(n)">Editar</button>
+                  <button type="button" class="btn btn-sm" (click)="eliminarAviso(n)">Eliminar</button>
+                </td>
+              </tr>
+            } @empty {
+              <tr><td colspan="7" class="muted">{{ cargandoLista() ? 'Cargando…' : 'No hay avisos que coincidan.' }}</td></tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      @if (totalPaginas() > 1) {
+        <div class="card-body toolbar" style="justify-content: space-between">
+          <span class="muted">Página {{ pagina() + 1 }} de {{ totalPaginas() }}</span>
+          <span>
+            <button type="button" class="btn btn-sm" [disabled]="pagina() === 0" (click)="cargarLista(pagina() - 1)">Anterior</button>
+            <button type="button" class="btn btn-sm" [disabled]="pagina() + 1 >= totalPaginas()" (click)="cargarLista(pagina() + 1)">Siguiente</button>
+          </span>
+        </div>
+      }
+    </section>
+  }
 </div>
 
-@if (editando(); as p) {
-  <app-modal [titulo]="'Plantilla ' + p.codigo + ' · ' + canalTexto(p.canal)" [ancho]="620" (cerrar)="cerrar()">
+@if (plantillaAbierta()) {
+  <app-modal [titulo]="editando() ? 'Plantilla ' + editando()!.codigo + ' · ' + canalTexto(editando()!.canal) : 'Nueva plantilla'" [ancho]="620" (cerrar)="cerrarPlantilla()">
     <form [formGroup]="formPlantilla" (ngSubmit)="guardarPlantilla()" id="form-plantilla" novalidate>
       <div class="form-grid">
-        @if (p.canal === 'EMAIL') {
-          <div class="field full"><label for="p-asunto">Asunto</label><input id="p-asunto" formControlName="asunto" /></div>
+        @if (!editando()) {
+          <div class="field">
+            <label for="p-cod">Código</label>
+            <input id="p-cod" formControlName="codigo" maxlength="60" placeholder="COMUNICADO_FERIADO" />
+            @if (formPlantilla.controls.codigo.touched && formPlantilla.controls.codigo.invalid) { <span class="error">Mayúsculas, números y guion bajo (mínimo 3).</span> }
+          </div>
+          <div class="field">
+            <label for="p-can">Canal</label>
+            <select id="p-can" formControlName="canal">
+              @for (c of canales; track c) { <option [value]="c">{{ canalTexto(c) }}</option> }
+            </select>
+          </div>
+        }
+        @if ((editando() ? editando()!.canal : formPlantilla.controls.canal.value) === 'EMAIL') {
+          <div class="field full"><label for="p-asunto">Asunto</label><input id="p-asunto" formControlName="asunto" maxlength="200" /></div>
         }
         <div class="field full">
           <label for="p-cuerpo">Texto</label>
@@ -72,8 +159,28 @@
       @if (errorForm()) { <div class="aviso aviso-danger" style="margin-top: 14px" role="alert">{{ errorForm() }}</div> }
     </form>
     <ng-container footer>
-      <button type="button" class="btn" (click)="cerrar()">Cancelar</button>
+      <button type="button" class="btn" (click)="cerrarPlantilla()">Cancelar</button>
       <button type="submit" form="form-plantilla" class="btn btn-primary" [disabled]="guardando()">Guardar</button>
+    </ng-container>
+  </app-modal>
+}
+
+@if (avisoEditando(); as n) {
+  <app-modal [titulo]="'Editar aviso #' + n.id" [ancho]="560" (cerrar)="avisoEditando.set(null)">
+    <form [formGroup]="formAviso" (ngSubmit)="guardarAviso()" id="form-aviso" novalidate>
+      <div class="form-grid">
+        <div class="field full"><label for="a-tit">Título</label><input id="a-tit" formControlName="titulo" maxlength="200" /></div>
+        <div class="field full">
+          <label for="a-msg">Mensaje</label>
+          <textarea id="a-msg" rows="4" formControlName="mensaje" style="padding: 10px 12px; min-height: 100px"></textarea>
+        </div>
+      </div>
+      <p class="muted" style="margin-top: 10px">Cambia el texto que ve el usuario {{ n.usuarioId }}. Los correos o push ya entregados no se modifican.</p>
+      @if (errorForm()) { <div class="aviso aviso-danger" style="margin-top: 14px" role="alert">{{ errorForm() }}</div> }
+    </form>
+    <ng-container footer>
+      <button type="button" class="btn" (click)="avisoEditando.set(null)">Cancelar</button>
+      <button type="submit" form="form-aviso" class="btn btn-primary" [disabled]="guardando()">Guardar</button>
     </ng-container>
   </app-modal>
 }

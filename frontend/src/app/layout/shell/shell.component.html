@@ -14,7 +14,7 @@
       @for (g of menu(); track g.titulo) {
         <div class="grupo">{{ g.titulo }}</div>
         @for (i of g.items; track i.ruta) {
-          <a class="item" [routerLink]="i.ruta" routerLinkActive="activo" (click)="cerrarMenu()">
+          <a class="item" [routerLink]="i.ruta" [class.activo]="esActivo(i)" [attr.aria-current]="esActivo(i) ? 'page' : null" (click)="cerrarMenu()">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path [attr.d]="i.icono" /></svg>
             <span>{{ i.etiqueta }}</span>
             @if (i.conContador && noLeidas() > 0) {
@@ -24,7 +24,6 @@
         }
       }
       @if (esKeycloak && esAdmin()) {
-        <div class="grupo">Administración</div>
         <a class="item" [href]="consolaAdmin" target="_blank" rel="noopener noreferrer">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z" /></svg>
           <span>Cuentas y roles (Keycloak)</span>
@@ -58,6 +57,16 @@
       </button>
     </header>
     <main class="principal">
+      @if (hubActual(); as h) {
+        <nav class="pestanas" [attr.aria-label]="h.hub.titulo">
+          <span class="pestanas-hub" [title]="h.hub.descripcion">{{ h.hub.titulo }}</span>
+          <div class="pestanas-lista" role="tablist">
+            @for (p of h.pestanas; track p.ruta) {
+              <a class="pestana" role="tab" [routerLink]="p.ruta" [class.on]="p.ruta === h.activa" [attr.aria-selected]="p.ruta === h.activa">{{ p.etiqueta }}</a>
+            }
+          </div>
+        </nav>
+      }
       <router-outlet />
     </main>
   </div>

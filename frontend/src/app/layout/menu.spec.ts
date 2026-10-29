@@ -1,6 +1,7 @@
 import { Route } from '@angular/router';
 import { routes } from '../app.routes';
 import { rutaInicial } from '../core/utils/landing';
+import { HUBS, hubDe } from './hubs';
 import { MENU } from './menu';
 
 /** Rutas hijas del shell con su regla de roles (`data.roles`); sin regla = cualquier usuario con sesión. */
@@ -75,5 +76,45 @@ describe('menú y rutas', () => {
   it('el ADMIN gana prioridad cuando tiene varios roles', () => {
     expect(rutaInicial(['DOCENTE', 'ADMIN'])).toBe('/inicio');
     expect(rutaInicial(['APODERADO', 'DOCENTE'])).toBe('/docente/inicio');
+  });
+});
+
+describe('espacios de trabajo (hubs)', () => {
+  const rutas = rutasDelShell();
+
+  it('toda pestaña apunta a una ruta que existe y que su rol puede abrir', () => {
+    const problemas: string[] = [];
+    for (const h of HUBS) {
+      for (const p of h.pestanas) {
+        if (!rutas.has(p.ruta)) problemas.push(`${h.id}: ${p.ruta} no existe`);
+        const permitidos = rutas.get(p.ruta);
+        if (permitidos) for (const r of p.roles) if (!permitidos.includes(r)) problemas.push(`${h.id}: ${r} ve «${p.etiqueta}» pero la ruta no lo admite`);
+      }
+    }
+    expect(problemas).toEqual([]);
+  });
+
+  it('ninguna ruta está en dos espacios y la primera pestaña la ve todo rol del hub', () => {
+    const vistas = HUBS.flatMap(h => h.pestanas.map(p => p.ruta));
+    expect(vistas.filter((r, i) => vistas.indexOf(r) !== i)).toEqual([]);
+    for (const h of HUBS) {
+      const entrada = MENU.flatMap(g => g.items).find(i => i.hub === h.id)!;
+      expect(entrada, h.id).toBeDefined();
+      for (const rol of entrada.roles) expect(h.pestanas[0].roles.includes(rol), `${rol} no puede abrir la primera pestaña de ${h.id}`).toBe(true);
+    }
+  });
+
+  it('una URL se asigna a la pestaña más específica y los detalles caen en su pestaña', () => {
+    expect(hubDe('/alumnos/importar')?.pestana.etiqueta).toBe('Importar alumnos');
+    expect(hubDe('/alumnos/12')?.pestana.etiqueta).toBe('Alumnos');
+    expect(hubDe('/matriculas?nueva=1')?.pestana.etiqueta).toBe('Matrículas');
+    expect(hubDe('/matriculas/cupos')?.pestana.etiqueta).toBe('Cupos');
+    expect(hubDe('/planificacion/aulas-disponibles')?.hub.id).toBe('horarios');
+    expect(hubDe('/planificacion/aulas')?.hub.id).toBe('aulas');
+    expect(hubDe('/inicio')).toBeNull();
+  });
+
+  it('el menú del personal queda corto', () => {
+    expect(itemsDe('ADMIN').length).toBeLessThanOrEqual(15);
   });
 });

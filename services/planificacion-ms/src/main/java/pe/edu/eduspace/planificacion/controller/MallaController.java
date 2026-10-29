@@ -5,6 +5,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import pe.edu.eduspace.planificacion.dto.MallaGradoResponse;
+import pe.edu.eduspace.planificacion.dto.MallaLoteRequest;
+import pe.edu.eduspace.planificacion.dto.MallaLoteResponse;
 import pe.edu.eduspace.planificacion.dto.MallaHorasRequest;
 import pe.edu.eduspace.planificacion.dto.MallaItemResponse;
 import pe.edu.eduspace.planificacion.dto.MallaRequest;
@@ -27,6 +29,11 @@ public class MallaController {
     public ResponseEntity<MallaItemResponse> agregar(@Valid @RequestBody MallaRequest request) {
         MallaItemResponse creado = service.agregar(request);
         return Respuestas.creado(creado.id(), creado);
+    }
+
+    @PostMapping("/lote")
+    public MallaLoteResponse agregarLote(@Valid @RequestBody MallaLoteRequest request) {
+        return service.agregarLote(request);
     }
 
     @PutMapping("/{id}")

@@ -33,7 +33,12 @@ import {
   PeriodoRequest,
   Seccion,
   SeccionRequest,
-  TipoAula
+  TipoAula,
+  GenerarHorarioRequest,
+  MallaLoteRequest,
+  MallaLoteResultado,
+  PreparacionSeccion,
+  ResultadoGeneracion
 } from '../models/planificacion.model';
 
 const API = '/api/v1/planificacion';
@@ -208,6 +213,10 @@ export class PlanificacionService {
   horarioSeccion(seccionId: number): Observable<HorarioSeccion> {
     return this.http.get<HorarioSeccion>(`${API}/horarios/seccion/${seccionId}`);
   }
+  /** Todas las clases del año (para saber qué aulas están ocupadas en cada bloque). */
+  horariosAnio(anioId: number): Observable<ClaseHorario[]> {
+    return this.http.get<ClaseHorario[]>(`${API}/horarios/anio/${anioId}`);
+  }
   horarioDocente(docenteId: number): Observable<HorarioDocente> {
     return this.http.get<HorarioDocente>(`${API}/horarios/docente/${docenteId}`);
   }
@@ -222,6 +231,16 @@ export class PlanificacionService {
   }
   quitarClase(id: number): Observable<void> {
     return this.http.delete<void>(`${API}/horarios/${id}`);
+  }
+  /** Estado de cada sección del año antes de armar el horario automático. */
+  preparacionHorarios(anioId: number): Observable<PreparacionSeccion[]> {
+    return this.http.get<PreparacionSeccion[]>(`${API}/horarios/preparacion`, { params: new HttpParams().set('anioId', anioId) });
+  }
+  generarHorarios(body: GenerarHorarioRequest): Observable<ResultadoGeneracion> {
+    return this.http.post<ResultadoGeneracion>(`${API}/horarios/generar`, body);
+  }
+  agregarMallaLote(body: MallaLoteRequest): Observable<MallaLoteResultado> {
+    return this.http.post<MallaLoteResultado>(`${API}/malla/lote`, body);
   }
   validarHorario(seccionId: number): Observable<ValidacionHorario> {
     return this.http.get<ValidacionHorario>(`${API}/horarios/validar/${seccionId}`);

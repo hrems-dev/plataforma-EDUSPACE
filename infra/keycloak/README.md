@@ -1,9 +1,9 @@
-# Keycloak (solo DEV) — emisor de tokens alterno
+# Keycloak (solo DEV) — emisor de tokens de DEV
 
 EduSpace tiene **dos emisores de token con el mismo contrato** (JWT RS256, `usuarioId` numérico, `realm_access.roles`), igual que Pagatu
 (Keycloak en DEV, `auth-ms` en PROD):
 
-| | `auth-ms` (por defecto) | Keycloak |
+| | `auth-ms` (PROD y escenarios e2e) | Keycloak (por defecto en DEV, como Pagatu) |
 |---|---|---|
 | Login | `POST /api/v1/auth/login` (usuario y clave) | Código de autorización + **PKCE** (la app nunca ve la clave) |
 | Quién firma | `auth-ms` | Keycloak (realm `eduspace`) |
@@ -26,9 +26,8 @@ Usa Podman o Docker (`CONTENEDORES=docker`). El realm `eduspace` se importa desd
 
 ## Usarlo de punta a punta
 ```bash
-# 1) backend confiando en Keycloak (reinicia los servicios con la variable)
-export JWK_SET_URI=http://localhost:18090/realms/eduspace/protocol/openid-connect/certs
-tools/e2e/levantar.sh
+# 1) backend confiando en Keycloak (es el valor por defecto de DEV en config-repo; levantar.sh también levanta Keycloak)
+tools/e2e/levantar.sh                    # --auth-propio para que confíen en auth-ms (escenarios e2e)
 # 2) front en modo Keycloak
 cd frontend && npm run auth:keycloak && npm start      # npm run auth:eduspace para volver al login propio
 ```
@@ -37,5 +36,5 @@ En este modo `auth-ms` sigue corriendo pero **sus tokens ya no se aceptan** (otr
 ## Limitaciones conocidas
 - Las altas de usuario en Keycloak no se reflejan en `auth-ms` ni al revés; el `usuarioId` hay que asignarlo a mano (atributo del usuario).
   Para PROD con Keycloak haría falta que `auth-ms` administre los usuarios por la Admin API de Keycloak (ver `PENDIENTES.md`).
-- `tools/e2e` crea sus usuarios de prueba por la API de `auth-ms`, así que los 6 escenarios corren con el emisor por defecto.
+- `tools/e2e` crea sus usuarios de prueba por la API de `auth-ms`, así que los 6 escenarios se corren con `levantar.sh --auth-propio`.
 - El realm usa `sslRequired: none` y `start-dev` (H2 en memoria): **nunca en PROD**. En PROD: HTTPS, base propia, sin `eduspace-e2e`.

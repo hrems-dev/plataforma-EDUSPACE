@@ -8,9 +8,11 @@ import { MatriculaService } from '../../core/services/matricula.service';
 import { PagoConfigService } from '../../core/services/pago-config.service';
 import { PlanificacionService } from '../../core/services/planificacion.service';
 import { UsuarioService } from '../../core/services/usuario.service';
-import { Anio, Periodo, Seccion } from '../../core/models/planificacion.model';
-import { Campania, Cupo } from '../../core/models/matricula.model';
+import { Anio, Docente, Nivel as NivelEscolar, Periodo, Seccion } from '../../core/models/planificacion.model';
+import { Campania, Cupo, Matricula } from '../../core/models/matricula.model';
 import { PageHeaderComponent } from '../../shared/components/page-header/page-header.component';
+import { AulasPanelComponent } from './aulas-panel.component';
+import { CursosDocentesComponent } from './cursos-docentes.component';
 
 /** Un indicador que falla no debe tumbar el resto de la pantalla: su valor queda en `null` (se muestra "—"). */
 const seguro = <T>(obs: Observable<T>): Observable<T | null> => obs.pipe(catchError(() => of(null)));
@@ -46,6 +48,9 @@ interface Datos {
   periodos: Periodo[] | null;
   secciones: Seccion[] | null;
   docentes: number | null;
+  listaDocentes: Docente[];
+  niveles: NivelEscolar[];
+  prelista: Matricula[] | null;
   usuarios: number | null;
   alertas: number | null;
   morosos: number | null;
@@ -59,7 +64,7 @@ interface Datos {
 }
 
 const VACIO: Datos = {
-  anio: null, periodos: null, secciones: null, docentes: null, usuarios: null, alertas: null, morosos: null, deuda: null,
+  anio: null, periodos: null, secciones: null, docentes: null, listaDocentes: [], niveles: [], prelista: null, usuarios: null, alertas: null, morosos: null, deuda: null,
   campanias: null, cupos: null, preMatriculas: null, matriculados: null, justificaciones: null, tarifas: null
 };
 
@@ -75,7 +80,7 @@ export const ACCESOS: Acceso[] = [
 
 @Component({
   selector: 'app-dashboard',
-  imports: [RouterLink, PageHeaderComponent],
+  imports: [RouterLink, PageHeaderComponent, AulasPanelComponent, CursosDocentesComponent],
   templateUrl: './dashboard.component.html'
 })
 export class DashboardComponent implements OnInit {
@@ -89,8 +94,8 @@ export class DashboardComponent implements OnInit {
   protected readonly esAdmin = this.auth.isAdmin;
   protected readonly nombre = this.auth.currentUser;
   protected readonly cargando = signal(true);
-  /** La tarjeta «Necesita tu atención» se muestra u oculta con el icono de campana. */
-  protected readonly verAtencion = signal(true);
+  /** La tarjeta «Necesita tu atención» flota sobre la pantalla: empieza cerrada (la campana muestra cuántos pendientes hay) para no tapar el resto. */
+  protected readonly verAtencion = signal(false);
   protected readonly datos = signal<Datos>(VACIO);
 
   protected readonly accesos = computed(() => ACCESOS.filter(a => !a.soloAdmin || this.esAdmin()));
@@ -100,14 +105,28 @@ export class DashboardComponent implements OnInit {
     return h < 12 ? 'Buenos días' : h < 19 ? 'Buenas tardes' : 'Buenas noches';
   });
 
-  /** Cupos ordenados de más a menos llenos: las secciones que están por agotarse van primero. */
-  protected readonly cuposTop = computed(() =>
-    [...(this.datos().cupos ?? [])]
-      .sort((a, b) => this.porcentaje(b) - this.porcentaje(a))
-      .slice(0, 6)
-  );
-
   protected readonly vacantes = computed(() => (this.datos().cupos ?? []).reduce((s, c) => s + c.vacantes, 0));
+
+  /** Ocupación por nivel (Inicial, Primaria, Secundaria) y total, a partir de los cupos de cada sección. */
+  protected readonly porNivel = computed(() => {
+    const d = this.datos();
+    return d.niveles
+      .map(n => {
+        const ids = new Set((d.secciones ?? []).filter(s => s.nivelId === n.id).map(s => s.id));
+        const cupos = (d.cupos ?? []).filter(c => ids.has(c.seccionId));
+        const capacidad = cupos.reduce((t, c) => t + c.capacidad, 0);
+        const ocupados = cupos.reduce((t, c) => t + c.ocupados, 0);
+        return { nivel: n, secciones: ids.size, capacidad, ocupados, porcentaje: capacidad ? Math.round((ocupados / capacidad) * 100) : 0 };
+      })
+      .filter(x => x.secciones > 0);
+  });
+
+  protected readonly totales = computed(() => {
+    const cupos = this.datos().cupos ?? [];
+    const capacidad = cupos.reduce((t, c) => t + c.capacidad, 0);
+    const ocupados = cupos.reduce((t, c) => t + c.ocupados, 0);
+    return { capacidad, ocupados, porcentaje: capacidad ? Math.round((ocupados / capacidad) * 100) : 0 };
+  });
 
   /** Lo que necesita atención hoy, de lo más urgente a lo informativo. Cada ítem explica por qué importa y lleva a resolverlo. */
   protected readonly pendientes = computed<Pendiente[]>(() => {
@@ -168,7 +187,8 @@ export class DashboardComponent implements OnInit {
   ngOnInit(): void {
     forkJoin({
       anio: seguro(this.plan.anioActivo()),
-      docentes: seguro(this.plan.docentes('', 0, 1)),
+      docentes: seguro(this.plan.docentes('', 0, 200)),
+      niveles: seguro(this.plan.niveles()),
       alertas: seguro(this.pagos.alertas(false)),
       morosos: seguro(this.pagos.morosos()),
       justificaciones: seguro(this.asistencia.bandeja('PENDIENTE', 0, 1)),
@@ -179,6 +199,8 @@ export class DashboardComponent implements OnInit {
         ...v,
         anio: r.anio,
         docentes: r.docentes?.totalElementos ?? null,
+        listaDocentes: r.docentes?.contenido ?? [],
+        niveles: r.niveles ?? [],
         alertas: r.alertas?.length ?? null,
         morosos: r.morosos?.totalAlumnosMorosos ?? null,
         deuda: r.morosos?.totalDeudaAcumulada ?? null,
@@ -190,28 +212,39 @@ export class DashboardComponent implements OnInit {
         this.cargando.set(false);
         return;
       }
-      forkJoin({
-        periodos: seguro(this.plan.periodos(anio.id)),
-        secciones: seguro(this.plan.secciones(anio.id)),
-        campanias: seguro(this.matriculas.campanias(anio.id)),
-        cupos: seguro(this.matriculas.cupos(anio.id)),
-        pre: seguro(this.matriculas.listar({ anioId: anio.id, estado: 'PRE_MATRICULA', size: 1 })),
-        mat: seguro(this.matriculas.listar({ anioId: anio.id, estado: 'MATRICULADO', size: 1 })),
-        tarifas: this.esAdmin() ? seguro(this.pagos.tarifas(anio.id)) : of(null)
-      }).subscribe(x => {
-        this.datos.update(v => ({
-          ...v,
-          periodos: x.periodos,
-          secciones: x.secciones,
-          campanias: x.campanias,
-          cupos: x.cupos,
-          preMatriculas: x.pre?.totalElementos ?? null,
-          matriculados: x.mat?.totalElementos ?? null,
-          tarifas: x.tarifas?.filter(t => t.activo !== false).length ?? null
-        }));
-        this.cargando.set(false);
-      });
+      this.cargarAnio(anio, true);
     });
+  }
+
+  /** Secciones, cupos y matrículas del año. Se repite cuando cambian tutores o asignaciones desde las tarjetas. */
+  protected cargarAnio(anio: Anio, primera = false): void {
+    forkJoin({
+      periodos: seguro(this.plan.periodos(anio.id)),
+      secciones: seguro(this.plan.secciones(anio.id)),
+      campanias: seguro(this.matriculas.campanias(anio.id)),
+      cupos: seguro(this.matriculas.cupos(anio.id)),
+      pre: seguro(this.matriculas.listar({ anioId: anio.id, estado: 'PRE_MATRICULA', size: 8 })),
+      mat: seguro(this.matriculas.listar({ anioId: anio.id, estado: 'MATRICULADO', size: 1 })),
+      tarifas: this.esAdmin() ? seguro(this.pagos.tarifas(anio.id)) : of(null)
+    }).subscribe(x => {
+      this.datos.update(v => ({
+        ...v,
+        periodos: x.periodos,
+        secciones: x.secciones,
+        campanias: x.campanias,
+        cupos: x.cupos,
+        prelista: x.pre?.contenido ?? null,
+        preMatriculas: x.pre?.totalElementos ?? null,
+        matriculados: x.mat?.totalElementos ?? null,
+        tarifas: x.tarifas?.filter(t => t.activo !== false).length ?? null
+      }));
+      if (primera) this.cargando.set(false);
+    });
+  }
+
+  protected refrescar(): void {
+    const anio = this.datos().anio;
+    if (anio) this.cargarAnio(anio);
   }
 
   /** Los enlaces pueden traer parámetros (`/matriculas?estado=…`): el routerLink los necesita por separado. */
@@ -235,13 +268,19 @@ export class DashboardComponent implements OnInit {
     return c.capacidad ? Math.min(100, Math.round((c.ocupados / c.capacidad) * 100)) : 0;
   }
 
-  protected nivelCupo(c: Cupo): string {
-    const p = this.porcentaje(c);
-    return p >= 100 ? 'llena' : p >= 90 ? 'alta' : '';
+  /** Sección y nombre de una pre-matrícula para mostrarla en la lista. */
+  protected seccionDe(m: Matricula): string {
+    const s = this.datos().secciones?.find(x => x.id === m.seccionId);
+    return s ? `${s.gradoNombre} · ${s.nombre}` : '—';
   }
 
-  protected nombreCupo(c: Cupo): string {
-    const s = this.datos().secciones?.find(x => x.id === c.seccionId);
-    return s ? `${s.gradoNombre} · ${s.nombre}` : c.seccionNombre;
+  /** Días que le quedan a una pre-matrícula antes de vencer (negativo si ya venció). */
+  protected diasRestantes(m: Matricula): number | null {
+    return m.venceEn ? Math.ceil((Date.parse(m.venceEn) - Date.now()) / 86_400_000) : null;
+  }
+
+  protected textoVence(m: Matricula): string {
+    const d = this.diasRestantes(m);
+    return d === null ? 'sin fecha' : d < 0 ? 'vencida' : d === 0 ? 'vence hoy' : d === 1 ? 'vence mañana' : `vence en ${d} días`;
   }
 }

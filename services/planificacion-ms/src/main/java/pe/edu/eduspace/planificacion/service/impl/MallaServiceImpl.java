@@ -6,7 +6,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import pe.edu.eduspace.planificacion.dto.MallaGradoResponse;
 import pe.edu.eduspace.planificacion.dto.MallaItemResponse;
+import pe.edu.eduspace.planificacion.dto.MallaLoteRequest;
+import pe.edu.eduspace.planificacion.dto.MallaLoteResponse;
 import pe.edu.eduspace.planificacion.dto.MallaRequest;
+import java.util.ArrayList;
 import pe.edu.eduspace.planificacion.entity.Curso;
 import pe.edu.eduspace.planificacion.entity.Grado;
 import pe.edu.eduspace.planificacion.entity.GradoCurso;
@@ -54,6 +57,38 @@ public class MallaServiceImpl implements MallaService {
         item.setCurso(curso);
         item.setHorasSemanales(request.horasSemanales());
         return mapper.toResponse(repository.save(item));
+    }
+
+    @Override
+    public MallaLoteResponse agregarLote(MallaLoteRequest request) {
+        boolean sobrescribir = Boolean.TRUE.equals(request.sobrescribir());
+        int creados = 0;
+        int actualizados = 0;
+        int omitidos = 0;
+        List<String> detalle = new ArrayList<>();
+        for (Long gradoId : request.gradoIds().stream().distinct().toList()) {
+            Grado grado = gradoRepository.findById(gradoId).orElseThrow(() -> ResourceNotFoundException.of("Grado", gradoId));
+            for (MallaLoteRequest.ItemLote it : request.cursos()) {
+                Curso curso = cursoRepository.findById(it.cursoId()).orElseThrow(() -> ResourceNotFoundException.of("Curso", it.cursoId()));
+                var existente = repository.findByGradoIdAndCursoId(grado.getId(), curso.getId());
+                if (existente.isEmpty()) {
+                    GradoCurso item = new GradoCurso();
+                    item.setGrado(grado);
+                    item.setCurso(curso);
+                    item.setHorasSemanales(it.horasSemanales());
+                    repository.save(item);
+                    creados++;
+                } else if (sobrescribir && !existente.get().getHorasSemanales().equals(it.horasSemanales())) {
+                    existente.get().setHorasSemanales(it.horasSemanales());
+                    repository.save(existente.get());
+                    actualizados++;
+                } else {
+                    omitidos++;
+                    detalle.add(curso.getNombre() + " ya estaba en " + grado.getNombre());
+                }
+            }
+        }
+        return new MallaLoteResponse(creados, actualizados, omitidos, detalle);
     }
 
     @Override

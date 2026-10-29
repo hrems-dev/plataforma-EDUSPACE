@@ -32,6 +32,23 @@ describe('authInterceptor', () => {
     req.flush([]);
   });
 
+  it('cada llamada a la API lleva un X-Trace-ID (y se conserva el que ya traiga)', () => {
+    const { http, ctrl } = iniciar();
+    http.get('/api/v1/a').subscribe();
+    const id = ctrl.expectOne('/api/v1/a').request.headers.get('X-Trace-ID');
+    expect(id).toMatch(/^[0-9a-f-]{36}$/);
+    http.get('/api/v1/b', { headers: { 'X-Trace-ID': 'mio-123' } }).subscribe();
+    expect(ctrl.expectOne('/api/v1/b').request.headers.get('X-Trace-ID')).toBe('mio-123');
+  });
+
+  it('no manda el Bearer a un dominio ajeno ni a rutas que no son de la API', () => {
+    const { http, ctrl } = iniciar();
+    http.get('https://otro-sitio.com/api/v1/datos').subscribe();
+    expect(ctrl.expectOne('https://otro-sitio.com/api/v1/datos').request.headers.has('Authorization')).toBe(false);
+    http.get('/config.json').subscribe();
+    expect(ctrl.expectOne('/config.json').request.headers.has('Authorization')).toBe(false);
+  });
+
   it('login y refresh no llevan Authorization', () => {
     const { http, ctrl } = iniciar();
     http.post('/api/v1/auth/login', {}).subscribe({ error: () => undefined });

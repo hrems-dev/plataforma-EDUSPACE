@@ -8,6 +8,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import pe.edu.eduspace.planificacion.dto.*;
+import pe.edu.eduspace.planificacion.service.HorarioGeneradorService;
 import pe.edu.eduspace.planificacion.service.HorarioService;
 import pe.edu.eduspace.planificacion.service.PublicacionHorarioService;
 import pe.edu.eduspace.planificacion.util.UsuarioActual;
@@ -19,15 +20,34 @@ public class HorarioController {
 
     private final HorarioService service;
     private final PublicacionHorarioService publicacionService;
+    private final HorarioGeneradorService generador;
 
     @GetMapping("/seccion/{seccionId}")
     public HorarioSeccionResponse porSeccion(@PathVariable Long seccionId) {
         return service.porSeccion(seccionId);
     }
 
+    /** Clases de todo el año: base de la vista «Aulas disponibles». */
+    @GetMapping("/anio/{anioId}")
+    public List<HorarioResponse> porAnio(@PathVariable Long anioId) {
+        return service.porAnio(anioId);
+    }
+
     @GetMapping("/docente/{docenteId}")
     public HorarioDocenteResponse porDocente(@PathVariable Long docenteId) {
         return service.porDocente(docenteId);
+    }
+
+    /** Qué sección está lista para armar su horario y qué le falta a las demás. */
+    @GetMapping("/preparacion")
+    public List<PreparacionSeccionResponse> preparacion(@RequestParam Long anioId) {
+        return generador.preparacion(anioId);
+    }
+
+    /** Arma automáticamente el horario sin cruces de docente, aula ni sección; con {@code simular=true} no guarda nada. */
+    @PostMapping("/generar")
+    public ResultadoGeneracion generar(@Valid @RequestBody GenerarHorarioRequest request) {
+        return generador.generar(request);
     }
 
     @GetMapping("/validar/{seccionId}")

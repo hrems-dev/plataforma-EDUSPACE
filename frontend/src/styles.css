@@ -242,3 +242,68 @@ table.table { width: 100%; border-collapse: collapse; font-size: 13px; min-width
 .acceso .muted { font-size: .8rem; }
 .atajo { margin: 14px 0 0; font-size: .85rem; }
 kbd { font: inherit; font-size: .78rem; padding: 1px 6px; border: 1px solid var(--line-2); border-bottom-width: 2px; border-radius: 5px; background: var(--bg); }
+
+/* Inicio: aulas (lista vertical + ficha), estadísticas y cursos/docentes */
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { min-height: 32px; padding: 0 12px; border: 1px solid var(--line-2); border-radius: 999px; background: #fff; color: var(--ink); font: inherit; font-size: .85rem; font-weight: 600; cursor: pointer; }
+.chip:hover { background: var(--bg); }
+.chip.on { background: var(--primary); border-color: var(--primary); color: #fff; }
+.chip:focus-visible { outline: 3px solid var(--primary-soft); outline-offset: 1px; }
+.aulas-layout { display: grid; grid-template-columns: minmax(250px, 340px) minmax(0, 1fr); gap: 18px; align-items: start; }
+.aulas-col { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.aula-lista { list-style: none; margin: 0; padding: 0 4px 0 0; display: flex; flex-direction: column; gap: 8px; max-height: 640px; overflow-y: auto; }
+.aula-item { width: 100%; display: flex; flex-direction: column; gap: 5px; text-align: left; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--card); color: var(--ink); font: inherit; cursor: pointer; transition: border-color .15s, background .15s; }
+.aula-item:hover { border-color: var(--primary); background: var(--primary-soft); }
+.aula-item.activa { border-color: var(--primary); background: var(--primary-soft); box-shadow: inset 3px 0 0 var(--primary); }
+.aula-item:focus-visible { outline: 3px solid var(--primary-soft); outline-offset: 1px; }
+.aula-fila { display: flex; justify-content: space-between; gap: 8px; }
+.aula-sub { font-size: .8rem; }
+.aula-ficha { min-width: 0; border: 1px solid var(--line); border-radius: 12px; padding: 16px; min-height: 220px; }
+.ficha-cab { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; margin-bottom: 14px; }
+.ficha-cab h3 { margin: 0 0 2px; font-size: 1.1rem; }
+.ficha-sub { margin: 16px 0 8px; font-size: .9rem; font-weight: 700; }
+.aula-ficha .datos dd.malo { color: var(--danger); font-weight: 700; }
+.aula-ficha .datos dd .input { min-height: 34px; margin-right: 6px; }
+.enlace { margin-left: 8px; padding: 0; border: 0; background: none; color: var(--primary); font: inherit; font-size: .85rem; font-weight: 600; cursor: pointer; text-decoration: underline; }
+.mini-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(104px, 1fr)); gap: 10px; margin-bottom: 8px; }
+.mini { display: flex; flex-direction: column; gap: 2px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--bg); }
+.mini-v { font-size: 1.4rem; font-weight: 700; line-height: 1.1; }
+.mini .muted { font-size: .8rem; }
+.mini.alerta { background: var(--warn-soft); border-color: #f2d9a3; }
+.mini.alerta .mini-v { color: var(--warn); }
+.lista-alumnos { margin-top: 16px; }
+.lista-alumnos summary { cursor: pointer; font-weight: 600; }
+.lista-alumnos ul { list-style: none; margin: 8px 0 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 6px 16px; max-height: 260px; overflow-y: auto; }
+.lista-alumnos li { display: flex; justify-content: space-between; gap: 8px; align-items: center; font-size: .88rem; padding: 4px 0; border-bottom: 1px solid #eef1f8; }
+.ficha-links { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 18px; }
+.pre-lista { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.pre-lista li { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 10px; }
+@media (max-width: 900px) {
+  .aulas-layout { grid-template-columns: minmax(0, 1fr); }
+  .aula-lista { max-height: 320px; }
+}
+.aula-ficha .vacio { display: flex; flex-direction: column; gap: 4px; }
+
+/* Notificaciones: selector de destinatarios */
+.dest { border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; display: flex; flex-direction: column; gap: 12px; margin: 0; }
+.dest legend { padding: 0 6px; font-weight: 700; }
+.dest .checks { display: flex; flex-wrap: wrap; gap: 6px 18px; }
+.dest .check { display: flex; align-items: center; gap: 8px; font-weight: 500; }
+.dest-lista { list-style: none; margin: 0; padding: 0; max-height: 220px; overflow-y: auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 4px 16px; }
+.dest-lista li { padding: 4px 0; }
+.dest-resumen { margin: 0; font-weight: 600; color: var(--ok); }
+.dest-resumen.vacio-dest { color: var(--ink-2); font-weight: 500; }
+.chip-x { margin-left: 6px; border: 0; background: none; color: inherit; font-size: 1rem; line-height: 1; cursor: pointer; }
+
+/* Armado automático de horarios */
+.grados-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 8px; margin-top: 10px; }
+.grado-op, .curso-op { display: flex; align-items: flex-start; gap: 8px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 10px; background: var(--card); cursor: pointer; font-size: .88rem; }
+.grado-op.on, .curso-op.on { border-color: var(--primary); background: var(--primary-soft); }
+.cursos-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 8px; margin-top: 10px; }
+.curso-op { justify-content: space-between; align-items: center; cursor: default; }
+.curso-op .horas { display: inline-flex; align-items: center; gap: 4px; }
+.curso-op .horas .input { width: 62px; min-height: 32px; padding: 0 8px; }
+.opciones { display: flex; flex-direction: column; gap: 8px; }
+.problemas { list-style: disc; margin: 4px 0 0; padding-left: 18px; font-size: .82rem; }
+.lista-alumnos.abierta { list-style: none; margin: 8px 0 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 0 18px; max-height: 300px; overflow-y: auto; }
+.lista-alumnos.abierta li { display: flex; gap: 8px; align-items: center; font-size: .88rem; padding: 6px 0; border-bottom: 1px solid #eef1f8; }

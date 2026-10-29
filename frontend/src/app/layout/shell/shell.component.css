@@ -54,3 +54,12 @@
 .paleta-tipo.alumno { background: var(--violet-soft); color: var(--violet); }
 .paleta-vacio { color: var(--ink-2); cursor: default !important; }
 .paleta-pie { padding: 8px 16px; border-top: 1px solid var(--line); font-size: .78rem; }
+
+/* Barra de pestañas del espacio de trabajo (matrícula, horarios, finanzas…) */
+.pestanas { display: flex; align-items: center; gap: 14px; margin: -8px 0 20px; border-bottom: 1px solid var(--line); overflow-x: auto; }
+.pestanas-hub { flex: none; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--ink-2); padding: 8px 0; }
+.pestanas-lista { display: flex; gap: 2px; }
+.pestana { flex: none; padding: 10px 14px; font-size: 14px; font-weight: 500; color: var(--ink-2); text-decoration: none; border-bottom: 2px solid transparent; margin-bottom: -1px; white-space: nowrap; }
+.pestana:hover { color: var(--ink); background: color-mix(in srgb, currentColor 6%, transparent); }
+.pestana.on { color: var(--primary); border-bottom-color: var(--primary); font-weight: 600; }
+.pestana:focus-visible { outline: 2px solid var(--primary); outline-offset: -2px; }

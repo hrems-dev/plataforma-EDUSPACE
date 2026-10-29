@@ -19,7 +19,7 @@
   </div>
 
   @if (asignaciones().length === 0 && seccionId.value) {
-    <div class="aviso aviso-warn">Esta sección no tiene asignaciones de docente. Créalas en <strong>Asignaciones</strong> para poder programar clases.</div>
+    <div class="aviso aviso-warn">Esta sección no tiene asignaciones de docente. Asigna docentes en <a routerLink="/planificacion/cursos-docentes"><strong>Cursos y docentes</strong></a> o desde el <a routerLink="/planificacion/panel"><strong>Panel de aulas</strong></a> para poder programar clases.</div>
   }
 
   @if (validacion(); as v) {
@@ -94,7 +94,9 @@
           <label for="h-asig">Curso y docente</label>
           <select id="h-asig" formControlName="asignacionId">
             <option [ngValue]="0" disabled>Elige…</option>
-            @for (a of asignaciones(); track a.id) { <option [ngValue]="a.id">{{ a.cursoNombre }} · {{ a.docenteNombre }}</option> }
+            @for (a of asignaciones(); track a.id) {
+              <option [ngValue]="a.id" [disabled]="docenteOcupado(a.docenteId)">{{ a.cursoNombre }} · {{ a.docenteNombre }}{{ docenteOcupado(a.docenteId) ? ' — ocupado en este bloque' : '' }}</option>
+            }
           </select>
           @if (form.controls.asignacionId.touched && form.controls.asignacionId.invalid) { <span class="error">Elige un curso.</span> }
         </div>
@@ -102,7 +104,9 @@
           <label for="h-aula">Aula (opcional)</label>
           <select id="h-aula" formControlName="aulaId">
             <option [ngValue]="0">Aula de la sección</option>
-            @for (a of aulas(); track a.id) { <option [ngValue]="a.id">{{ a.nombre }} ({{ a.tipo }})</option> }
+            @for (a of aulas(); track a.id) {
+              <option [ngValue]="a.id" [disabled]="aulaOcupada(a.id)">{{ a.nombre }} ({{ a.tipo }}){{ aulaOcupada(a.id) ? ' — ocupada' : '' }}</option>
+            }
           </select>
         </div>
       </div>

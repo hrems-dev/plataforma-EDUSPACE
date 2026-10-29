@@ -1,6 +1,7 @@
 import { DatePipe } from '@angular/common';
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 import { catchError, firstValueFrom, of } from 'rxjs';
 import {
   Anio,
@@ -30,7 +31,7 @@ const DIAS = [1, 2, 3, 4, 5];
 
 @Component({
   selector: 'app-horarios',
-  imports: [ReactiveFormsModule, DatePipe, ModalComponent, PageHeaderComponent],
+  imports: [ReactiveFormsModule, RouterLink, DatePipe, ModalComponent, PageHeaderComponent],
   templateUrl: './horarios.component.html',
   styleUrl: './horarios.component.css'
 })
@@ -39,6 +40,7 @@ export class HorariosComponent implements OnInit {
   private readonly avisos = inject(NotificationService);
   private readonly confirmacion = inject(ConfirmService);
   private readonly fb = inject(FormBuilder);
+  private readonly ruta = inject(ActivatedRoute);
 
   protected readonly dias = DIAS;
   protected readonly nombreDia = (d: number) => DIAS_SEMANA[d];
@@ -51,6 +53,8 @@ export class HorariosComponent implements OnInit {
   protected readonly validacion = signal<ValidacionHorario | null>(null);
   protected readonly publicaciones = signal<Publicacion[]>([]);
   protected readonly cargando = signal(false);
+  /** Clases de todo el año: sirven para marcar docentes y aulas que ya están ocupados en el bloque elegido. */
+  private readonly clasesAnio = signal<ClaseHorario[]>([]);
 
   protected readonly anioId = this.fb.nonNullable.control(0);
   protected readonly seccionId = this.fb.nonNullable.control(0);
@@ -89,7 +93,9 @@ export class HorariosComponent implements OnInit {
     if (!this.anioId.value) return;
     this.api.secciones(this.anioId.value).subscribe(s => {
       this.secciones.set(s);
-      this.seccionId.setValue(s[0]?.id ?? 0);
+      // ?seccion=ID abre directamente esa sección (el armado automático enlaza aquí)
+      const pedida = Number(this.ruta.snapshot.queryParamMap.get('seccion'));
+      this.seccionId.setValue(s.some(x => x.id === pedida) ? pedida : (s[0]?.id ?? 0));
       this.cargar();
     });
   }
@@ -113,7 +119,32 @@ export class HorariosComponent implements OnInit {
       }
     });
     this.api.asignaciones(id).subscribe(a => this.asignaciones.set(a));
+    this.api.horariosAnio(this.anioId.value).pipe(catchError(() => of([] as ClaseHorario[]))).subscribe(c => this.clasesAnio.set(c));
     this.api.publicaciones(id).subscribe({ next: p => this.publicaciones.set(p), error: () => this.publicaciones.set([]) });
+  }
+
+  /** Docentes y aulas ya ocupados (en cualquier sección) en el bloque de la celda abierta, sin contar la clase que se edita. */
+  private readonly ocupadosEnCelda = computed(() => {
+    const c = this.celda();
+    const propia = this.clase()?.id;
+    const docentes = new Set<number>();
+    const aulas = new Set<number>();
+    if (c) {
+      for (const x of this.clasesAnio()) {
+        if (x.bloqueId !== c.bloque.id || x.diaSemana !== c.dia || x.id === propia) continue;
+        docentes.add(x.docenteId);
+        if (x.aulaId) aulas.add(x.aulaId);
+      }
+    }
+    return { docentes, aulas };
+  });
+
+  protected docenteOcupado(docenteId: number): boolean {
+    return this.ocupadosEnCelda().docentes.has(docenteId);
+  }
+
+  protected aulaOcupada(aulaId: number): boolean {
+    return this.ocupadosEnCelda().aulas.has(aulaId);
   }
 
   protected hora(h: string): string {

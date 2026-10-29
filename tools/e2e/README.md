@@ -10,7 +10,8 @@ reales, que los 10 servicios, Kafka, MinIO, Eureka, el Config Server y el Gatewa
 ## Uso
 ```bash
 ./compilar.sh      # una vez (o tras cambiar código)
-./levantar.sh      # recrea bases y arranca todo (~2 min). Con --sin-reset solo reinicia las aplicaciones
+./levantar.sh --auth-propio   # recrea bases y arranca todo (~2 min). Con --sin-reset solo reinicia las aplicaciones.
+                              # Los escenarios crean sus usuarios en auth-ms: usa --auth-propio. Sin la opción, los servicios confían en Keycloak (como Pagatu en DEV).
 ./correr_todo.sh   # ejecuta 01 … 06; cada línea muestra OK / ERR; al final "TODOS LOS ESCENARIOS OK"
 ./detener.sh
 ```

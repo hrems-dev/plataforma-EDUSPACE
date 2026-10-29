@@ -8,10 +8,13 @@ import java.util.regex.Pattern;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import java.util.Set;
+import pe.edu.eduspace.notificaciones.dto.PlantillaCrearRequest;
 import pe.edu.eduspace.notificaciones.dto.PlantillaRequest;
 import pe.edu.eduspace.notificaciones.dto.PlantillaResponse;
 import pe.edu.eduspace.notificaciones.entity.Canal;
 import pe.edu.eduspace.notificaciones.entity.PlantillaNotificacion;
+import pe.edu.eduspace.notificaciones.exception.BusinessRuleException;
 import pe.edu.eduspace.notificaciones.exception.ResourceNotFoundException;
 import pe.edu.eduspace.notificaciones.mapper.NotificacionMapper;
 import pe.edu.eduspace.notificaciones.repository.PlantillaRepository;
@@ -23,6 +26,10 @@ import pe.edu.eduspace.notificaciones.service.PlantillaService;
 public class PlantillaServiceImpl implements PlantillaService {
 
     static final String SIN_DATO = "(sin dato)";
+    /** Códigos que usan los avisos automáticos (eventos de los demás servicios): borrarlos los dejaría sin texto. */
+    static final Set<String> DEL_SISTEMA = Set.of("ASISTENCIA_FALTA", "BOLETIN_GENERADO", "EXAMEN_CALIFICADO", "EXAMEN_PUBLICADO",
+            "HORARIO_PUBLICADO", "JUSTIFICACION_RESUELTA", "MATRICULA_ANULADA", "MATRICULA_CONFIRMADA", "MATRICULA_CREADA",
+            "PAGO_CONFIRMADO", "PAGO_POR_VENCER", "PAGO_VENCIDO", "TAREA_CALIFICADA", "TAREA_PUBLICADA", "TAREA_RECORDATORIO");
     private static final Pattern MARCADOR = Pattern.compile("\\{\\{\\s*([A-Za-z0-9_]+)\\s*}}");
 
     private final PlantillaRepository repository;
@@ -44,6 +51,29 @@ public class PlantillaServiceImpl implements PlantillaService {
     @Transactional(readOnly = true)
     public List<PlantillaResponse> listar() {
         return repository.findAllByOrderByCodigoAscCanalAsc().stream().map(mapper::toResponse).toList();
+    }
+
+    @Override
+    public PlantillaResponse crear(PlantillaCrearRequest request) {
+        if (repository.findByCodigoAndCanal(request.codigo(), request.canal()).isPresent()) {
+            throw new BusinessRuleException("Ya existe una plantilla " + request.codigo() + " para el canal " + request.canal());
+        }
+        PlantillaNotificacion p = new PlantillaNotificacion();
+        p.setCodigo(request.codigo());
+        p.setCanal(request.canal());
+        p.setAsunto(request.asunto());
+        p.setCuerpo(request.cuerpo());
+        p.setActiva(request.activa() == null || request.activa());
+        return mapper.toResponse(repository.save(p));
+    }
+
+    @Override
+    public void eliminar(Long id) {
+        PlantillaNotificacion p = repository.findById(id).orElseThrow(() -> ResourceNotFoundException.of("Plantilla", id));
+        if (DEL_SISTEMA.contains(p.getCodigo())) {
+            throw new BusinessRuleException("«" + p.getCodigo() + "» es una plantilla del sistema: no se elimina, solo se desactiva");
+        }
+        repository.delete(p);
     }
 
     @Override

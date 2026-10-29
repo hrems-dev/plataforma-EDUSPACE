@@ -31,8 +31,10 @@ Usuarios de DEV: los de `tools/e2e/README.md` (`admin`, `secretaria`). Un usuari
 | Rol | Rutas | Qué hace |
 |---|---|---|
 | ADMIN / SECRETARIA | `/planificacion/*` (malla, asignaciones, bloques, horarios, feriados) | Horario en grilla con validación y publicación (avisa si queda incompleto). La secretaria solo edita horarios, asignaciones y docentes |
+| ADMIN / SECRETARIA | espacios de trabajo | El menú del personal se organiza en 8 espacios con pestañas (`layout/hubs.ts`); ver `docs/09-espacios-de-trabajo.md`. Pantallas nuevas: `/planificacion/panel`, `/planificacion/cursos-docentes`, `/planificacion/aulas-disponibles` |
+| ADMIN / SECRETARIA | `/planificacion/horarios-auto` | **Armado automático** en 3 pasos: (1) cursos y horas por grado en lote (solo ADMIN), (2) qué secciones están listas, (3) simular o generar horarios sin cruces de docente, aula ni sección; opcionalmente asigna docentes por especialidad. Algoritmo en `planificacion-ms` (`horario/PlanificadorHorario`) |
 | ADMIN / SECRETARIA | `/asistencia/*`, `/calificaciones/*` | Justificaciones, reporte de asistencia, cierre de periodo (SECRETARIA/ADMIN; reabrir solo ADMIN), boletines |
-| ADMIN | `/pagos/*`, `/notificaciones/*` | Cuentas, cobranza, plantillas y envíos |
+| ADMIN | `/pagos/*`, `/notificaciones/envio` | Cuentas, cobranza; avisos: enviar a docentes, familias de una sección, alumnos concretos o números de usuario; CRUD de plantillas (las del sistema no se borran) y de los avisos enviados |
 | DOCENTE | `/docente/*` | Inicio, horario, hoja de asistencia, tareas y entregas, notas, banco de preguntas y exámenes |
 | APODERADO / ALUMNO | `/familia/*` | Resumen, asistencia (justificar), notas, horario, tareas con entrega a MinIO, exámenes con reloj; **Pagos solo apoderado** |
 | CAJERO | `/caja` | Apertura, búsqueda de alumno, cobro de cuotas, arqueo y cierre |
@@ -43,7 +45,7 @@ Usuarios de DEV: los de `tools/e2e/README.md` (`admin`, `secretaria`). Un usuari
 - **Nuevas por rol:** `/finanzas` (ADMIN/SECRETARIA), `/docente/alumnos`, `/familia/boletines`.
 
 ### Atajos y ayudas de uso
-- **Inicio (ADMIN/SECRETARIA):** "Necesita tu atención" (morosos, cupos llenos, campaña cerrada, pre-matrículas, justificaciones, secciones sin tutor, cada una con botón para resolverla), indicadores, ocupación de secciones, lista de **puesta en marcha** del año y accesos rápidos.
+- **Inicio (ADMIN/SECRETARIA):** "Necesita tu atención" (morosos, cupos llenos, campaña cerrada, pre-matrículas, justificaciones, secciones sin tutor, cada una con botón para resolverla), indicadores, **estadísticas de matrícula** (ocupación total y por nivel), **alumnos en pre-matrícula** con los días que les quedan, **aulas** en lista vertical (al elegir una: aula, tutor —cambiable por el ADMIN—, matriculados, pre-matrícula, vacantes, asistencia promedio, alumnos con faltas, cursos y docentes), **cursos y docentes** (vista por curso o por docente, alta de curso con su malla y asignación de docentes), lista de **puesta en marcha** del año y accesos rápidos. La tarjeta de atención empieza cerrada: la campana muestra cuántos pendientes hay.
 - **Ctrl + K** (o "Buscar…" del menú): salta a cualquier pantalla permitida para el rol o abre el expediente de un alumno por nombre/documento.
 - **Cupos:** el ADMIN cambia la capacidad en la propia fila (valida contra los matriculados y la capacidad del aula).
 - Enlaces con parámetros: `/matriculas?nueva=1`, `/matriculas?estado=PRE_MATRICULA`, `/alumnos?nuevo=1`.

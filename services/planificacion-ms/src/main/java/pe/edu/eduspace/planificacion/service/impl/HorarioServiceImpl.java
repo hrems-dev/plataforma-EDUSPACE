@@ -54,6 +54,12 @@ public class HorarioServiceImpl implements HorarioService {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public List<HorarioResponse> porAnio(Long anioId) {
+        return repository.findByAnio(anioId).stream().map(mapper::toResponse).toList();
+    }
+
+    @Override
     public HorarioResponse crear(HorarioRequest request) {
         Horario horario = new Horario();
         aplicar(horario, request, null);

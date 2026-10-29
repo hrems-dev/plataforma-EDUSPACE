@@ -47,6 +47,10 @@ public interface HorarioRepository extends JpaRepository<Horario, Long> {
     boolean existsChoqueSeccion(@Param("seccionId") Long seccionId, @Param("dia") Short dia,
                                 @Param("bloqueId") Long bloqueId, @Param("excluirId") Long excluirId);
 
+    /** Todas las clases de las secciones del año (el generador las usa como espacios ya ocupados). */
+    @Query("select h from Horario h where h.asignacion.seccion.anio.id = :anioId")
+    List<Horario> findByAnio(@Param("anioId") Long anioId);
+
     long countByAsignacionId(Long asignacionId);
 
     @Query("select count(h) from Horario h where h.asignacion.id = :asignacionId and (:excluirId is null or h.id <> :excluirId)")

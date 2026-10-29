@@ -38,7 +38,7 @@ public class SecurityConfig {
                     if (swaggerPublic) {
                         auth.requestMatchers("/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**").permitAll();
                     }
-                    auth.requestMatchers("/api/v1/notificaciones/plantillas/**", "/api/v1/notificaciones/enviar").hasRole("ADMIN");
+                    auth.requestMatchers("/api/v1/notificaciones/plantillas/**", "/api/v1/notificaciones/enviar", "/api/v1/notificaciones/admin/**").hasRole("ADMIN");
                     auth.anyRequest().authenticated();
                 })
                 .exceptionHandling(e -> e.authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED)))

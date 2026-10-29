@@ -270,6 +270,24 @@ export const routes: Routes = [
         loadComponent: () => import('./features/caja/caja.component').then(m => m.CajaComponent)
       },
       {
+        path: 'planificacion/panel',
+        canActivate: [roleGuard],
+        data: { roles: PERSONAL },
+        loadComponent: () => import('./features/planificacion/panel/panel-aulas.component').then(m => m.PanelAulasComponent)
+      },
+      {
+        path: 'planificacion/cursos-docentes',
+        canActivate: [roleGuard],
+        data: { roles: PERSONAL },
+        loadComponent: () => import('./features/planificacion/panel/panel-cursos.component').then(m => m.PanelCursosComponent)
+      },
+      {
+        path: 'planificacion/aulas-disponibles',
+        canActivate: [roleGuard],
+        data: { roles: PERSONAL },
+        loadComponent: () => import('./features/planificacion/aulas-disponibles/aulas-disponibles.component').then(m => m.AulasDisponiblesComponent)
+      },
+      {
         path: 'planificacion/malla',
         canActivate: [roleGuard],
         data: { roles: PERSONAL },
@@ -286,6 +304,12 @@ export const routes: Routes = [
         canActivate: [roleGuard],
         data: { roles: PERSONAL },
         loadComponent: () => import('./features/planificacion/bloques/bloques.component').then(m => m.BloquesComponent)
+      },
+      {
+        path: 'planificacion/horarios-auto',
+        canActivate: [roleGuard],
+        data: { roles: PERSONAL },
+        loadComponent: () => import('./features/planificacion/horarios/horario-auto.component').then(m => m.HorarioAutoComponent)
       },
       {
         path: 'planificacion/horarios',

@@ -64,12 +64,12 @@
     <div class="kpi">
       <div class="kpi-header"><div class="etiqueta">Secciones del año</div></div>
       <div class="valor">{{ datos().secciones ? datos().secciones!.length : '—' }}</div>
-      <div class="kpi-footer"><a class="nota" routerLink="/planificacion/secciones">Ver secciones →</a></div>
+      <div class="kpi-footer"><a class="nota" routerLink="/planificacion/panel">Ver aulas y secciones →</a></div>
     </div>
     <div class="kpi">
       <div class="kpi-header"><div class="etiqueta">Docentes</div></div>
       <div class="valor">{{ valor(datos().docentes) }}</div>
-      <div class="kpi-footer"><a class="nota" routerLink="/planificacion/docentes">Ver docentes →</a></div>
+      <div class="kpi-footer"><a class="nota" routerLink="/planificacion/cursos-docentes">Ver cursos y docentes →</a></div>
     </div>
     <div class="kpi">
       <div class="kpi-header"><div class="etiqueta">Por cobrar (vencido)</div></div>
@@ -86,27 +86,76 @@
   </section>
 
   <div class="dos-col">
-    <!-- 3. Cupos -->
-    <section class="card" aria-labelledby="t-cupos">
+    <!-- 3. Estadísticas de la matrícula -->
+    <section class="card" aria-labelledby="t-est">
       <div class="card-body">
         <div class="sec-cab">
-          <h2 id="t-cupos" class="sec-titulo">Ocupación de las secciones</h2>
-          <a class="btn btn-sm" routerLink="/matriculas/cupos">Ver todo</a>
+          <h2 id="t-est" class="sec-titulo">Estadísticas de matrícula</h2>
+          <a class="btn btn-sm" routerLink="/matriculas/cupos">Ver cupos</a>
         </div>
-        @if (cuposTop().length === 0) {
+        @if (!datos().cupos) {
           <p class="muted">{{ cargando() ? 'Cargando…' : 'Aún no hay secciones con cupos. Crea secciones para el año activo.' }}</p>
-        }
-        @for (c of cuposTop(); track c.seccionId) {
-          <div class="cupo-fila">
-            <span class="cupo-nom">{{ nombreCupo(c) }}</span>
-            <div [class]="'barra-cupo ' + nivelCupo(c)" role="img" [attr.aria-label]="porcentaje(c) + ' por ciento ocupado'"><span [style.width.%]="porcentaje(c)"></span></div>
-            <span class="muted cupo-num">{{ c.ocupados }}/{{ c.capacidad }}</span>
+        } @else {
+          <div class="mini-stats">
+            <div class="mini"><span class="mini-v">{{ totales().porcentaje }} %</span><span class="muted">de ocupación del colegio</span></div>
+            <div class="mini"><span class="mini-v">{{ valor(datos().matriculados) }}</span><span class="muted">matriculados</span></div>
+            <div class="mini" [class.alerta]="(datos().preMatriculas ?? 0) > 0"><span class="mini-v">{{ valor(datos().preMatriculas) }}</span><span class="muted">en pre-matrícula</span></div>
+            <div class="mini"><span class="mini-v">{{ vacantes() }}</span><span class="muted">vacantes libres</span></div>
           </div>
+          <h3 class="ficha-sub">Ocupación por nivel</h3>
+          @for (n of porNivel(); track n.nivel.id) {
+            <div class="cupo-fila">
+              <span class="cupo-nom">{{ n.nivel.nombre }}</span>
+              <div [class]="'barra-cupo ' + (n.porcentaje >= 100 ? 'llena' : n.porcentaje >= 90 ? 'alta' : '')" role="img" [attr.aria-label]="n.nivel.nombre + ': ' + n.porcentaje + ' por ciento ocupado'"><span [style.width.%]="n.porcentaje"></span></div>
+              <span class="muted cupo-num">{{ n.ocupados }}/{{ n.capacidad }}</span>
+            </div>
+          }
         }
       </div>
     </section>
 
-    <!-- 4. Puesta en marcha / accesos rápidos -->
+    <!-- 4. Pre-matrícula -->
+    <section class="card" aria-labelledby="t-pre">
+      <div class="card-body">
+        <div class="sec-cab">
+          <h2 id="t-pre" class="sec-titulo">Alumnos en pre-matrícula</h2>
+          <a class="btn btn-sm" routerLink="/matriculas" [queryParams]="{ estado: 'PRE_MATRICULA' }">Ver todos</a>
+        </div>
+        @if (!datos().prelista) {
+          <p class="muted">{{ cargando() ? 'Cargando…' : 'No se pudo leer la lista de pre-matrículas.' }}</p>
+        } @else if (datos().prelista!.length === 0) {
+          <div class="aviso aviso-ok">No hay pre-matrículas pendientes: todos los alumnos con matrícula ya pagaron.</div>
+        } @else {
+          <p class="muted" style="margin: 0 0 8px">Esperan el pago de la matrícula para quedar matriculados.</p>
+          <ul class="pre-lista">
+            @for (m of datos().prelista; track m.id) {
+              <li>
+                <div class="pend-txt">
+                  <strong>{{ m.alumnoNombre }}</strong>
+                  <span class="muted">{{ seccionDe(m) }} · {{ m.codigo }}</span>
+                </div>
+                <span [class]="'badge ' + ((diasRestantes(m) ?? 9) <= 1 ? 'badge-danger' : 'badge-warn')">{{ textoVence(m) }}</span>
+              </li>
+            }
+          </ul>
+          @if ((datos().preMatriculas ?? 0) > datos().prelista!.length) {
+            <p class="muted" style="margin-top: 8px">y {{ datos().preMatriculas! - datos().prelista!.length }} más…</p>
+          }
+        }
+      </div>
+    </section>
+  </div>
+
+  <!-- 5. Aulas: lista vertical y ficha del aula elegida -->
+  @if (datos().secciones) {
+    <app-aulas-panel [secciones]="datos().secciones!" [niveles]="datos().niveles" [cupos]="datos().cupos" [docentes]="datos().listaDocentes"
+                     [esAdmin]="esAdmin()" [anio]="datos().anio" (cambio)="refrescar()" />
+    <!-- 6. Cursos y docentes -->
+    <app-cursos-docentes [secciones]="datos().secciones!" [docentes]="datos().listaDocentes" [esAdmin]="esAdmin()" (cambio)="refrescar()" />
+  }
+
+  <!-- 7. Puesta en marcha / accesos rápidos -->
+  <div>
     <section class="card" aria-labelledby="t-acc">
       <div class="card-body">
         @if (!configurado() && !cargando()) {

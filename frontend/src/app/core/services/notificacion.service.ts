@@ -1,7 +1,7 @@
 import { Injectable, inject, signal } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, map, tap } from 'rxjs';
-import { EnvioManual, EnvioManualResultado, Notificacion, Plantilla, Preferencia } from '../models/notificacion.model';
+import { EnvioManual, EnvioManualResultado, FiltroAvisos, Notificacion, NotificacionAdmin, Plantilla, PlantillaCrear, Preferencia } from '../models/notificacion.model';
 import { Page } from '../models/page.model';
 
 const API = '/api/v1/notificaciones';
@@ -52,6 +52,35 @@ export class NotificacionService {
 
   actualizarPlantilla(id: number, body: { asunto?: string; cuerpo: string; activa: boolean }): Observable<Plantilla> {
     return this.http.put<Plantilla>(`${API}/plantillas/${id}`, body);
+  }
+
+  crearPlantilla(body: PlantillaCrear): Observable<Plantilla> {
+    return this.http.post<Plantilla>(`${API}/plantillas`, body);
+  }
+
+  eliminarPlantilla(id: number): Observable<void> {
+    return this.http.delete<void>(`${API}/plantillas/${id}`);
+  }
+
+  /** Todas las notificaciones generadas (de cualquier destinatario), más recientes primero. */
+  avisos(f: FiltroAvisos = {}, page = 0, size = 15): Observable<Page<NotificacionAdmin>> {
+    let params = new HttpParams().set('page', page).set('size', size);
+    if (f.tipo) params = params.set('tipo', f.tipo);
+    if (f.canal) params = params.set('canal', f.canal);
+    if (f.estado) params = params.set('estado', f.estado);
+    if (f.usuarioId) params = params.set('usuarioId', f.usuarioId);
+    if (f.texto) params = params.set('texto', f.texto);
+    return this.http
+      .get<{ contenido: NotificacionAdmin[]; pagina: number; tamano: number; total: number; totalPaginas: number }>(`${API}/admin`, { params })
+      .pipe(map(p => ({ contenido: p.contenido, pagina: p.pagina, tamano: p.tamano, totalElementos: p.total, totalPaginas: p.totalPaginas })));
+  }
+
+  editarAviso(id: number, body: { titulo: string; mensaje: string }): Observable<NotificacionAdmin> {
+    return this.http.put<NotificacionAdmin>(`${API}/admin/${id}`, body);
+  }
+
+  eliminarAviso(id: number): Observable<void> {
+    return this.http.delete<void>(`${API}/admin/${id}`);
   }
 
   enviar(body: EnvioManual): Observable<EnvioManualResultado> {

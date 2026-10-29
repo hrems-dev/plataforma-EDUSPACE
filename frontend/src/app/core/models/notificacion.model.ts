@@ -28,6 +28,38 @@ export interface Plantilla {
   actualizadoEn?: string;
 }
 
+export interface PlantillaCrear {
+  codigo: string;
+  canal: CanalNotificacion;
+  asunto?: string;
+  cuerpo: string;
+  activa: boolean;
+}
+
+export type EstadoEnvio = 'PENDIENTE' | 'ENVIADA' | 'FALLIDA' | 'DESCARTADA';
+
+/** Una notificación vista por el ADMIN (cualquier destinatario y canal). */
+export interface NotificacionAdmin {
+  id: number;
+  usuarioId: number;
+  tipo: string;
+  canal: CanalNotificacion;
+  estado: EstadoEnvio;
+  titulo: string;
+  mensaje: string;
+  leida: boolean;
+  creadaEn: string;
+  enviadaEn?: string;
+}
+
+export interface FiltroAvisos {
+  tipo?: string;
+  canal?: CanalNotificacion | '';
+  estado?: EstadoEnvio | '';
+  usuarioId?: number;
+  texto?: string;
+}
+
 export interface EnvioManual {
   usuarioIds: number[];
   titulo: string;

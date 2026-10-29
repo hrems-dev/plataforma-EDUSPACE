@@ -38,12 +38,12 @@ def token(usuario):
 
 
 def call(metodo, ruta, usuario, cuerpo=None, crudo=None, ctype='application/json'):
-    """Una llamada; si el Gateway aún no encuentra el servicio (0, 502, 503, 504) la repite unas veces."""
-    for intento in range(4):
+    """Una llamada; si el Gateway aún no encuentra el servicio (0, 502, 503, 504) o limita el ritmo (429) la repite unas veces."""
+    for intento in range(6):
         s, d = _llamar(metodo, ruta, usuario, cuerpo, crudo, ctype)
-        if s not in (0, 502, 503, 504) or intento == 3:
+        if s not in (0, 429, 502, 503, 504) or intento == 5:
             return s, d
-        time.sleep(3)
+        time.sleep(10 if s == 429 else 3)
 
 
 def _llamar(metodo, ruta, usuario, cuerpo=None, crudo=None, ctype='application/json'):

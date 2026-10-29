@@ -52,8 +52,8 @@ public class SecurityConfig {
         List<String> origins = Arrays.stream(allowedOrigins.split(",")).map(String::trim).filter(o -> !o.isEmpty()).toList();
         config.setAllowedOrigins(origins);
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
-        config.setAllowedHeaders(List.of("Authorization", "Content-Type", "Accept", "X-Correlation-Id"));
-        config.setExposedHeaders(List.of("X-Correlation-Id", "Content-Disposition"));
+        config.setAllowedHeaders(List.of("Authorization", "Content-Type", "Accept", "X-Trace-ID", "X-Correlation-Id"));
+        config.setExposedHeaders(List.of("X-Trace-ID", "X-Correlation-Id", "Content-Disposition"));
         config.setMaxAge(3600L);
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", config);

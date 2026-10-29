@@ -212,3 +212,61 @@ export interface Feriado {
 export type FeriadoRequest = Omit<Feriado, 'id'>;
 
 export const DIAS_SEMANA = ['', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+
+/** Cursos de varios grados a la vez (malla en lote). */
+export interface MallaLoteRequest {
+  gradoIds: number[];
+  cursos: { cursoId: number; horasSemanales: number }[];
+  sobrescribir: boolean;
+}
+export interface MallaLoteResultado {
+  creados: number;
+  actualizados: number;
+  omitidos: number;
+  detalle: string[];
+}
+
+/** Qué le falta a una sección para armar su horario. */
+export interface PreparacionSeccion {
+  seccionId: number;
+  nombre: string;
+  gradoId: number;
+  gradoNombre: string;
+  nivelId: number;
+  nivelNombre: string;
+  turno: Turno;
+  aula?: string;
+  cursosMalla: number;
+  horasMalla: number;
+  espacios: number;
+  sinDocente: string[];
+  clasesProgramadas: number;
+  lista: boolean;
+  problemas: string[];
+}
+
+export interface GenerarHorarioRequest {
+  anioId: number;
+  seccionIds: number[];
+  reemplazar: boolean;
+  asignarDocentes: boolean;
+  simular: boolean;
+}
+export type EstadoGeneracion = 'GENERADO' | 'INCOMPLETO' | 'SIN_CAMBIOS' | 'OMITIDO';
+export interface ResultadoSeccionGeneracion {
+  seccionId: number;
+  nombre: string;
+  estado: EstadoGeneracion;
+  requeridas: number;
+  colocadas: number;
+  mensajes: string[];
+}
+export interface ResultadoGeneracion {
+  simulacion: boolean;
+  seccionesGeneradas: number;
+  seccionesOmitidas: number;
+  horasColocadas: number;
+  horasSinColocar: number;
+  docentesAsignados: number;
+  secciones: ResultadoSeccionGeneracion[];
+}

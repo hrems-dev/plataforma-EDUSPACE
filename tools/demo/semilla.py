@@ -3,6 +3,8 @@
   python3 semilla.py base        colegio: año, periodos, cursos, malla, sección, docente, horario, alumnos, matrículas y cobros
   python3 semilla.py academico   asistencia, criterios y notas, tareas y exámenes (como DOCENTE)
   python3 semilla.py familia     entregas, intento de examen, justificación y pago en línea (como ALUMNO y APODERADO)
+  python3 semilla.py matriculas  secciones de todos los grados, tarifas por nivel y alumnos con expediente listo para matricular
+  python3 semilla.py docentes    cursos de Primaria y docentes con su especialidad (para probar el armado automático de horarios)
   python3 semilla.py todo
 
 Necesita el backend arriba y los usuarios admin, secretaria, cajero, docente, apoderado y alumno (ver tools/demo/lib.py).
@@ -70,6 +72,8 @@ def base():
     doc = docs[0] if docs else R.ok('docente', call('POST', '/api/v1/planificacion/docentes', 'secretaria', {'tipoDocumento': 'DNI', 'numeroDocumento': '40111222', 'nombres': 'Jorge', 'apellidos': 'Paredes', 'email': 'docente@eduspace.com', 'especialidad': 'Matemática'}))
     if not doc.get('usuarioId'):
         R.ok('vincular docente con su usuario', call('PATCH', f"/api/v1/planificacion/docentes/{doc['id']}/usuario", 'admin', {'usuarioId': USUARIO_DOCENTE}))
+    if not sec.get('tutorDocenteId'):
+        R.ok('tutor de 4° A', call('PUT', f"/api/v1/planificacion/secciones/{sec['id']}", 'admin', {'anioId': sec['anioId'], 'gradoId': sec['gradoId'], 'aulaId': sec.get('aulaId'), 'nombre': sec['nombre'], 'turno': sec['turno'], 'capacidad': sec['capacidad'], 'tutorDocenteId': doc['id'], 'activo': True}))
     asig = {a['cursoNombre']: a for a in call('GET', f"/api/v1/planificacion/asignaciones?seccionId={sec['id']}", 'secretaria')[1]}
     for nombre in horas:
         if nombre not in asig:
@@ -310,12 +314,109 @@ def familia():
     R.ok('notificaciones del apoderado', call('GET', '/api/v1/notificaciones/mias?page=0&size=5', 'apoderado'))
 
 
+# ------------------------------------------------------------------ matrículas: datos listos para usar
+CAPACIDAD = {'Inicial': 20, 'Primaria': 30, 'Secundaria': 35}
+# (apoderado: nombres, apellidos, documento, email, parentesco), hijos: (nombres, materno, nivel, grado, sexo)
+FAMILIAS = [
+    (('Marta', 'Quispe', '41200101', 'mquispe@ejemplo.com', 'MADRE'), [('Camila', 'Rojas', 'Inicial', 1, 'F'), ('Joaquín', 'Rojas', 'Primaria', 3, 'M')]),
+    (('Luis', 'Ramírez', '41200102', 'lramirez@ejemplo.com', 'PADRE'), [('Valeria', 'Castro', 'Inicial', 2, 'F')]),
+    (('Elena', 'Huamán', '41200103', 'ehuaman@ejemplo.com', 'MADRE'), [('Santiago', 'Poma', 'Inicial', 3, 'M'), ('Renata', 'Poma', 'Primaria', 1, 'F')]),
+    (('Carlos', 'Torres', '41200104', 'ctorres@ejemplo.com', 'PADRE'), [('Andrea', 'Díaz', 'Primaria', 2, 'F')]),
+    (('Patricia', 'Flores', '41200105', 'pflores@ejemplo.com', 'MADRE'), [('Bruno', 'Soto', 'Primaria', 5, 'M'), ('Daniela', 'Soto', 'Secundaria', 1, 'F')]),
+    (('Raúl', 'Medina', '41200106', 'rmedina@ejemplo.com', 'PADRE'), [('Emilia', 'Cruz', 'Primaria', 6, 'F')]),
+    (('Gabriela', 'Salazar', '41200107', 'gsalazar@ejemplo.com', 'MADRE'), [('Nicolás', 'Paz', 'Primaria', 4, 'M')]),
+    (('Fernando', 'Vera', '41200108', 'fvera@ejemplo.com', 'PADRE'), [('Mía', 'León', 'Secundaria', 2, 'F'), ('Thiago', 'León', 'Secundaria', 4, 'M')]),
+    (('Rosa', 'Aguilar', '41200109', 'raguilar@ejemplo.com', 'MADRE'), [('Mariana', 'Ortiz', 'Secundaria', 3, 'F')]),
+    (('Jorge', 'Campos', '41200110', 'jcampos@ejemplo.com', 'PADRE'), [('Sebastián', 'Reyes', 'Secundaria', 5, 'M')]),
+    (('Lucía', 'Navarro', '41200111', 'lnavarro@ejemplo.com', 'MADRE'), [('Isabella', 'Cano', 'Primaria', 4, 'F'), ('Matías', 'Cano', 'Inicial', 2, 'M')]),
+    (('Hugo', 'Alvarado', '41200112', 'halvarado@ejemplo.com', 'PADRE'), [('Antonella', 'Peña', 'Primaria', 3, 'F')]),
+]
+EDAD_BASE = {'Inicial': 3, 'Primaria': 6, 'Secundaria': 12}
+
+
+def matriculas():
+    """Deja el colegio listo para matricular: secciones en todos los grados, tarifas por nivel y alumnos con expediente verificado."""
+    anio, _ = contexto()
+    grados = call('GET', '/api/v1/planificacion/grados', 'admin')[1]
+    aulas = {a['codigo']: a for a in call('GET', '/api/v1/planificacion/aulas', 'admin')[1]}
+    secs = call('GET', f"/api/v1/planificacion/secciones?anioId={anio['id']}", 'admin')[1]
+    for g in grados:
+        letras = ['A'] if g['nivelNombre'] == 'Inicial' else ['A', 'B']
+        cap = CAPACIDAD[g['nivelNombre']]
+        for letra in letras:
+            if any(x['gradoId'] == g['id'] and x['nombre'] == letra for x in secs):
+                continue
+            codigo = f"I-{g['numero'] + 2}{letra}" if g['nivelNombre'] == 'Inicial' else f"{g['nivelNombre'][:3].upper()}-{g['numero']}{letra}"
+            aula = aulas.get(codigo) or R.ok(f'aula {codigo}', call('POST', '/api/v1/planificacion/aulas', 'admin', {'codigo': codigo, 'nombre': f"Aula {g['nombre']} {letra}", 'tipo': 'AULA', 'capacidad': cap, 'activo': True}))
+            aulas[codigo] = aula
+            R.ok(f"sección {g['nombre']} {letra}", call('POST', '/api/v1/planificacion/secciones', 'admin', {'anioId': anio['id'], 'gradoId': g['id'], 'nombre': letra, 'turno': 'MANANA', 'capacidad': cap, 'aulaId': aula['id'], 'activo': True}))
+    # tarifas de Inicial y Secundaria (Primaria ya la crea la etapa base)
+    conceptos = {c['tipo']: c for c in call('GET', '/api/v1/pagos/conceptos', 'admin')[1]}
+    tarifas = call('GET', f"/api/v1/pagos/tarifas?anioId={anio['id']}", 'admin')[1]
+    niveles = {n['nombre']: n['id'] for n in call('GET', '/api/v1/planificacion/niveles', 'admin')[1]}
+    for nivel, mat, pen in [('Inicial', 80, 250), ('Secundaria', 120, 350)]:
+        for tipo, monto, cuotas in [('MATRICULA', mat, 1), ('PENSION', pen, 10)]:
+            if any(t['conceptoId'] == conceptos[tipo]['id'] and t['nivelId'] == niveles[nivel] for t in tarifas):
+                continue
+            R.ok(f'tarifa {tipo} {nivel}', call('POST', '/api/v1/pagos/tarifas', 'admin', {'anioId': anio['id'], 'nivelId': niveles[nivel], 'gradoId': None, 'conceptoId': conceptos[tipo]['id'], 'monto': monto, 'numCuotas': cuotas, 'mesInicio': 3, 'diaVencimiento': 5, 'activo': True}))
+    # alumnos nuevos, sin matrícula, con DNI, partida y ficha SIAGIE verificados
+    existentes = {a['numeroDocumento']: a for a in call('GET', '/api/v1/alumnos?page=0&size=100', 'secretaria')[1]['contenido']}
+    n = 0
+    for (anom, aap, adni, amail, par), hijos in FAMILIAS:
+        apoderado_id = None
+        for nom, materno, nivel, grado, sexo in hijos:
+            n += 1
+            dni = f'6{n:07d}'
+            if dni in existentes:
+                apoderado_id = apoderado_id or call('GET', f"/api/v1/alumnos/{existentes[dni]['id']}", 'secretaria')[1]['apoderados'][0]['apoderado']['id']
+                continue
+            nace = HOY.year - (EDAD_BASE[nivel] + grado - 1)
+            vinculo = {'parentesco': par, 'esPrincipal': True, 'esResponsablePago': True, 'viveConAlumno': True, 'puedeRecoger': True}
+            if apoderado_id:
+                vinculo['apoderadoId'] = apoderado_id
+            else:
+                vinculo['apoderado'] = {'numeroDocumento': adni, 'nombres': anom, 'apellidos': aap, 'telefono': f'9880011{n:02d}', 'email': amail}
+            a = R.ok(f'alumno {nom} {aap} ({nivel} {grado}°)', call('POST', '/api/v1/alumnos', 'secretaria', {'numeroDocumento': dni, 'nombres': nom, 'apellidoPaterno': aap, 'apellidoMaterno': materno, 'fechaNacimiento': f'{nace}-0{1 + n % 9}-1{n % 9}', 'sexo': sexo, 'distrito': 'Miraflores', 'apoderados': [vinculo]}))
+            apoderado_id = apoderado_id or a['apoderados'][0]['apoderado']['id']
+            asegurar_expediente(a['id'])
+    print('   Listo para matricular: entra como secretaria y usa Matrículas → Nueva matrícula (los alumnos nuevos no tienen matrícula).')
+
+
+# ------------------------------------------------------------------ docentes y cursos de Primaria (para el generador de horarios)
+CURSOS_PRIMARIA = [('PSO', 'Personal Social', 'Ciencias Sociales'), ('ART', 'Arte y Cultura', 'Arte'), ('EFI', 'Educación Física', 'Educación Física'),
+                   ('REL', 'Educación Religiosa', 'Religión'), ('ING', 'Inglés', 'Inglés'), ('TUT', 'Tutoría', 'Tutoría')]
+DOCENTES_PRIMARIA = [  # (nombres, apellidos, especialidad): 12 de aula (Primaria) y 3 especialistas
+    ('Rosa', 'Aguirre Lazo', 'Educación Primaria'), ('Luis', 'Benites Cruz', 'Educación Primaria'), ('Marta', 'Cáceres Vidal', 'Educación Primaria'),
+    ('Pedro', 'Delgado Rivas', 'Educación Primaria'), ('Ana', 'Espinoza Paz', 'Educación Primaria'), ('Julio', 'Farfán Ochoa', 'Educación Primaria'),
+    ('Carmen', 'Gamarra Soto', 'Educación Primaria'), ('Hugo', 'Herrera Lima', 'Educación Primaria'), ('Elena', 'Ibáñez Cano', 'Educación Primaria'),
+    ('Raúl', 'Jiménez Poma', 'Educación Primaria'), ('Sofía', 'Landa Reyes', 'Educación Primaria'), ('Diego', 'Medina Arce', 'Educación Primaria'),
+    ('Valeria', 'Ñahui Quispe', 'Arte y Cultura'), ('Andrés', 'Olivera Ramos', 'Educación Física'), ('Teresa', 'Peralta Gil', 'Inglés'),
+]
+
+
+def docentes():
+    """Cursos y docentes de Primaria con su especialidad. No arma malla ni asignaciones: eso se hace desde el inicio (Horarios → Armado automático)."""
+    cursos = {c['nombre'] for c in call('GET', '/api/v1/planificacion/cursos', 'admin')[1]}
+    for codigo, nombre, area in CURSOS_PRIMARIA:
+        if nombre not in cursos:
+            R.ok(f'curso {nombre}', call('POST', '/api/v1/planificacion/cursos', 'admin', {'codigo': codigo, 'nombre': nombre, 'area': area, 'activo': True}))
+    existentes = {d['numeroDocumento'] for d in call('GET', '/api/v1/planificacion/docentes?q=&page=0&size=200', 'secretaria')[1]['contenido']}
+    for i, (nom, ape, esp) in enumerate(DOCENTES_PRIMARIA):
+        dni = f'7{i + 1:07d}'
+        if dni not in existentes:
+            R.ok(f'docente {nom} {ape}', call('POST', '/api/v1/planificacion/docentes', 'secretaria', {'tipoDocumento': 'DNI', 'numeroDocumento': dni, 'nombres': nom, 'apellidos': ape, 'email': f'{nom.lower()}.{ape.split()[0].lower()}@eduspace.test'.replace('á', 'a').replace('é', 'e').replace('í', 'i').replace('ó', 'o').replace('ú', 'u').replace('ñ', 'n'), 'especialidad': esp}))
+
+
 if __name__ == '__main__':
     etapa = sys.argv[1] if len(sys.argv) > 1 else 'base'
     if not esperar_backend():
         raise SystemExit(2)
     if etapa in ('base', 'todo'):
         base()
+    if etapa in ('docentes', 'todo'):
+        docentes()
+    if etapa in ('matriculas', 'todo'):
+        matriculas()
     if etapa in ('academico', 'todo'):
         academico()
     if etapa in ('familia', 'todo'):

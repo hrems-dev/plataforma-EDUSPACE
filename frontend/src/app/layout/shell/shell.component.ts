@@ -1,18 +1,20 @@
 import { Component, HostListener, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { toSignal } from '@angular/core/rxjs-interop';
+import { NavigationEnd, Router, RouterLink, RouterOutlet } from '@angular/router';
 import { timer } from 'rxjs';
-import { catchError, switchMap } from 'rxjs/operators';
+import { catchError, filter, map, switchMap } from 'rxjs/operators';
 import { of } from 'rxjs';
 import { AlumnoService } from '../../core/services/alumno.service';
 import { AlumnoResumen } from '../../core/models/alumno.model';
 import { AuthService } from '../../core/services/auth.service';
 import { NotificacionService } from '../../core/services/notificacion.service';
+import { HUBS, hubDe } from '../hubs';
 import { MENU, PERSONAL } from '../menu';
 
 @Component({
   selector: 'app-shell',
-  imports: [RouterLink, RouterLinkActive, RouterOutlet],
+  imports: [RouterLink, RouterOutlet],
   templateUrl: './shell.component.html',
   styleUrl: './shell.component.css'
 })
@@ -34,6 +36,31 @@ export class ShellComponent {
     })).filter(g => g.items.length > 0)
   );
 
+  /** URL actual (sin parámetros) para saber a qué espacio de trabajo pertenece la pantalla. */
+  private readonly url = toSignal(
+    this.router.events.pipe(filter(e => e instanceof NavigationEnd), map(() => this.router.url)),
+    { initialValue: this.router.url }
+  );
+
+  private readonly pestanaVisible = (p: { roles: string[]; soloEduspace?: boolean }) =>
+    this.auth.tieneAlgunRol(p.roles) && !(p.soloEduspace && this.auth.esKeycloak);
+
+  /** Espacio de trabajo de la pantalla abierta, con solo las pestañas que el rol puede usar. */
+  protected readonly hubActual = computed(() => {
+    const h = hubDe(this.url());
+    if (!h) return null;
+    return { hub: h.hub, activa: h.pestana.ruta, pestanas: h.hub.pestanas.filter(this.pestanaVisible) };
+  });
+
+  /** Un ítem suelto se resalta en su ruta; la entrada de un espacio de trabajo, en cualquiera de sus pestañas. */
+  protected esActivo(i: { ruta: string; hub?: string }): boolean {
+    const h = this.hubActual();
+    if (i.hub) return h?.hub.id === i.hub;
+    if (h) return false;
+    const u = this.url().split(/[?#]/)[0];
+    return u === i.ruta || u.startsWith(i.ruta + '/');
+  }
+
   // --- Paleta de búsqueda (Ctrl+K): saltar a cualquier pantalla permitida o abrir el expediente de un alumno ---
   protected readonly paletaAbierta = signal(false);
   protected readonly texto = signal('');
@@ -44,8 +71,10 @@ export class ShellComponent {
 
   protected readonly opciones = computed(() => {
     const t = this.texto().trim().toLowerCase();
-    const pantallas = this.menu()
-      .flatMap(g => g.items.map(i => ({ tipo: 'pantalla' as const, etiqueta: i.etiqueta, detalle: g.titulo, ruta: i.ruta })))
+    // Cada pestaña de un espacio de trabajo es una pantalla propia en la búsqueda; la entrada del hub sería un duplicado de su primera pestaña.
+    const sueltas = this.menu().flatMap(g => g.items.filter(i => !i.hub).map(i => ({ tipo: 'pantalla' as const, etiqueta: i.etiqueta, detalle: g.titulo, ruta: i.ruta })));
+    const deHubs = HUBS.flatMap(h => h.pestanas.filter(this.pestanaVisible).map(p => ({ tipo: 'pantalla' as const, etiqueta: p.etiqueta, detalle: h.titulo, ruta: p.ruta })));
+    const pantallas = [...sueltas, ...deHubs]
       .filter(o => !t || `${o.etiqueta} ${o.detalle}`.toLowerCase().includes(t));
     const personas = this.alumnos().map(a => ({ tipo: 'alumno' as const, etiqueta: a.nombreCompleto, detalle: `Alumno · ${a.numeroDocumento}`, ruta: `/alumnos/${a.id}` }));
     return [...personas, ...pantallas].slice(0, 12);

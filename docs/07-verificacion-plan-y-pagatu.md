@@ -70,3 +70,31 @@ Pendiente: S10 paneles de observabilidad **por servicio** (hay stack `obs/`, no 
 6. Puertos propios (8090–8099) en vez de la convención 18xxx de pagatu (infra sí usa 18xxx).
 7. Nombres sin prefijo `pagatu-`/`eduspace-` en los servicios de dominio (la infra sí lleva `eduspace-`).
 8. Faltan `mkdocs.yml`, `uso-rapido/` y `CLAUDE.md` que pagatu sí tiene a nivel de raíz.
+
+## 3. Segunda revisión contra la guía y el código de pagatu (2026-10-27)
+
+Fuentes: `Ruta de aprendizaje Pagatu S1–S4`, `class/pagatu` (docs S01–S09, `OFICIAL_ESTRUCTURA_ESTANDAR.md`, `config-repo`, `SecurityConfig` del gateway) y `class/frontPagatu`.
+
+### Corregido en esta revisión
+| Tema | Pagatu | EduSpace antes | Ahora |
+|---|---|---|---|
+| Emisor de tokens en DEV | Keycloak (`config-repo/*-dev.yml`); `auth-ms` en PROD | `auth-ms` en DEV y Keycloak solo con la variable `JWK_SET_URI`; el front en modo Keycloak daba 401 en todo si el backend arrancaba con el valor por defecto | `*-dev.yml` apuntan a Keycloak (`18090`), `*-prod.yml` a `auth-ms`. `tools/e2e/levantar.sh` levanta Keycloak si falta y acepta `--auth-propio` (necesario para los escenarios e2e) |
+| Trazabilidad (S1/S10: «Angular envía `X-Trace-ID`») | el filtro respeta el header | los 10 filtros lo respetaban, pero el front no lo enviaba y el CORS del gateway permitía `X-Correlation-Id`, no `X-Trace-ID` | el interceptor agrega `X-Trace-ID` (UUID) a cada llamada a la API; el gateway lo permite y lo expone. Probado: el `traceId` del error vuelve igual al enviado |
+| Seguridad del front | token en `sessionStorage` | token en memoria (Keycloak) | además, el Bearer solo se envía a `/api/` del mismo origen (no a dominios ajenos); aviso visible si el backend rechaza el token |
+
+### Sigue la guía (verificado)
+- Puertos DEV: Config 18888, Eureka 18761, Gateway 18080, Prometheus 19090, Loki 13100, Grafana 13000, Kafka 19092 / UI 18085 (idénticos a pagatu); bases en 154xx.
+- Config Server nativo con `-dev`/`-prod` y `spring.config.import: optional:configserver` en los 10 servicios.
+- Eureka con las 10 instancias registradas; gateway con rutas `lb://` y punto único de entrada; `instance-id` aleatorio en PROD.
+- Flyway manda y Hibernate valida (`ddl-auto: validate` en los 10); `V2+` para cambios (nunca se edita una migración aplicada: el cambio de nombres de Inicial es `V3`).
+- Errores con `{codigo, mensaje, ruta, traceId, fecha}`; `/api/v1`; Swagger en `/swagger-ui.html` y OpenAPI en `/v3/api-docs` en los 10 (comprobado en vivo).
+- Seguridad S7: Resource Server en gateway y servicios, roles desde `realm_access.roles`, `usuarioId` tomado del token (no del request).
+- Kafka/outbox (S8–S9), Feign + Resilience4j (S6) en los servicios que consultan a otros.
+- Front (S11): `core/{guards,interceptors,models,services}`, `features/`, `layout/`, `shared/`; `proxy.conf.json`; CORS del gateway por variable.
+
+### Diferencias que quedan (decididas o pendientes)
+1. `/actuator/metrics` responde 401 en `planificacion`, `alumnos` y `notificaciones` (la guía S1 lo consulta sin token). Es endurecimiento deliberado: solo `health`, `info` y `prometheus` son públicos. Los otros 7 servicios dejan todo `/actuator/**` abierto; conviene igualarlos a los 3 estrictos antes de PROD.
+2. Falta `infra/compose.yml` que valide Config + Eureka + Gateway juntos (pagatu lo tiene; aquí cada pieza tiene su `compose*.yml`, solo el gateway).
+3. Los servicios de dominio no llevan prefijo `eduspace-` (`alumnos-ms`, no `eduspace-alumnos-ms`) como pide la convención `<proyecto>-<contexto>-ms`. Cambiarlo toca Eureka, rutas del gateway, `config-repo`, Prometheus y e2e.
+4. Login del front: pagatu usa el formulario propio con *password grant* contra Keycloak; EduSpace usa código + PKCE (la app nunca ve la clave). Se mantiene: es más seguro y la guía S7 lo presenta como el estándar.
+5. Desviaciones 1–8 de la sección 2 siguen vigentes.

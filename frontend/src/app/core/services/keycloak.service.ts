@@ -10,12 +10,16 @@ export class KeycloakService {
 
   /**
    * Con `obligatorio` (pantallas del portal): si no hay sesión redirige al login de Keycloak (código con PKCE).
-   * Sin él (sitio público): solo prepara el cliente y procesa un retorno de login si lo hay; no redirige.
+   * Sin él (sitio público): comprueba en silencio (iframe) si ya hay sesión en Keycloak, sin redirigir ni mostrar nada;
+   * así la página pública sabe que el usuario ya entró y el token existe desde el primer momento.
    */
   async iniciar(config: KeycloakConfig, obligatorio = true): Promise<boolean> {
     this.config = config;
     this.kc = new Keycloak({ url: config.url, realm: config.realm, clientId: config.clientId });
-    return this.kc.init({ ...(obligatorio ? { onLoad: 'login-required' as const } : {}), pkceMethod: 'S256', checkLoginIframe: false });
+    const carga = obligatorio
+      ? { onLoad: 'login-required' as const }
+      : { onLoad: 'check-sso' as const, silentCheckSsoRedirectUri: `${window.location.origin}/silent-check-sso.html`, silentCheckSsoFallback: false };
+    return this.kc.init({ ...carga, pkceMethod: 'S256', checkLoginIframe: false });
   }
 
   get autenticado(): boolean {

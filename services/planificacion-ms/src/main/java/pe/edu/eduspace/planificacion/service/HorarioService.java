@@ -7,6 +7,9 @@ public interface HorarioService {
 
     HorarioDocenteResponse porDocente(Long docenteId);
 
+    /** Todas las clases del año (para ver qué aulas están ocupadas y cuáles libres en cada bloque). */
+    java.util.List<HorarioResponse> porAnio(Long anioId);
+
     HorarioResponse crear(HorarioRequest request);
 
     HorarioResponse mover(Long id, HorarioRequest request);
