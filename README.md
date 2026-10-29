@@ -17,6 +17,8 @@ el front se agrega después.
 | `tareas-ms` | 8098 | `tareas_db` · 15448 | Andre | Tareas, entregas con archivos en MinIO, calificación (0–20), pendientes, recordatorios. |
 | `notificaciones-ms` | 8099 | `notificaciones_db` · 15449 | Hermes | Consume 15 tópicos y crea notificaciones IN_APP / EMAIL / PUSH. |
 
+**Quién hizo qué:** `docs/equipo/` (un documento por persona: Hermes, Andre y Witmer, con sus microservicios explicados).
+
 `docs/` trae los informes del paquete de desarrollo, `docs/05-integracion-y-correcciones.md` (contratos, correcciones y decisiones
 de esta etapa) y `docs/06-bitacora-de-avance.md` (cronología), `docs/07-verificacion-plan-y-pagatu.md` (verificación contra el plan y pagatu). `sql/` trae los V1 de referencia y `00_crear_bases.sql`.
 
