@@ -39,6 +39,7 @@ public class SecurityConfig {
                     auth.requestMatchers("/actuator/**").permitAll();
                 }
                 auth.requestMatchers(HttpMethod.POST, "/api/v1/auth/login", "/api/v1/auth/refresh", "/api/v1/auth/logout").permitAll();
+                auth.requestMatchers("/api/v1/publico/**").permitAll();   // matrícula en línea del sitio público (limitada por RateLimitFilter)
                 auth.anyRequest().authenticated();   // incluye el resto de /actuator cuando no es público
             })
             .oauth2ResourceServer(oauth2 -> oauth2.jwt(Customizer.withDefaults()));
@@ -50,9 +51,10 @@ public class SecurityConfig {
             @Value("${eduspace.gateway.cors.allowed-origins}") String allowedOrigins) {
         CorsConfiguration config = new CorsConfiguration();
         List<String> origins = Arrays.stream(allowedOrigins.split(",")).map(String::trim).filter(o -> !o.isEmpty()).toList();
-        config.setAllowedOrigins(origins);
+        // Patrones: aceptan origen exacto o comodines (p. ej. http://192.168.*.*:4200 para abrir la web desde otro equipo de la red en DEV).
+        config.setAllowedOriginPatterns(origins);
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
-        config.setAllowedHeaders(List.of("Authorization", "Content-Type", "Accept", "X-Trace-ID", "X-Correlation-Id"));
+        config.setAllowedHeaders(List.of("Authorization", "Content-Type", "Accept", "X-Trace-ID", "X-Correlation-Id", "X-Matricula-Token"));
         config.setExposedHeaders(List.of("X-Trace-ID", "X-Correlation-Id", "Content-Disposition"));
         config.setMaxAge(3600L);
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();

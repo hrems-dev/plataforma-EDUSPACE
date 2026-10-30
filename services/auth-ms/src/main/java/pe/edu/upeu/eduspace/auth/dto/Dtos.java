@@ -37,6 +37,17 @@ public final class Dtos {
         @NotBlank @Size(max = 100) String nombres,
         @NotBlank @Size(max = 100) String apellidos) {}
 
+    /** Cuenta de una persona del colegio: usuario = nombre.apellido y clave inicial = su documento (debe cambiarla al entrar). */
+    public record CuentaPersonaRequest(
+        @NotBlank @Size(max = 100) String nombres,
+        @NotBlank @Size(max = 100) String apellidos,
+        @NotBlank @Size(min = 6, max = 20) @Pattern(regexp = "[A-Za-z0-9]+", message = "El documento solo admite letras y números") String documento,
+        @NotBlank String rol,
+        @Email @Size(max = 150) String email) {}
+
+    public record RestablecerPorDocumentoRequest(
+        @NotBlank @Size(min = 6, max = 20) @Pattern(regexp = "[A-Za-z0-9]+", message = "El documento solo admite letras y números") String documento) {}
+
     public record RolesRequest(@NotEmpty(message = "Indique al menos un rol") Set<String> roles) {}
 
     public record UsuarioResponse(Long id, String username, String email, String nombres, String apellidos, boolean activo,

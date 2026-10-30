@@ -1,5 +1,5 @@
 import { DatePipe, DecimalPipe } from '@angular/common';
-import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, OnInit, computed, inject, input, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Criterio, NotaPendiente, OrigenCriterio, RegistroNotas, ValidarPesos } from '../../../core/models/calificacion.model';
 import { Asignacion } from '../../../core/models/planificacion.model';
@@ -22,6 +22,11 @@ export class DocenteNotasComponent implements OnInit {
   private readonly avisos = inject(NotificationService);
   private readonly confirmacion = inject(ConfirmService);
   private readonly fb = inject(FormBuilder);
+
+  /** Dentro de la página de un curso: ya viene elegido el curso y se ocultan la cabecera y el selector de curso. */
+  readonly seccionId = input<number | null>(null);
+  readonly cursoId = input<number | null>(null);
+  readonly embebido = input(false);
 
   protected readonly ctx = signal<ContextoDocente | null>(null);
   protected readonly registro = signal<RegistroNotas | null>(null);
@@ -51,7 +56,8 @@ export class DocenteNotasComponent implements OnInit {
     this.contexto.cargar().subscribe({
       next: c => {
         this.ctx.set(c);
-        this.filtro.patchValue({ asignacion: c.asignaciones[0]?.id ?? 0, periodoId: c.periodoActivo?.id ?? 0 });
+        const elegida = c.asignaciones.find(a => a.seccionId === this.seccionId() && a.cursoId === this.cursoId()) ?? c.asignaciones[0];
+        this.filtro.patchValue({ asignacion: elegida?.id ?? 0, periodoId: c.periodoActivo?.id ?? 0 });
         this.cargar();
       },
       error: e => this.avisos.error(mensajeError(e, 'No se pudo cargar tu información de docente.'))

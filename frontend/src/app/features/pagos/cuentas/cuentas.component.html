@@ -7,6 +7,10 @@
     <div class="card-body"><app-buscador-alumno [soloActivos]="false" (elegidoAlumno)="elegir($event)" /></div>
   </section>
 
+  @if (!cuenta() && !cargando()) {
+    <div class="vacio-guia"><strong>Busca a un alumno</strong><span>Verás sus cuotas, descuentos, mora y saldo, y podrás asignarle un descuento.</span></div>
+  }
+
   @if (cuenta(); as c) {
     <section class="kpis" aria-label="Resumen de la cuenta">
       <div class="kpi"><div class="etiqueta">Total cobrado</div><div class="valor" style="color: var(--ok)">S/ {{ c.totalCobrado | number: '1.2-2' }}</div></div>

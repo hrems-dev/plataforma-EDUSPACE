@@ -21,6 +21,10 @@ import {
   Vinculo
 } from '../../../core/models/alumno.model';
 import { AlumnoService } from '../../../core/services/alumno.service';
+import { AuthService } from '../../../core/services/auth.service';
+import { CuentasService, partirNombre } from '../../../core/services/cuentas.service';
+import { UsuarioService } from '../../../core/services/usuario.service';
+import { Usuario } from '../../../core/models/usuario.model';
 import { ConfirmService } from '../../../core/services/confirm.service';
 import { NotificationService } from '../../../core/services/notification.service';
 import { mensajeError } from '../../../core/utils/errores';
@@ -45,6 +49,13 @@ export class AlumnoDetalleComponent {
   private readonly avisos = inject(NotificationService);
   private readonly confirmacion = inject(ConfirmService);
   private readonly fb = inject(FormBuilder);
+  private readonly cuentas = inject(CuentasService);
+  private readonly usuarios = inject(UsuarioService);
+  /** Las cuentas se administran solo con el login propio y solo el ADMIN. */
+  private readonly sesion = inject(AuthService);
+  protected readonly puedeCuentas = computed(() => this.sesion.isAdmin() && !this.sesion.esKeycloak);
+  protected readonly cuenta = signal<Usuario | null>(null);
+  protected readonly trabajandoCuenta = signal(false);
 
   /** Parámetro de ruta `:id` (withComponentInputBinding). */
   readonly id = input.required<string>();
@@ -159,6 +170,7 @@ export class AlumnoDetalleComponent {
     this.api.obtener(id).subscribe({
       next: a => {
         this.alumno.set(a);
+        this.cargarCuenta(a);
         this.cargando.set(false);
       },
       error: (e: HttpErrorResponse) => {
@@ -172,8 +184,50 @@ export class AlumnoDetalleComponent {
     this.api.salud(id).subscribe({ next: s => this.salud.set(s), error: () => this.salud.set(null) }); // 404: aún sin ficha
   }
 
+  /** Estado de la cuenta de acceso del alumno (usuario, si ya cambió su clave). */
+  private cargarCuenta(a: Alumno): void {
+    this.cuenta.set(null);
+    if (!a.usuarioId || !this.puedeCuentas()) return;
+    this.usuarios.obtener(a.usuarioId).subscribe({ next: u => this.cuenta.set(u), error: () => this.cuenta.set(null) });
+  }
+
+  protected crearCuenta(a: Alumno): void {
+    const n = partirNombre(a.nombreCompleto);
+    this.trabajandoCuenta.set(true);
+    this.cuentas.crear({ tipo: 'ALUMNO', id: a.id, nombres: a.nombres, apellidos: [a.apellidoPaterno, a.apellidoMaterno].filter(Boolean).join(' ') || n.apellidos, documento: a.numeroDocumento }).subscribe({
+      next: u => {
+        this.trabajandoCuenta.set(false);
+        this.avisos.success(`Cuenta creada: usuario ${u.username}, clave inicial su documento.`);
+        this.recargarAlumno();
+      },
+      error: e => {
+        this.trabajandoCuenta.set(false);
+        this.avisos.error(mensajeError(e, 'No se pudo crear la cuenta.'));
+      }
+    });
+  }
+
+  protected async restaurarCuenta(a: Alumno): Promise<void> {
+    if (!(await this.confirmacion.confirmar(`¿Restaurar la cuenta de ${a.nombreCompleto}? Su clave volverá a ser su documento y deberá cambiarla al entrar.`, 'Restaurar'))) return;
+    this.trabajandoCuenta.set(true);
+    this.cuentas.restablecer({ tipo: 'ALUMNO', id: a.id, nombres: a.nombres, apellidos: a.apellidoPaterno, documento: a.numeroDocumento, usuarioId: a.usuarioId }).subscribe({
+      next: () => {
+        this.trabajandoCuenta.set(false);
+        this.avisos.success('Cuenta restaurada: la clave es su documento y deberá cambiarla al entrar.');
+        this.cargarCuenta(a);
+      },
+      error: e => {
+        this.trabajandoCuenta.set(false);
+        this.avisos.error(mensajeError(e, 'No se pudo restaurar la cuenta.'));
+      }
+    });
+  }
+
   private recargarAlumno(): void {
-    this.api.obtener(this.alumnoId()).subscribe(a => this.alumno.set(a));
+    this.api.obtener(this.alumnoId()).subscribe(a => {
+      this.alumno.set(a);
+      this.cargarCuenta(a);
+    });
   }
 
   private recargarDocumentos(id = this.alumnoId()): void {

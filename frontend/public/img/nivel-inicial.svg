@@ -1,0 +1,75 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 240" width="100%" height="100%">
+  <defs>
+    <linearGradient id="iniBg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fffbeb"/>
+      <stop offset="100%" stop-color="#fef3c7"/>
+    </linearGradient>
+  </defs>
+  <!-- Fondo cálido de aula infantil -->
+  <rect width="400" height="240" rx="14" fill="url(#iniBg)"/>
+
+  <!-- Arcoíris decorativo de aula -->
+  <g transform="translate(40, -10)" opacity="0.35">
+    <path d="M0 120 A80 80 0 0 1 160 120" stroke="#f43f5e" stroke-width="8" fill="none"/>
+    <path d="M8 120 A72 72 0 0 1 152 120" stroke="#f97316" stroke-width="8" fill="none"/>
+    <path d="M16 120 A64 64 0 0 1 144 120" stroke="#eab308" stroke-width="8" fill="none"/>
+    <path d="M24 120 A56 56 0 0 1 136 120" stroke="#22c55e" stroke-width="8" fill="none"/>
+    <path d="M32 120 A48 48 0 0 1 128 120" stroke="#06b6d4" stroke-width="8" fill="none"/>
+  </g>
+
+  <!-- Pizarra infantil con dibujos -->
+  <rect x="230" y="25" width="140" height="90" rx="6" fill="#14532d" stroke="#b45309" stroke-width="5"/>
+  <text x="300" y="55" fill="#fef08a" font-family="sans-serif" font-size="16" font-weight="bold" text-anchor="middle">1 2 3</text>
+  <text x="300" y="80" fill="#fef08a" font-family="sans-serif" font-size="18" font-weight="bold" text-anchor="middle">A B C</text>
+  <circle cx="260" cy="95" r="5" fill="#fb7185"/>
+  <polygon points="330,90 335,97 343,97 337,102 339,109 330,105 321,109 323,102 317,97 325,97" fill="#facc15"/>
+
+  <!-- Mesa lúdica infantil -->
+  <ellipse cx="140" cy="180" rx="90" ry="32" fill="#38bdf8" opacity="0.2"/>
+  <ellipse cx="140" cy="175" rx="90" ry="30" fill="#f8fafc" stroke="#cbd5e1" stroke-width="2"/>
+
+  <!-- Bloques de madera de construcción -->
+  <!-- Cubo A -->
+  <g transform="translate(65, 140)">
+    <polygon points="0,15 15,0 35,0 20,15" fill="#f87171"/>
+    <polygon points="20,15 35,0 35,20 20,35" fill="#dc2626"/>
+    <polygon points="0,15 20,15 20,35 0,35" fill="#ef4444"/>
+    <text x="10" y="30" fill="#fff" font-family="sans-serif" font-weight="bold" font-size="14" text-anchor="middle">A</text>
+  </g>
+  <!-- Cubo B -->
+  <g transform="translate(90, 130)">
+    <polygon points="0,15 15,0 35,0 20,15" fill="#60a5fa"/>
+    <polygon points="20,15 35,0 35,20 20,35" fill="#2563eb"/>
+    <polygon points="0,15 20,15 20,35 0,35" fill="#3b82f6"/>
+    <text x="10" y="30" fill="#fff" font-family="sans-serif" font-weight="bold" font-size="14" text-anchor="middle">B</text>
+  </g>
+  <!-- Cubo C -->
+  <g transform="translate(115, 145)">
+    <polygon points="0,15 15,0 35,0 20,15" fill="#4ade80"/>
+    <polygon points="20,15 35,0 35,20 20,35" fill="#16a34a"/>
+    <polygon points="0,15 20,15 20,35 0,35" fill="#22c55e"/>
+    <text x="10" y="30" fill="#fff" font-family="sans-serif" font-weight="bold" font-size="14" text-anchor="middle">C</text>
+  </g>
+
+  <!-- Pote con lápices de colores y pinceles -->
+  <rect x="180" y="130" width="26" height="35" rx="4" fill="#fbbf24" stroke="#d97706"/>
+  <line x1="184" y1="130" x2="176" y2="105" stroke="#ef4444" stroke-width="4" stroke-linecap="round"/>
+  <line x1="190" y1="130" x2="190" y2="100" stroke="#3b82f6" stroke-width="4" stroke-linecap="round"/>
+  <line x1="196" y1="130" x2="202" y2="105" stroke="#10b981" stroke-width="4" stroke-linecap="round"/>
+  <line x1="202" y1="130" x2="210" y2="112" stroke="#a855f7" stroke-width="3" stroke-linecap="round"/>
+
+  <!-- Huerto / Maceta Escolar -->
+  <g transform="translate(260, 140)">
+    <polygon points="10,40 50,40 45,70 15,70" fill="#b45309"/>
+    <!-- Brote verde -->
+    <path d="M30 40 Q20 25 15 30 Q20 40 30 40" fill="#22c55e"/>
+    <path d="M30 40 Q40 20 45 25 Q40 38 30 40" fill="#16a34a"/>
+    <line x1="30" y1="40" x2="30" y2="18" stroke="#15803d" stroke-width="2.5"/>
+    <circle cx="30" cy="16" r="6" fill="#facc15"/>
+  </g>
+
+  <!-- Pelota lúdica en suelo -->
+  <circle cx="350" cy="195" r="22" fill="#ef4444"/>
+  <path d="M334 180 Q350 195 334 210" fill="none" stroke="#fff" stroke-width="3"/>
+  <path d="M346 174 Q360 195 346 216" fill="none" stroke="#3b82f6" stroke-width="4"/>
+</svg>

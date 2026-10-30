@@ -50,7 +50,8 @@ public class CupoService {
     /** Vacantes por grado: sincroniza con planificación las secciones del grado y devuelve su ocupación. */
     @Transactional
     public List<CupoResponse> vacantes(Long anioId, Long gradoId) {
-        for (PlanificacionClient.Seccion s : planificacion.secciones(anioId, gradoId)) {
+        List<PlanificacionClient.Seccion> vigentes = planificacion.secciones(anioId, gradoId);
+        for (PlanificacionClient.Seccion s : vigentes) {
             try {
                 asegurar(s);
             } catch (BusinessRuleException e) {
@@ -61,7 +62,10 @@ public class CupoService {
         var cupos = gradoId != null
             ? cupoRepository.findByAnioIdAndGradoIdOrderBySeccionNombre(anioId, gradoId)
             : cupoRepository.findByAnioIdOrderByGradoIdAscSeccionNombreAsc(anioId);
-        cupos.forEach(c -> res.add(MatriculaMapper.toResponse(c)));
+        // Una sección eliminada en planificación deja su fila de cupo aquí: no se muestra. Si planificación no devolvió
+        // secciones (caída o año vacío) no se puede afirmar nada y se devuelve lo que hay.
+        var ids = vigentes.stream().map(PlanificacionClient.Seccion::id).collect(java.util.stream.Collectors.toSet());
+        cupos.stream().filter(c -> ids.isEmpty() || ids.contains(c.getSeccionId())).forEach(c -> res.add(MatriculaMapper.toResponse(c)));
         return res;
     }
 }

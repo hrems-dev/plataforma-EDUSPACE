@@ -18,6 +18,12 @@ export class LoginComponent {
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
 
+  /** Por qué se llegó al login sin haberlo pedido (sesión vencida o servidor reiniciado). */
+  protected readonly aviso = this.route.snapshot.queryParams['motivo'] === 'vencida'
+    ? 'Tu sesión venció. Inicia sesión de nuevo para continuar.'
+    : this.route.snapshot.queryParams['motivo'] === 'invalida'
+      ? 'El sistema no reconoce tu sesión (puede que se haya reiniciado). Inicia sesión de nuevo y volverás a donde estabas.'
+      : null;
   protected readonly cargando = signal(false);
   protected readonly error = signal<string | null>(null);
 

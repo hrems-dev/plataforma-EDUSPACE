@@ -26,16 +26,18 @@ El cambio de sección no cambia el estado (sigue MATRICULADO con otra sección).
 | Matrícula | Crear (pre-matrícula), consultar, listar con filtros, ver las propias | `POST /`, `GET /`, `{id}`, `mias` |
 | Cupos | Ocupación por sección (control atómico, sin sobrepasar la capacidad) | `cupos` |
 | Cambios | Traslado de sección (mismo grado y año), retiro, anulación | `PATCH {id}/traslado\|retiro\|anular` |
+| **Aprobación (solo ADMIN)** | La matrícula pagada queda `POR_APROBAR`; el administrador la aprueba (→ `MATRICULADO`) o la rechaza con motivo (→ `ANULADO`); reenvío del acceso por correo | `PATCH {id}/aprobar\|rechazar`, `POST {id}/reenviar-acceso` |
 | Requisitos | Documentos exigidos (DNI, partida, SIAGIE…) marcados como cumplidos | `PUT {id}/requisitos/{tipo}` |
 | Ratificación | Matrícula masiva del año siguiente; valida deuda en `pago-ms` | `POST ratificacion` |
 | Alumnos de una sección | Para docentes y personal | `seccion/{id}/alumnos` |
 | Internos | Para otros servicios | `/internal/matriculas/seccion/{id}`, `/internal/matriculas/alumno/{id}` |
 
 **Tablas:** `campanias_matricula`, `matriculas`, `cupos_seccion`, `matricula_requisitos`, `matricula_historial`, `eventos_procesados`, `outbox_eventos`, `shedlock`.
-**Publica:** `matricula.creada`, `.confirmada`, `.trasladada`, `.retirada`, `.anulada`. **Consume:** `pago.confirmado` (pasa a MATRICULADO) y `pago.anulado`.
+**Publica:** `matricula.creada`, `.confirmada`, `.trasladada`, `.retirada`, `.anulada`. **Consume:** `pago.confirmado` (deja la matrícula **POR_APROBAR**; solo la aprobación del ADMIN la pasa a MATRICULADO y publica `matricula.confirmada`) y `pago.anulado`. Migraciones `V5` (estado `POR_APROBAR`, columnas `pagada_en/aprobada_por/aprobada_en`) y `V6` (tipos de historial PAGO/APROBACION/RECHAZO).
 **Llama a:** `alumnos-ms`, `planificacion-ms`, `pago-ms`.
 **Reglas:** solo se matricula con una campaña ABIERTA del año de la sección (una por año; una CERRADA no se reabre) y con el alumno ACTIVO; la sección debe tener capacidad configurada y cupo libre; la pre-matrícula vence (`venceEn`) y `VencimientoJob` la anula; el traslado es dentro del mismo grado; todo cambio queda en `matricula_historial`.
-**Pantallas** (espacio *Matrícula*): Matrículas · Campañas · Cupos (y la acción «Matricular alumno» del Panel de aulas).
+**Matrícula en línea (público):** `PublicoMatriculaController` (`/api/v1/publico/matricula`) y `MatriculaEnLineaService` orquestan el trámite completo (ver `docs/sistema/matricula-en-linea.md`); tabla `matriculas_publicas`; constancia PDF (`PdfConstancia`) y pasarela simulada (`TarjetaSimulada`).
+**Pantallas** (espacio *Matrícula*): Matrículas · **Por aprobar** (ADMIN) · Campañas · Cupos (y la acción «Matricular alumno» del Panel de aulas).
 **Pendiente:** constancia de matrícula en PDF; que «aprobó el año» (ratificación) se consulte a `calificaciones-ms`.
 
 ---
@@ -68,16 +70,17 @@ No decide la nota oficial del periodo, no guarda archivos (MinIO) y usa su répl
 
 | Área | Qué hace | Endpoints (`/api/v1/tareas/…`) |
 |---|---|---|
+| **Materiales del curso** | El docente sube archivos (URL firmada a MinIO) o enlaces de sus cursos; la familia de la sección los ve y descarga | `/api/v1/tareas/materiales`: `POST archivo-url`, `POST`, `GET ?seccionId&cursoId`, `GET {id}/url`, `DELETE {id}` |
 | Tareas | Crear, editar, publicar, cerrar; adjuntos por URL firmada | `POST /`, `PUT {id}`, `PATCH {id}/publicar\|cerrar`, `{id}/adjuntos/url` |
 | Entregas | El alumno sube el archivo (URL firmada) y entrega; versiones y marca de entrega tardía | `{id}/entregas/archivo-url`, `POST {id}/entregas`, `GET {id}/entregas` |
 | Calificación | Calificar o devolver una entrega; calificar en lote | `PATCH entregas/{id}/calificar\|devolver`, `PATCH {id}/calificaciones` |
 | Consulta | Lo mío y lo pendiente | `mias`, `mias/pendientes`, `GET /` |
 
-**Tablas:** `tareas`, `tarea_adjuntos`, `entregas`, `entrega_archivos`, `matriculas_local`, `eventos_procesados`, `shedlock`.
-**Publica:** `tarea.publicada`, `tarea.entregada` (aún sin consumidor), `tarea.calificada`, `tarea.recordatorio` (job: avisa a quienes no han entregado). **Consume:** `matricula.*`.
+**Tablas:** `tareas`, `tarea_adjuntos`, `materiales`, `entregas`, `entrega_archivos`, `matriculas_local`, `eventos_procesados`, `shedlock`.
+**Publica:** `tarea.publicada`, `tarea.entregada` (aún sin consumidor), `tarea.calificada`, `tarea.recordatorio` (job: avisa a quienes no han entregado), `material.publicado` (aviso cuando el docente sube un material). **Consume:** `matricula.*`.
 **Llama a:** `planificacion-ms`, `matricula-ms`, `alumnos-ms`; MinIO para archivos.
 **Reglas:** la tarea nace en BORRADOR y se publica con fecha de entrega futura; una PUBLICADA solo admite cambiar descripción y fecha; una CERRADA no se edita ni recibe entregas; el docente solo gestiona sus tareas y debe estar asignado a esa sección y curso; el periodo debe pertenecer al año de la sección y estar ACTIVO; nota 0–20 enviada a calificaciones con su `periodoId`.
-**Pantallas:** *Tareas* del docente (con la lista de entregas y calificación) y *Tareas* de la familia.
+**Pantallas:** *Mis cursos → curso → Materiales* (docente) y *Materiales* del curso (familia); *Tareas* del docente (con la lista de entregas y calificación) y *Tareas* de la familia.
 **Pendiente:** un consumidor de `tarea.entregada` para avisar al docente.
 
 ---

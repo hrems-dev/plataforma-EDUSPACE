@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="100%" height="100%">
+  <defs>
+    <linearGradient id="shieldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1e3a8a"/>
+      <stop offset="100%" stop-color="#0f172a"/>
+    </linearGradient>
+    <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fbbf24"/>
+      <stop offset="50%" stop-color="#f59e0b"/>
+      <stop offset="100%" stop-color="#b45309"/>
+    </linearGradient>
+    <filter id="shadow" x="-10%" y="-10%" width="130%" height="130%">
+      <feDropShadow dx="0" dy="4" stdDeviation="3" flood-opacity="0.25"/>
+    </filter>
+  </defs>
+
+  <!-- Escudo Base -->
+  <path d="M60 8 C88 8 104 22 104 50 C104 84 60 112 60 112 C60 112 16 84 16 50 C16 22 32 8 60 8 Z"
+        fill="url(#shieldGrad)" stroke="url(#goldGrad)" stroke-width="4" filter="url(#shadow)"/>
+
+  <!-- Ribete Interior -->
+  <path d="M60 15 C83 15 96 26 96 50 C96 78 60 102 60 102 C60 102 24 78 24 50 C24 26 37 15 60 15 Z"
+        fill="none" stroke="rgba(251, 191, 36, 0.4)" stroke-width="1.5" stroke-dasharray="3 2"/>
+
+  <!-- Sol del Valle / Amanecer -->
+  <path d="M42 46 C48 38 72 38 78 46 Z" fill="url(#goldGrad)" opacity="0.9"/>
+  <circle cx="60" cy="40" r="7" fill="url(#goldGrad)"/>
+
+  <!-- Rayos de luz -->
+  <path d="M60 27 L60 31 M48 31 L51 34 M72 31 L69 34" stroke="url(#goldGrad)" stroke-width="2" stroke-linecap="round"/>
+
+  <!-- Libro Abierto del Conocimiento -->
+  <g transform="translate(36, 52)">
+    <!-- Páginas -->
+    <path d="M24 16 C16 12 6 13 2 15 L2 32 C6 30 16 29 24 33 C32 29 42 30 46 32 L46 15 C42 13 32 12 24 16 Z"
+          fill="#f8fafc" stroke="url(#goldGrad)" stroke-width="1.8"/>
+    <!-- Lomo central -->
+    <path d="M24 16 L24 33" stroke="#94a3b8" stroke-width="1.8"/>
+    <!-- Líneas de lectura -->
+    <path d="M7 19 C12 18 18 19 21 21 M7 23 C12 22 18 23 21 25 M27 21 C30 19 36 18 41 19 M27 25 C30 23 36 22 41 23"
+          stroke="#cbd5e1" stroke-width="1.2" stroke-linecap="round"/>
+  </g>
+
+  <!-- Antorcha / Llama Central -->
+  <path d="M60 62 C57 58 57 55 60 52 C63 55 63 58 60 62 Z" fill="#ef4444"/>
+  <path d="M60 60 C58.5 57 58.5 55 60 53 C61.5 55 61.5 57 60 60 Z" fill="#fbbf24"/>
+
+  <!-- Estrellas de Excelencia -->
+  <polygon points="60,90 62,95 67,95 63,98 64,103 60,100 56,103 57,98 53,95 58,95" fill="url(#goldGrad)"/>
+  <polygon points="46,85 47,88 51,88 48,90 49,94 46,92 43,94 44,90 41,88 45,88" fill="url(#goldGrad)" transform="scale(0.8) translate(12, 10)"/>
+  <polygon points="74,85 75,88 79,88 76,90 77,94 74,92 71,94 72,90 69,88 73,88" fill="url(#goldGrad)" transform="scale(0.8) translate(18, 10)"/>
+</svg>

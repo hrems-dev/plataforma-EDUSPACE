@@ -20,15 +20,21 @@ import { NIVELES } from './datos';
       </div>
       <div class="pub-detalle" role="tabpanel">
         <div>
-          <div class="pub-nivel-ic" [style.background]="actual().color" aria-hidden="true">{{ actual().nombre[0] }}</div>
-          <h2 style="margin-top: 12px">{{ actual().nombre }} · {{ actual().edades }}</h2>
-          <p class="pub-sub" style="margin-bottom: 20px">{{ actual().resumen }}</p>
-          <h3>Lo que destaca</h3>
+          <img [src]="fotoNivel(actual().id)" [alt]="'Nivel ' + actual().nombre" class="pub-tarjeta-img" style="height: 220px; border-radius: 14px; margin-bottom: 20px;" />
+          <div style="display: flex; align-items: center; gap: 14px; margin-bottom: 12px;">
+            <div class="pub-nivel-ic" [style.background]="actual().color" aria-hidden="true">{{ actual().nombre[0] }}</div>
+            <div>
+              <h2 style="margin: 0;">{{ actual().nombre }} · {{ actual().edades }}</h2>
+              <small class="muted" style="font-weight: 600;">Propuesta formativa integral</small>
+            </div>
+          </div>
+          <p class="pub-sub" style="margin-bottom: 24px">{{ actual().resumen }}</p>
+          <h3 style="font-size: 1.15rem; color: var(--pc); margin-bottom: 12px;">Lo que destaca</h3>
           <ul class="pub-lista">@for (d of actual().destacados; track d) { <li>{{ d }}</li> }</ul>
-          <h3 style="margin-top: 24px">Talleres</h3>
-          <div class="pub-etiquetas">@for (t of actual().talleres; track t) { <span class="pub-chip">{{ t }}</span> }</div>
+          <h3 style="margin-top: 28px; font-size: 1.15rem; color: var(--pc); margin-bottom: 12px;">Talleres extracurriculares</h3>
+          <div class="pub-etiquetas">@for (t of actual().talleres; track t) { <span class="pub-chip pub-chip-oro">{{ t }}</span> }</div>
         </div>
-        <aside class="pub-tarjeta">
+        <aside class="pub-tarjeta" style="border-top: 4px solid var(--pc);">
           <h3 style="margin-top: 0">Datos del nivel</h3>
           <dl class="pub-datos">
             <div><dt>Grados</dt><dd>{{ actual().grados }}</dd></div>
@@ -36,8 +42,8 @@ import { NIVELES } from './datos';
             <div><dt>Matrícula</dt><dd>S/ {{ actual().matricula }}</dd></div>
             <div><dt>Pensión mensual</dt><dd>S/ {{ actual().pension }}</dd></div>
           </dl>
-          <a routerLink="/admision" [queryParams]="{ nivel: actual().id }" class="pub-btn pub-btn-primario" style="width: 100%; margin-top: 18px">Postular a {{ actual().nombre }}</a>
-          <p class="muted" style="font-size: .82rem; margin: 10px 0 0">Montos de ejemplo. Se pagan en 10 cuotas de marzo a diciembre.</p>
+          <a routerLink="/admision" [queryParams]="{ nivel: actual().id }" class="pub-btn pub-btn-primario" style="width: 100%; margin-top: 20px">Postular a {{ actual().nombre }}</a>
+          <p class="muted" style="font-size: .84rem; margin: 12px 0 0; text-align: center;">Montos de ejemplo. Se pagan en 10 cuotas de marzo a diciembre.</p>
         </aside>
       </div>
     </div></section>
@@ -59,5 +65,14 @@ export class NivelesPublicoComponent {
 
   protected elegir(id: string): void {
     this.id.set(id);
+  }
+
+  protected fotoNivel(id: string): string {
+    const mapa: Record<string, string> = {
+      inicial: '/img/aula-inicial.jpg',
+      primaria: '/img/aula-primaria.jpg',
+      secundaria: '/img/laboratorio-secundaria.jpg'
+    };
+    return mapa[id] ?? `/img/nivel-${id}.svg`;
   }
 }

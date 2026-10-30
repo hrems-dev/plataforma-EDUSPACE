@@ -4,6 +4,7 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { Router, provideRouter } from '@angular/router';
 import { authInterceptor } from './auth.interceptor';
 import { AuthService } from '../services/auth.service';
+import { EstadoServicioService } from '../services/estado-servicio.service';
 import { NotificationService } from '../services/notification.service';
 import { jwtFalso } from '../testing/jwt-falso';
 
@@ -107,7 +108,7 @@ describe('authInterceptor', () => {
     ctrl.expectOne('/api/v1/auth/refresh').flush({}, { status: 401, statusText: 'Unauthorized' });
 
     expect(auth.isAuthenticated()).toBe(false);
-    expect(navegar).toHaveBeenCalledWith(['/login']);
+    expect(navegar).toHaveBeenCalledWith(['/login'], { queryParams: { motivo: 'vencida' } });
     expect(TestBed.inject(NotificationService).avisos().some(a => a.tipo === 'warning')).toBe(true);
   });
 
@@ -123,12 +124,57 @@ describe('authInterceptor', () => {
 describe('authInterceptor: servicio que rechaza el token', () => {
   beforeEach(() => sessionStorage.clear());
 
-  it('si tras renovar bien la repetición sigue dando 401, NO cierra la sesión (es el servicio quien rechaza, no un vencimiento)', () => {
-    const { http, ctrl, auth } = iniciar();
+  it('si tras renovar bien la repetición sigue dando 401 (el servicio ya no reconoce la sesión), avisa y manda al login', () => {
+    const { http, ctrl, auth, router } = iniciar();
+    const navegar = vi.spyOn(router, 'navigate').mockResolvedValue(true);
     http.get('/api/v1/auth/usuarios').subscribe({ error: () => undefined });
     ctrl.expectOne('/api/v1/auth/usuarios').flush({}, { status: 401, statusText: 'Unauthorized' });
     ctrl.expectOne('/api/v1/auth/refresh').flush({ access_token: jwtFalso(['ADMIN']), refresh_token: 'r2', token_type: 'Bearer', expires_in: 1800, debe_cambiar_clave: false });
     ctrl.expectOne('/api/v1/auth/usuarios').flush({}, { status: 401, statusText: 'Unauthorized' });
+    expect(auth.isAuthenticated()).toBe(false);
+    expect(navegar).toHaveBeenCalledWith(['/login'], { queryParams: { motivo: 'invalida' } });
+    expect(TestBed.inject(NotificationService).avisos().some(a => a.tipo === 'warning')).toBe(true);
+  });
+});
+
+describe('authInterceptor: servicio sin conexión', () => {
+  beforeEach(() => sessionStorage.clear());
+
+  it('un 503 o una caída de red encienden el aviso y la primera respuesta buena lo apaga', () => {
+    const { http, ctrl } = iniciar();
+    const estado = TestBed.inject(EstadoServicioService);
+    http.get('/api/v1/alumnos/mios').subscribe({ error: () => undefined });
+    ctrl.expectOne('/api/v1/alumnos/mios').flush({ mensaje: 'Unable to find instance' }, { status: 503, statusText: 'Service Unavailable' });
+    expect(estado.caido()).toBe(true);
+    // otro servicio sano NO apaga el aviso del que está caído
+    http.get('/api/v1/matriculas/mias').subscribe();
+    ctrl.expectOne('/api/v1/matriculas/mias').flush([]);
+    expect(estado.caido()).toBe(true);
+    // cuando el servicio caído vuelve a responder, el aviso se apaga
+    http.get('/api/v1/alumnos/mios').subscribe();
+    ctrl.expectOne('/api/v1/alumnos/mios').flush([]);
+    expect(estado.caido()).toBe(false);
+    http.get('/api/v1/a').subscribe({ error: () => undefined });
+    ctrl.expectOne('/api/v1/a').error(new ProgressEvent('error'), { status: 0 });
+    expect(estado.caido()).toBe(true);
+  });
+
+  it('un 500 crudo del Gateway (servicio caído que Eureka aún anuncia) enciende el aviso; un 500 de nuestros servicios, no', () => {
+    const { http, ctrl } = iniciar();
+    const estado = TestBed.inject(EstadoServicioService);
+    http.get('/api/v1/propio').subscribe({ error: () => undefined });
+    ctrl.expectOne('/api/v1/propio').flush({ codigo: 500, mensaje: 'Error interno del servidor: algo falló' }, { status: 500, statusText: 'Server Error' });
+    expect(estado.caido()).toBe(false);
+    http.get('/api/v1/alumnos').subscribe({ error: () => undefined });
+    ctrl.expectOne('/api/v1/alumnos').flush({ timestamp: 'x', status: 500, error: 'Internal Server Error', path: '/api/v1/alumnos' }, { status: 500, statusText: 'Server Error' });
+    expect(estado.caido()).toBe(true);
+  });
+
+  it('un error 400 o 404 no se confunde con un servicio caído y la sesión sigue', () => {
+    const { http, ctrl, auth } = iniciar();
+    http.get('/api/v1/x').subscribe({ error: () => undefined });
+    ctrl.expectOne('/api/v1/x').flush({}, { status: 404, statusText: 'Not Found' });
+    expect(TestBed.inject(EstadoServicioService).caido()).toBe(false);
     expect(auth.isAuthenticated()).toBe(true);
   });
 });

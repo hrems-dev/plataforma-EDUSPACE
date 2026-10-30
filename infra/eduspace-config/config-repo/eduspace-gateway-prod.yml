@@ -51,6 +51,10 @@ spring:
               uri: lb://examenes-ms
               predicates:
                 - Path=/api/v1/examenes/**
+            - id: publico-route
+              uri: lb://matricula-ms
+              predicates:
+                - Path=/api/v1/publico/**
             - id: matriculas-route
               uri: lb://matricula-ms
               predicates:
@@ -75,6 +79,8 @@ eduspace:
       burst: 50
       login-per-minute: 10
       login-burst: 5
+      public-per-minute: 30    # matrícula en línea del sitio público (sin sesión): más estricto que la API
+      public-burst: 15
 
 eureka:
   client:

@@ -3,8 +3,8 @@
   <header class="pub-cab">
     <div class="pub-wrap pub-cab-in">
       <a routerLink="/" class="pub-marca" aria-label="Inicio">
-        <span class="pub-logo" aria-hidden="true">H</span>
-        <span><strong>{{ colegio.nombre }}</strong><small>{{ colegio.lema }}</small></span>
+        <img src="/img/colegio-escudo.svg" alt="Escudo Colegio Horizonte del Valle" class="pub-escudo-img" />
+        <span class="pub-marca-txt"><strong>{{ colegio.nombre }}</strong><small>{{ colegio.lema }}</small></span>
       </a>
       <button type="button" class="pub-burger" (click)="menuAbierto.set(!menuAbierto())" [attr.aria-expanded]="menuAbierto()" aria-label="Menú">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16" /></svg>
@@ -23,7 +23,10 @@
   <footer class="pub-pie">
     <div class="pub-wrap pub-pie-grid">
       <div>
-        <strong class="pub-pie-tit">{{ colegio.nombre }}</strong>
+        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
+          <img src="/img/colegio-escudo.svg" alt="" style="width: 32px; height: 32px;" aria-hidden="true" />
+          <strong class="pub-pie-tit" style="margin: 0;">{{ colegio.nombre }}</strong>
+        </div>
         <p>{{ colegio.lema }}. Formamos personas íntegras, curiosas y comprometidas con su comunidad.</p>
       </div>
       <div>

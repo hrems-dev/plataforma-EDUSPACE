@@ -35,6 +35,7 @@ Cierra el flujo de matrícula: al cobrar la matrícula publica `pago.confirmado`
 - Un pago en línea solo vale si el alumno es hijo del apoderado que paga y las cuotas son suyas (403 si no).
 - Un comprobante por pago: consultar no consume correlativos.
 - El monto de una tarifa existente no se modifica: se desactiva y se crea otra. Un cajero solo puede tener una caja ABIERTA; un pago de una caja ya cerrada no se anula sin autorización extraordinaria. Un alumno no recibe dos veces el mismo descuento en un año.
+**Para la matrícula en línea (internos):** `GET /internal/tarifas/aplicable`, `GET /internal/pagos/matricula/{id}/cuotas` y `POST /internal/pagos/matricula-en-linea` (cobro con medio `ONLINE_SIMULADO`, idempotente por matrícula). Es el punto donde se integraría una pasarela real.
 **Pantallas** (espacio *Finanzas*): Resumen · Cuentas por alumno · Cobranza · Morosos y alertas · Conceptos · Tarifas · Descuentos (ADMIN) · *Caja* (CAJERO) · *Pagos* de la familia (APODERADO).
 **Pendiente:** conciliación de caja, pasarela real, SUNAT; el 409 de `descuentos/asignar` visto en una prueba corresponde a la regla «el alumno ya tiene ese descuento en el año» (por el código, no se reprodujo).
 

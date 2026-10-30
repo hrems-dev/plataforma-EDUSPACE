@@ -1,12 +1,13 @@
 .app { display: flex; min-height: 100vh; }
 
 .lateral {
-  flex: 0 0 248px; background: #14213d; color: #fff; padding: 22px 14px; display: flex; flex-direction: column; gap: 4px;
+  flex: 0 0 254px; background: #0f172a; border-right: 2px solid rgba(251, 191, 36, 0.2); color: #fff; padding: 22px 14px; display: flex; flex-direction: column; gap: 4px;
   position: sticky; top: 0; height: 100vh; overflow-y: auto;
 }
-.marca { display: flex; align-items: center; gap: 10px; padding: 0 8px 18px; }
-.logo { width: 34px; height: 34px; border-radius: 9px; background: #2f5bea; display: flex; align-items: center; justify-content: center; font-weight: 700; }
-.nombre { font-weight: 700; font-size: 18px; }
+.marca { display: flex; align-items: center; gap: 12px; padding: 0 8px 18px; border-bottom: 1px solid rgba(255, 255, 255, 0.1); margin-bottom: 12px; }
+.logo-escudo { width: 40px; height: 40px; object-fit: contain; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3)); }
+.nombre { font-weight: 800; font-size: 18px; letter-spacing: -0.01em; line-height: 1.1; }
+.sub-marca { color: #f59e0b; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; display: block; margin-top: 2px; }
 
 .grupo { margin: 14px 10px 4px; font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #9fb0d6; }
 .item {
@@ -63,3 +64,37 @@
 .pestana:hover { color: var(--ink); background: color-mix(in srgb, currentColor 6%, transparent); }
 .pestana.on { color: var(--primary); border-bottom-color: var(--primary); font-weight: 600; }
 .pestana:focus-visible { outline: 2px solid var(--primary); outline-offset: -2px; }
+
+/* ── Barra superior de docentes, alumnos y apoderados ── */
+.aula-app { min-height: 100vh; background: radial-gradient(1200px 500px at 85% -10%, var(--primary-soft), transparent 60%), var(--bg); }
+.aula-barra { position: sticky; top: 0; z-index: 30; display: flex; align-items: center; gap: 18px; padding: 10px 28px; background: rgb(255 255 255 / .86); backdrop-filter: blur(10px); border-bottom: 1px solid var(--line); }
+.aula-marca { display: flex; align-items: center; gap: 10px; text-decoration: none; color: var(--ink); flex: none; }
+.aula-logo { width: 34px; height: 34px; border-radius: 10px; display: grid; place-items: center; font-weight: 800; color: #fff; background: linear-gradient(135deg, var(--primary), #7c3aed); }
+.aula-nombre { font-weight: 800; letter-spacing: -.01em; }
+.aula-nav { display: flex; gap: 4px; flex: 1; min-width: 0; overflow-x: auto; scrollbar-width: none; }
+.aula-nav::-webkit-scrollbar { display: none; }
+.aula-pill { flex: none; display: inline-flex; align-items: center; gap: 7px; padding: 8px 14px; border-radius: 999px; text-decoration: none; font-weight: 600; font-size: .92rem; color: var(--ink-2); transition: background .15s, color .15s; }
+.aula-pill:hover { background: var(--primary-soft); color: var(--primary); }
+.aula-pill.on { background: var(--primary); color: #fff; }
+.aula-pill:focus-visible, .aula-icono:focus-visible, .aula-avatar:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+.aula-acc { display: flex; align-items: center; gap: 6px; flex: none; }
+.aula-icono { position: relative; width: 38px; height: 38px; display: grid; place-items: center; border: 0; border-radius: 50%; background: transparent; color: var(--ink-2); cursor: pointer; text-decoration: none; }
+.aula-icono:hover { background: var(--primary-soft); color: var(--primary); }
+.aula-punto { position: absolute; top: 2px; right: 0; min-width: 17px; height: 17px; padding: 0 4px; border-radius: 999px; background: var(--danger); color: #fff; font-size: .68rem; font-weight: 700; display: grid; place-items: center; }
+.aula-usuario { position: relative; }
+.aula-avatar { width: 38px; height: 38px; border-radius: 50%; border: 0; cursor: pointer; font-weight: 800; font-size: .8rem; color: #fff; background: linear-gradient(135deg, var(--primary), #7c3aed); }
+.aula-velo { position: fixed; inset: 0; z-index: 40; }
+.aula-menu { position: absolute; right: 0; top: 46px; z-index: 41; min-width: 220px; padding: 6px; background: var(--card); border: 1px solid var(--line); border-radius: 14px; box-shadow: 0 18px 40px -16px rgb(20 33 61 / .35); display: flex; flex-direction: column; }
+.aula-menu-cab { display: flex; flex-direction: column; padding: 10px 12px 8px; border-bottom: 1px solid var(--line); margin-bottom: 4px; }
+.aula-menu-cab span { font-size: .78rem; color: var(--ink-2); }
+.aula-menu a, .aula-menu button { text-align: left; padding: 9px 12px; border: 0; background: transparent; border-radius: 8px; font: inherit; color: var(--ink); text-decoration: none; cursor: pointer; }
+.aula-menu a:hover, .aula-menu button:hover { background: var(--primary-soft); }
+.aula-menu .salir { color: var(--danger); }
+.aula-main { max-width: 1180px; margin: 0 auto; padding: 26px 28px 60px; }
+@media (max-width: 780px) {
+  .aula-barra { padding: 8px 12px; gap: 8px; flex-wrap: wrap; }
+  .aula-nombre { display: none; }
+  .aula-nav { order: 3; flex-basis: 100%; }
+  .aula-acc { margin-left: auto; }
+  .aula-main { padding: 16px 14px 48px; }
+}

@@ -31,6 +31,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
     private final boolean activo;
     private final Limite general;
     private final Limite login;
+    private final Limite publico;
     private final Map<String, Cubo> cubos = new ConcurrentHashMap<>();
 
     public RateLimitFilter(
@@ -38,10 +39,13 @@ public class RateLimitFilter extends OncePerRequestFilter {
             @Value("${eduspace.gateway.rate-limit.requests-per-minute:300}") int porMinuto,
             @Value("${eduspace.gateway.rate-limit.burst:50}") int rafaga,
             @Value("${eduspace.gateway.rate-limit.login-per-minute:10}") int loginPorMinuto,
-            @Value("${eduspace.gateway.rate-limit.login-burst:5}") int loginRafaga) {
+            @Value("${eduspace.gateway.rate-limit.login-burst:5}") int loginRafaga,
+            @Value("${eduspace.gateway.rate-limit.public-per-minute:30}") int publicoPorMinuto,
+            @Value("${eduspace.gateway.rate-limit.public-burst:15}") int publicoRafaga) {
         this.activo = activo;
         this.general = new Limite(porMinuto, rafaga);
         this.login = new Limite(loginPorMinuto, loginRafaga);
+        this.publico = new Limite(publicoPorMinuto, publicoRafaga);
     }
 
     @Override
@@ -54,8 +58,10 @@ public class RateLimitFilter extends OncePerRequestFilter {
             throws ServletException, IOException {
         boolean esLogin = "POST".equals(request.getMethod())
                 && (request.getRequestURI().equals("/api/v1/auth/login") || request.getRequestURI().equals("/api/v1/auth/refresh"));
-        Limite limite = esLogin ? login : general;
-        String clave = (esLogin ? "login:" : "api:") + request.getRemoteAddr();
+        // La matrícula en línea no exige sesión: tiene su propio cubo, más estricto, para frenar el uso abusivo.
+        boolean esPublico = request.getRequestURI().startsWith("/api/v1/publico/");
+        Limite limite = esLogin ? login : esPublico ? publico : general;
+        String clave = (esLogin ? "login:" : esPublico ? "publico:" : "api:") + request.getRemoteAddr();
         long segundosEspera = cubos.computeIfAbsent(clave, k -> new Cubo(limite)).tomar(limite);
         if (segundosEspera > 0) {
             response.setStatus(429);

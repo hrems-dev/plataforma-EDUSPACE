@@ -40,6 +40,12 @@ public class AsignacionServiceImpl implements AsignacionService {
 
     @Override
     @Transactional(readOnly = true)
+    public List<AsignacionResponse> listarPorAnio(Long anioId) {
+        return repository.findByAnio(anioId).stream().map(mapper::toResponse).toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public AsignacionResponse obtener(Long id) {
         return mapper.toResponse(buscar(id));
     }

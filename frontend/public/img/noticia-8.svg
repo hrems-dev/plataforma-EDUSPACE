@@ -1,0 +1,60 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 220" width="100%" height="100%">
+  <defs>
+    <linearGradient id="n8Bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1e1b4b"/>
+      <stop offset="100%" stop-color="#312e81"/>
+    </linearGradient>
+    <linearGradient id="goldM" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fde047"/>
+      <stop offset="100%" stop-color="#ca8a04"/>
+    </linearGradient>
+    <linearGradient id="silverM" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f1f5f9"/>
+      <stop offset="100%" stop-color="#94a3b8"/>
+    </linearGradient>
+    <linearGradient id="bronzeM" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fdba74"/>
+      <stop offset="100%" stop-color="#c2410c"/>
+    </linearGradient>
+  </defs>
+  <rect width="400" height="220" fill="url(#n8Bg)"/>
+  <!-- Fórmulas matemáticas en el fondo -->
+  <g fill="#818cf8" opacity="0.3" font-family="monospace" font-size="16">
+    <text x="30" y="40">π ≈ 3.14159</text>
+    <text x="260" y="50">e = mc²</text>
+    <text x="40" y="180">a² + b² = c²</text>
+    <text x="270" y="190">∑ f(x) Δx</text>
+    <text x="170" y="30">√2</text>
+  </g>
+  <!-- Triángulo y compás geométrico -->
+  <polygon points="120,150 200,60 280,150" fill="none" stroke="#6366f1" stroke-width="2" stroke-dasharray="4 4" opacity="0.4"/>
+
+  <!-- Tres Medallas Olímpicas Escolares -->
+  <!-- Medalla de Oro (Centro) -->
+  <g transform="translate(200, 105)">
+    <!-- Cinta bicolor escolar (rojo y blanco) -->
+    <polygon points="-16,-55 0,-15 16,-55" fill="#dc2626"/>
+    <polygon points="-8,-55 0,-25 8,-55" fill="#fff"/>
+    <!-- Medalla dorada -->
+    <circle cx="0" cy="15" r="32" fill="url(#goldM)" stroke="#eab308" stroke-width="3"/>
+    <circle cx="0" cy="15" r="24" fill="none" stroke="#a16207" stroke-width="1.5" stroke-dasharray="3 2"/>
+    <text x="0" y="24" font-family="sans-serif" font-size="24" font-weight="900" fill="#713f12" text-anchor="middle">1</text>
+    <polygon points="0,-3 3,4 10,4 5,8 7,15 0,11 -7,15 -5,8 -10,4 -3,4" fill="#a16207" transform="scale(0.6) translate(0, 5)"/>
+  </g>
+
+  <!-- Medalla de Plata (Izquierda) -->
+  <g transform="translate(130, 115)">
+    <polygon points="-12,-50 0,-15 12,-50" fill="#2563eb"/>
+    <polygon points="-6,-50 0,-25 6,-50" fill="#fff"/>
+    <circle cx="0" cy="12" r="26" fill="url(#silverM)" stroke="#cbd5e1" stroke-width="2.5"/>
+    <text x="0" y="20" font-family="sans-serif" font-size="20" font-weight="900" fill="#334155" text-anchor="middle">2</text>
+  </g>
+
+  <!-- Medalla de Bronce (Derecha) -->
+  <g transform="translate(270, 115)">
+    <polygon points="-12,-50 0,-15 12,-50" fill="#16a34a"/>
+    <polygon points="-6,-50 0,-25 6,-50" fill="#fff"/>
+    <circle cx="0" cy="12" r="26" fill="url(#bronzeM)" stroke="#ea580c" stroke-width="2.5"/>
+    <text x="0" y="20" font-family="sans-serif" font-size="20" font-weight="900" fill="#7c2d12" text-anchor="middle">3</text>
+  </g>
+</svg>

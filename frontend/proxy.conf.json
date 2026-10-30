@@ -4,5 +4,14 @@
     "secure": false,
     "changeOrigin": true,
     "logLevel": "debug"
+  },
+  "/kc": {
+    "target": "http://localhost:18090",
+    "secure": false,
+    "changeOrigin": true,
+    "pathRewrite": {
+      "^/kc": ""
+    },
+    "logLevel": "info"
   }
 }

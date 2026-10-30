@@ -1,4 +1,5 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
+import { catchError, forkJoin, of } from 'rxjs';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Anio, Asignacion, Curso, Docente, Seccion } from '../../../core/models/planificacion.model';
 import { ConfirmService } from '../../../core/services/confirm.service';
@@ -54,9 +55,11 @@ export class AsignacionesComponent implements OnInit {
     this.seccionId.setValue(0);
     this.asignaciones.set([]);
     if (!this.anioId.value) return;
-    this.api.secciones(this.anioId.value).subscribe(s => {
-      this.secciones.set(s);
-      this.seccionId.setValue(s[0]?.id ?? 0);
+    forkJoin({ secciones: this.api.secciones(this.anioId.value), todas: this.api.asignaciones(undefined, undefined, this.anioId.value).pipe(catchError(() => of([] as Asignacion[]))) }).subscribe(({ secciones, todas }) => {
+      this.secciones.set(secciones);
+      // Se abre la primera sección que ya tiene docentes asignados (si ninguna, la primera) para no mostrar una pantalla vacía.
+      const con = new Set(todas.map(a => a.seccionId));
+      this.seccionId.setValue((secciones.find(x => con.has(x.id)) ?? secciones[0])?.id ?? 0);
       this.cargar();
     });
   }

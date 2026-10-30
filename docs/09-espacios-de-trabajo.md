@@ -12,7 +12,7 @@ que reúnen las pantallas que se usan juntas. Las URL no cambiaron (los enlaces 
 | Año escolar | Años y periodos · Feriados |
 | Asistencia y notas | Justificaciones · Reporte de asistencia · Cierre de periodo · Libretas y boletines |
 | Finanzas | Resumen · Cuentas por alumno · Cobranza · Morosos · Conceptos* · Tarifas* · Descuentos* |
-| Avisos y cuentas | Avisos y plantillas* · Usuarios y roles* (solo login propio) |
+| Avisos y cuentas | Avisos y plantillas* · Cuentas de acceso* · Usuarios y roles* (las dos últimas, solo con el login propio) |
 
 \* solo ADMIN. Docentes, familias y cajero conservan sus menús (ya eran cortos).
 

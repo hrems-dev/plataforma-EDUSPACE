@@ -28,7 +28,7 @@ public class PlantillaServiceImpl implements PlantillaService {
     static final String SIN_DATO = "(sin dato)";
     /** Códigos que usan los avisos automáticos (eventos de los demás servicios): borrarlos los dejaría sin texto. */
     static final Set<String> DEL_SISTEMA = Set.of("ASISTENCIA_FALTA", "BOLETIN_GENERADO", "EXAMEN_CALIFICADO", "EXAMEN_PUBLICADO",
-            "HORARIO_PUBLICADO", "JUSTIFICACION_RESUELTA", "MATRICULA_ANULADA", "MATRICULA_CONFIRMADA", "MATRICULA_CREADA",
+            "HORARIO_PUBLICADO", "JUSTIFICACION_RESUELTA", "MATERIAL_PUBLICADO", "MATRICULA_ANULADA", "MATRICULA_CONFIRMADA", "MATRICULA_CREADA",
             "PAGO_CONFIRMADO", "PAGO_POR_VENCER", "PAGO_VENCIDO", "TAREA_CALIFICADA", "TAREA_PUBLICADA", "TAREA_RECORDATORIO");
     private static final Pattern MARCADOR = Pattern.compile("\\{\\{\\s*([A-Za-z0-9_]+)\\s*}}");
 

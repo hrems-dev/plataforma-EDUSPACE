@@ -36,6 +36,7 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/actuator/**", "/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
                 .requestMatchers("/.well-known/jwks.json").permitAll()
+                .requestMatchers("/internal/**").permitAll()   // protegido por ServiceTokenFilter (X-Service-Token)
                 .requestMatchers(HttpMethod.POST, "/api/v1/auth/login", "/api/v1/auth/refresh", "/api/v1/auth/logout").permitAll()
                 .requestMatchers("/api/v1/auth/usuarios/**").hasRole("ADMIN")
                 .anyRequest().authenticated())

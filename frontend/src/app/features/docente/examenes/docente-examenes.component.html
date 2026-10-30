@@ -1,10 +1,16 @@
-<div class="page">
-  <app-page-header titulo="Exámenes" subtitulo="Arma exámenes con preguntas de tu banco, publícalos y revisa los resultados. El tiempo lo controla el servidor.">
-    <a class="btn" routerLink="/docente/banco">Banco de preguntas</a>
-    <button type="button" class="btn btn-primary" [disabled]="!ctx()?.asignaciones?.length" (click)="nuevo()">Nuevo examen</button>
-  </app-page-header>
+<div [class.page]="!embebido()">
+  @if (!embebido()) {
+    <app-page-header titulo="Exámenes" subtitulo="Arma exámenes con preguntas de tu banco, publícalos y revisa los resultados. El tiempo lo controla el servidor.">
+      <a class="btn" routerLink="/docente/banco">Banco de preguntas</a>
+      <button type="button" class="btn btn-primary" [disabled]="!ctx()?.asignaciones?.length" (click)="nuevo()">Nuevo examen</button>
+    </app-page-header>
+  }
 
   <div class="toolbar">
+    @if (embebido()) {
+      <button type="button" class="btn btn-primary" [disabled]="!ctx()?.asignaciones?.length" (click)="nuevo()">Nuevo examen</button>
+      <a class="btn" routerLink="/docente/banco">Banco de preguntas</a>
+    }
     <select class="input" [formControl]="estado" (change)="cargar(0)" aria-label="Estado">
       <option value="">Todos</option>
       <option value="BORRADOR">Borradores</option>
@@ -17,12 +23,12 @@
   <div class="card">
     <div class="table-wrap">
       <table class="table">
-        <thead><tr><th>Examen</th><th>Curso y sección</th><th>Ventana</th><th>Duración</th><th>Puntaje</th><th>Estado</th><th></th></tr></thead>
+        <thead><tr><th>Examen</th>@if (!embebido()) { <th>Curso y sección</th> }<th>Ventana</th><th>Duración</th><th>Puntaje</th><th>Estado</th><th></th></tr></thead>
         <tbody>
           @for (x of examenes(); track x.id) {
             <tr>
               <td><strong>{{ x.titulo }}</strong></td>
-              <td>{{ etiqueta(x) }}</td>
+              @if (!embebido()) { <td>{{ etiqueta(x) }}</td> }
               <td class="muted">{{ x.fechaInicio | date: 'dd/MM HH:mm' }} → {{ x.fechaFin | date: 'dd/MM HH:mm' }}</td>
               <td>{{ x.duracionMin }} min · {{ x.intentosMax }} {{ x.intentosMax === 1 ? 'intento' : 'intentos' }}</td>
               <td>{{ x.puntajeTotal }}</td>
@@ -57,12 +63,14 @@
   <app-modal [titulo]="editando() ? 'Editar examen' : 'Nuevo examen'" [ancho]="760" (cerrar)="cerrar()">
     <form [formGroup]="form" (ngSubmit)="guardar()" id="form-examen" novalidate>
       <div class="form-grid">
-        <div class="field">
-          <label for="x-asig">Curso y sección</label>
-          <select id="x-asig" formControlName="asignacion" (change)="cargarBanco()">
-            @for (a of ctx()?.asignaciones ?? []; track a.id) { <option [ngValue]="a.id">{{ a.cursoNombre }} · {{ a.seccionNombre }}</option> }
-          </select>
-        </div>
+        @if (!embebido()) {
+          <div class="field">
+            <label for="x-asig">Curso y sección</label>
+            <select id="x-asig" formControlName="asignacion" (change)="cargarBanco()">
+              @for (a of ctx()?.asignaciones ?? []; track a.id) { <option [ngValue]="a.id">{{ a.cursoNombre }} · {{ a.seccionNombre }}</option> }
+            </select>
+          </div>
+        }
         <div class="field">
           <label for="x-per">Periodo</label>
           <select id="x-per" formControlName="periodoId">@for (p of ctx()?.periodos ?? []; track p.id) { <option [ngValue]="p.id">{{ p.nombre }}</option> }</select>

@@ -13,6 +13,18 @@ EduSpace tiene **dos emisores de token con el mismo contrato** (JWT RS256, `usua
 
 Cambiar de emisor **no toca el código de los servicios**: solo la variable `JWK_SET_URI` (Gateway y los 9 servicios la leen) y el `config.json` del front.
 
+## Tres formas de iniciar sesión (`frontend/public/config.json` → `authMode`)
+
+| `authMode` | Qué hace | Dónde sirve |
+|---|---|---|
+| `keycloak-form` | El **formulario de EduSpace** envía usuario y clave a Keycloak (credenciales directas, cliente `eduspace-web-form`); Keycloak valida y emite el token. En DEV el navegador llega a Keycloak por el proxy `/kc` del servidor de la web | **Cualquier equipo de la red por http** (no usa Web Crypto). Recomendado en DEV |
+| `keycloak` | Redirección a la pantalla de Keycloak (código + PKCE) | Solo `http://localhost:4200` o `https` (necesita Web Crypto) |
+| `eduspace` | Login propio de auth-ms | Cualquier equipo; cuentas y claves se gestionan en la web |
+
+Cambiar todo el sistema de una vez (config, Gateway y servicios): `tools/e2e/modo.sh keycloak-form|keycloak|propio`.
+Las cuentas de la demo (`jorge.paredes`, `lucia.mendoza`, `carmen.rios`) se crean en Keycloak con `python3 tools/demo/sincronizar_keycloak.py` (clave `Expo12345`, mismo `usuarioId` que en EduSpace).
+En producción conviene `keycloak` con HTTPS (PKCE); las credenciales directas son una comodidad de DEV.
+
 ## Levantarlo
 ```bash
 cd infra/keycloak && ./levantar-dev.sh          # http://localhost:18090 · consola: admin / admin · --detener para apagarlo

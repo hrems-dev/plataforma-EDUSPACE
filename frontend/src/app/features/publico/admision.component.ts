@@ -7,7 +7,7 @@ import { COLEGIO, FAQ, NIVELES, PASOS_ADMISION, REQUISITOS } from './datos';
   imports: [DecimalPipe],
   template: `
     <section class="pub-cab-tit"><div class="pub-wrap">
-      <span class="pub-chip">Admisión 2027</span>
+      <span class="pub-chip pub-chip-oro">Admisión 2027</span>
       <h1>Únete a nuestra comunidad</h1>
       <p>Un proceso claro en cinco pasos. Calcula tu pensión, revisa los requisitos y envía tu pre-inscripción.</p>
     </div></section>
@@ -26,8 +26,11 @@ import { COLEGIO, FAQ, NIVELES, PASOS_ADMISION, REQUISITOS } from './datos';
     </div></section>
 
     <section class="pub-sec alt"><div class="pub-wrap pub-dos" style="grid-template-columns: 1fr 1fr">
-      <div class="pub-tarjeta">
-        <h3 style="margin-top: 0">Lista de requisitos</h3>
+      <div class="pub-tarjeta" style="border-top: 4px solid var(--verde-esc);">
+        <h3 style="margin-top: 0; display: flex; align-items: center; gap: 8px;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--verde-esc);"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+          Lista de requisitos
+        </h3>
         <p class="muted" style="margin: 0">Marca lo que ya tienes: <strong>{{ listos() }} de {{ requisitos.length }}</strong></p>
         <div class="pub-prog" role="progressbar" [attr.aria-valuenow]="porcentajeListos()" aria-valuemin="0" aria-valuemax="100"><span [style.width.%]="porcentajeListos()"></span></div>
         @for (r of requisitos; track r; let i = $index) {
@@ -35,11 +38,14 @@ import { COLEGIO, FAQ, NIVELES, PASOS_ADMISION, REQUISITOS } from './datos';
             <input type="checkbox" [checked]="marcados().has(i)" (change)="marcar(i)" /><span>{{ r }}</span>
           </label>
         }
-        @if (listos() === requisitos.length) { <div class="pub-ok" style="margin-top: 12px">¡Listo! Ya puedes entregar tus documentos en secretaría.</div> }
+        @if (listos() === requisitos.length) { <div class="pub-ok" style="margin-top: 14px">¡Listo! Ya puedes entregar tus documentos en secretaría.</div> }
       </div>
 
-      <div class="pub-tarjeta">
-        <h3 style="margin-top: 0">Calcula tu pensión</h3>
+      <div class="pub-tarjeta" style="border-top: 4px solid var(--pc);">
+        <h3 style="margin-top: 0; display: flex; align-items: center; gap: 8px;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--pc);"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="16" y1="14" x2="16" y2="18"/><path d="M16 10h.01"/><path d="M12 10h.01"/><path d="M8 10h.01"/><path d="M12 14h.01"/><path d="M8 14h.01"/><path d="M12 18h.01"/><path d="M8 18h.01"/></svg>
+          Calcula tu pensión
+        </h3>
         <div class="pub-campo"><label id="l-niv">Nivel</label>
           <div class="pub-grupo" role="group" aria-labelledby="l-niv">
             @for (n of niveles; track n.id) { <button type="button" [class.activo]="nivelId() === n.id" (click)="nivelId.set(n.id)">{{ n.nombre }}</button> }
@@ -58,7 +64,7 @@ import { COLEGIO, FAQ, NIVELES, PASOS_ADMISION, REQUISITOS } from './datos';
           <b>S/ {{ calculo().cuota | number: '1.2-2' }}</b>
           <small>Más matrícula de S/ {{ nivel().matricula }}. Total del año: S/ {{ calculo().total | number: '1.2-2' }}</small>
         </div>
-        <p class="muted" style="font-size: .82rem">Cálculo referencial con montos de ejemplo.</p>
+        <p class="muted" style="font-size: .84rem; margin-top: 10px;">Cálculo referencial con montos de ejemplo.</p>
       </div>
     </div></section>
 
@@ -67,11 +73,12 @@ import { COLEGIO, FAQ, NIVELES, PASOS_ADMISION, REQUISITOS } from './datos';
         <h2>Preguntas frecuentes</h2>
         @for (f of faq; track f.p) { <details><summary>{{ f.p }}</summary><p>{{ f.r }}</p></details> }
       </div>
-      <div class="pub-tarjeta" id="preinscripcion">
-        <h2 style="font-size: 1.4rem">Pre-inscripción</h2>
+      <div class="pub-tarjeta" id="preinscripcion" style="border-top: 4px solid var(--oro);">
+        <img src="/img/admision-visita.jpg" alt="Visita guiada de admisión en Colegio Horizonte del Valle" class="pub-tarjeta-img" style="height: 160px;" />
+        <h2 style="font-size: 1.4rem; margin-top: 0; color: var(--pc);">Pre-inscripción</h2>
         @if (enviado()) {
           <div class="pub-ok">Gracias, {{ nombre() }}. Esto es una demostración: no se envió ningún dato. En el sitio real recibirías respuesta de {{ colegio.admisionCorreo }} en 24 horas hábiles.</div>
-          <button type="button" class="pub-btn pub-btn-borde" style="margin-top: 12px" (click)="reiniciar()">Enviar otra</button>
+          <button type="button" class="pub-btn pub-btn-borde" style="margin-top: 14px" (click)="reiniciar()">Enviar otra</button>
         } @else {
           <form class="pub-form" (submit)="enviar($event)" novalidate>
             <div class="pub-campo"><label for="f-nom">Tu nombre</label><input id="f-nom" class="pub-input" [value]="nombre()" (input)="nombre.set($any($event.target).value)" autocomplete="name" />
@@ -83,7 +90,7 @@ import { COLEGIO, FAQ, NIVELES, PASOS_ADMISION, REQUISITOS } from './datos';
                 @for (n of niveles; track n.id) { <option [value]="n.id">{{ n.nombre }} ({{ n.edades }})</option> }
               </select></div>
             <div class="pub-campo"><label for="f-edad">Edad del estudiante</label><input id="f-edad" class="pub-input" type="number" min="3" max="17" [value]="edad()" (input)="edad.set($any($event.target).value)" /></div>
-            <div class="pub-campo ancho"><button type="submit" class="pub-btn pub-btn-primario">Enviar pre-inscripción</button></div>
+            <div class="pub-campo ancho"><button type="submit" class="pub-btn pub-btn-primario" style="width: 100%; margin-top: 8px;">Enviar pre-inscripción</button></div>
           </form>
         }
       </div>

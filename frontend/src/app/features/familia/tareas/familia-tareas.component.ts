@@ -1,5 +1,5 @@
 import { DatePipe } from '@angular/common';
-import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, OnInit, computed, inject, input, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
 import { ArchivoRef, TareaPendiente } from '../../../core/models/tarea.model';
 import { FamiliaContextoService } from '../../../core/services/familia-contexto.service';
@@ -8,6 +8,7 @@ import { TareaService } from '../../../core/services/tarea.service';
 import { mensajeError } from '../../../core/utils/errores';
 import { ModalComponent } from '../../../shared/components/modal/modal.component';
 import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
+import { FamiliaDatosService } from '../cursos/familia-datos.service';
 import { SelectorHijoComponent } from '../../../shared/components/selector-hijo/selector-hijo.component';
 
 const MAX_BYTES = 10 * 1024 * 1024;
@@ -20,14 +21,19 @@ const MAX_BYTES = 10 * 1024 * 1024;
 export class FamiliaTareasComponent implements OnInit {
   protected readonly ctx = inject(FamiliaContextoService);
   private readonly api = inject(TareaService);
+  private readonly datos = inject(FamiliaDatosService);
   private readonly avisos = inject(NotificationService);
   private readonly fb = inject(FormBuilder);
+
+  /** Dentro de la página de un curso: solo sus tareas y sin cabecera ni selector de hijo. */
+  readonly cursoId = input<number | null>(null);
+  readonly embebido = input(false);
 
   protected readonly tareas = signal<TareaPendiente[]>([]);
   protected readonly cargando = signal(true);
   protected readonly delHijo = computed(() =>
     this.tareas()
-      .filter(t => t.alumnoId === this.ctx.seleccionado()?.alumnoId)
+      .filter(t => t.alumnoId === this.ctx.seleccionado()?.alumnoId && (this.cursoId() === null || t.cursoId === this.cursoId()))
       .sort((a, b) => a.fechaEntrega.localeCompare(b.fechaEntrega))
   );
 
@@ -105,6 +111,7 @@ export class FamiliaTareasComponent implements OnInit {
             this.avisos.success('Tarea entregada.');
             this.cerrar();
             this.recargar();
+            this.datos.recargarTareas(); // actualiza el contador de «Mis cursos»
           },
           error: e => {
             this.enviando.set(false);

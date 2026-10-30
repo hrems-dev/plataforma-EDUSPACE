@@ -1,5 +1,5 @@
 import { DatePipe } from '@angular/common';
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnInit, inject, input, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { EstadoTarea, Tarea } from '../../../core/models/tarea.model';
@@ -9,6 +9,7 @@ import { NotificationService } from '../../../core/services/notification.service
 import { TareaService } from '../../../core/services/tarea.service';
 import { mensajeError } from '../../../core/utils/errores';
 import { ModalComponent } from '../../../shared/components/modal/modal.component';
+import { TareaEntregasComponent } from './tarea-entregas.component';
 import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
 
 const CLASE: Record<EstadoTarea, string> = { BORRADOR: 'badge-gray', PUBLICADA: 'badge-ok', CERRADA: 'badge-warn' };
@@ -18,7 +19,7 @@ const aLocal = (iso: string): string => iso.slice(0, 16);
 
 @Component({
   selector: 'app-docente-tareas',
-  imports: [ReactiveFormsModule, RouterLink, DatePipe, ModalComponent, PageHeaderComponent],
+  imports: [ReactiveFormsModule, RouterLink, DatePipe, ModalComponent, PageHeaderComponent, TareaEntregasComponent],
   templateUrl: './docente-tareas.component.html'
 })
 export class DocenteTareasComponent implements OnInit {
@@ -27,6 +28,12 @@ export class DocenteTareasComponent implements OnInit {
   private readonly avisos = inject(NotificationService);
   private readonly confirmacion = inject(ConfirmService);
   private readonly fb = inject(FormBuilder);
+
+  /** Dentro de la página de un curso: solo las tareas de esa sección y curso, sin cabecera, y las entregas se abren aquí mismo. */
+  readonly seccionId = input<number | null>(null);
+  readonly cursoId = input<number | null>(null);
+  readonly embebido = input(false);
+  protected readonly viendo = signal<Tarea | null>(null);
 
   protected readonly ctx = signal<ContextoDocente | null>(null);
   protected readonly tareas = signal<Tarea[]>([]);
@@ -76,7 +83,7 @@ export class DocenteTareasComponent implements OnInit {
 
   protected cargar(pagina = 0): void {
     this.cargando.set(true);
-    this.api.listar({ estado: this.estado.value }, pagina).subscribe({
+    this.api.listar({ estado: this.estado.value, seccionId: this.seccionId() ?? undefined, cursoId: this.cursoId() ?? undefined }, pagina).subscribe({
       next: p => {
         this.tareas.set(p.contenido);
         this.total.set(p.totalElementos);
@@ -97,7 +104,7 @@ export class DocenteTareasComponent implements OnInit {
     const manana = new Date(Date.now() + 3 * 86_400_000);
     manana.setHours(23, 59, 0, 0);
     this.form.reset({
-      asignacion: c?.asignaciones[0]?.id ?? 0,
+      asignacion: c?.asignaciones.find(a => a.seccionId === this.seccionId() && a.cursoId === this.cursoId())?.id ?? c?.asignaciones[0]?.id ?? 0,
       periodoId: c?.periodoActivo?.id ?? 0,
       titulo: '',
       descripcion: '',
@@ -129,6 +136,11 @@ export class DocenteTareasComponent implements OnInit {
     this.editando.set(t);
     this.errorForm.set(null);
     this.abierto.set(true);
+  }
+
+  protected cerrarEntregas(): void {
+    this.viendo.set(null);
+    this.cargar(this.pagina()); // las notas y entregas cambian los contadores
   }
 
   protected cerrar(): void {

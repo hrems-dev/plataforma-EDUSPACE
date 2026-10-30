@@ -20,6 +20,8 @@ export class LibretaVistaComponent {
 
   readonly libreta = input.required<Libreta>();
   protected readonly periodos = signal<Periodo[]>([]);
+  /** calificaciones-ms solo devuelve «Curso N»: el nombre real sale de la malla del grado. */
+  private readonly nombresCurso = signal<Map<number, string>>(new Map());
 
   protected readonly columnas = computed(() => {
     const ids = new Set<number>();
@@ -33,6 +35,14 @@ export class LibretaVistaComponent {
       const anio = this.libreta().anioId;
       this.plan.periodos(anio).subscribe({ next: p => this.periodos.set(p), error: () => this.periodos.set([]) });
     });
+    effect(() => {
+      const grado = this.libreta().gradoId;
+      this.plan.malla(grado).subscribe({ next: m => this.nombresCurso.set(new Map(m.cursos.map(c => [c.cursoId, c.cursoNombre]))), error: () => this.nombresCurso.set(new Map()) });
+    });
+  }
+
+  protected nombreCurso(c: Libreta['cursos'][number]): string {
+    return this.nombresCurso().get(c.cursoId) ?? c.cursoNombre;
   }
 
   protected nombrePeriodo(id: number): string {

@@ -26,6 +26,8 @@ public class JwtService {
 
     private final JwtEncoder encoder;
     private final AuthProperties props;
+    /** La clave que firma: su kid es el que debe ir en la cabecera (en DEV cambia en cada arranque). */
+    private final com.nimbusds.jose.jwk.RSAKey claveActual;
 
     public String emitir(Usuario u) {
         Instant ahora = Instant.now();
@@ -40,7 +42,7 @@ public class JwtService {
             .claim("usuarioId", u.getId())
             .claim("realm_access", Map.of("roles", roles))
             .build();
-        JwsHeader header = JwsHeader.with(SignatureAlgorithm.RS256).keyId(props.getJwt().getKid()).build();
+        JwsHeader header = JwsHeader.with(SignatureAlgorithm.RS256).keyId(claveActual.getKeyID()).build();
         return encoder.encode(JwtEncoderParameters.from(header, claims)).getTokenValue();
     }
 

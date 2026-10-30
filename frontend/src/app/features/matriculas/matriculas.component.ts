@@ -1,4 +1,4 @@
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 import { DatePipe } from '@angular/common';
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -27,12 +27,12 @@ type Dialogo = 'ninguno' | 'nueva' | 'detalle' | 'motivo' | 'traslado' | 'ratifi
 type AccionMotivo = 'anular' | 'retirar';
 
 const CLASE_ESTADO: Record<EstadoMatricula, string> = {
-  PRE_MATRICULA: 'badge-warn', MATRICULADO: 'badge-ok', RETIRADO: 'badge-danger', TRASLADADO: 'badge-violet', ANULADO: 'badge-gray'
+  PRE_MATRICULA: 'badge-warn', POR_APROBAR: 'badge-warn', MATRICULADO: 'badge-ok', RETIRADO: 'badge-danger', TRASLADADO: 'badge-violet', ANULADO: 'badge-gray'
 };
 
 @Component({
   selector: 'app-matriculas',
-  imports: [ReactiveFormsModule, DatePipe, ModalComponent, PageHeaderComponent],
+  imports: [ReactiveFormsModule, DatePipe, RouterLink, ModalComponent, PageHeaderComponent],
   templateUrl: './matriculas.component.html'
 })
 export class MatriculasComponent implements OnInit {

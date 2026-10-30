@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 220" width="100%" height="100%">
+  <defs>
+    <linearGradient id="n4Bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#4c1d95"/>
+      <stop offset="100%" stop-color="#be185d"/>
+    </linearGradient>
+  </defs>
+  <rect width="400" height="220" fill="url(#n4Bg)"/>
+  <!-- Haces de luces del auditorio -->
+  <polygon points="50,0 120,220 200,220 70,0" fill="#fef08a" opacity="0.25"/>
+  <polygon points="350,0 280,220 200,220 330,0" fill="#38bdf8" opacity="0.25"/>
+  <!-- Escenario con telón -->
+  <path d="M0 0 Q60 50 120 0 Z" fill="#991b1b"/>
+  <path d="M280 0 Q340 50 400 0 Z" fill="#991b1b"/>
+  <path d="M0 0 L50 0 L30 180 L0 180 Z" fill="#991b1b"/>
+  <path d="M350 0 L400 0 L400 180 L370 180 Z" fill="#991b1b"/>
+  <!-- Micrófono central y notas musicales doradas -->
+  <g transform="translate(180, 50)">
+    <!-- Micrófono -->
+    <rect x="15" y="0" width="16" height="30" rx="8" fill="#cbd5e1" stroke="#475569" stroke-width="2"/>
+    <path d="M8 15 C8 32 38 32 38 15" fill="none" stroke="#94a3b8" stroke-width="3"/>
+    <line x1="23" y1="32" x2="23" y2="75" stroke="#94a3b8" stroke-width="4"/>
+    <ellipse cx="23" cy="75" rx="20" ry="6" fill="#334155"/>
+    <!-- Notas flotando -->
+    <g fill="#fbbf24">
+      <path d="M-40 20 Q-20 10 -20 30 A6 6 0 1 1 -26 24 L-26 5 L-5 10 L-5 25 A6 6 0 1 1 -11 19 L-11 0 L-40 10 Z"/>
+      <circle cx="50" cy="10" r="5"/>
+      <line x1="55" y1="10" x2="55" y2="-15" stroke="#fbbf24" stroke-width="2"/>
+      <path d="M55 -15 Q65 -20 68 -10" stroke="#fbbf24" stroke-width="2" fill="none"/>
+      <circle cx="-50" cy="50" r="5"/>
+      <line x1="-45" y1="50" x2="-45" y2="25" stroke="#fbbf24" stroke-width="2"/>
+      <circle cx="65" cy="45" r="5"/>
+      <line x1="70" y1="45" x2="70" y2="20" stroke="#fbbf24" stroke-width="2"/>
+    </g>
+  </g>
+</svg>

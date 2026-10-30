@@ -1,6 +1,7 @@
 import { Route } from '@angular/router';
 import { routes } from '../app.routes';
 import { rutaInicial } from '../core/utils/landing';
+import { NAV_AULA, usaBarraAula } from './aula-nav';
 import { HUBS, hubDe } from './hubs';
 import { MENU } from './menu';
 
@@ -116,5 +117,34 @@ describe('espacios de trabajo (hubs)', () => {
 
   it('el menú del personal queda corto', () => {
     expect(itemsDe('ADMIN').length).toBeLessThanOrEqual(15);
+  });
+});
+
+describe('barra superior de docentes, alumnos y apoderados', () => {
+  const rutas = rutasDelShell();
+
+  it('cada enlace existe y su rol puede abrirlo', () => {
+    const problemas: string[] = [];
+    for (const e of NAV_AULA) {
+      if (!rutas.has(e.ruta)) problemas.push(`${e.ruta} no existe`);
+      const permitidos = rutas.get(e.ruta);
+      if (permitidos) for (const r of e.roles) if (!permitidos.includes(r)) problemas.push(`${r} ve «${e.etiqueta}» pero ${e.ruta} no lo admite`);
+    }
+    expect(problemas).toEqual([]);
+  });
+
+  it('solo quien tiene únicamente roles de aula usa la barra; el personal y la caja mantienen el menú lateral', () => {
+    expect(usaBarraAula(['DOCENTE'])).toBe(true);
+    expect(usaBarraAula(['APODERADO', 'ALUMNO'])).toBe(true);
+    expect(usaBarraAula(['DOCENTE', 'ADMIN'])).toBe(false);
+    expect(usaBarraAula(['SECRETARIA'])).toBe(false);
+    expect(usaBarraAula(['CAJERO'])).toBe(false);
+    expect(usaBarraAula([])).toBe(false);
+  });
+
+  it('las páginas de un curso mantienen resaltado «Mis cursos»', () => {
+    const mis = (rol: string) => NAV_AULA.find(e => e.roles.includes(rol) && e.etiqueta === 'Mis cursos')!;
+    expect(mis('DOCENTE').prefijos).toContain('/docente/curso');
+    expect(mis('ALUMNO').prefijos).toContain('/familia/curso');
   });
 });

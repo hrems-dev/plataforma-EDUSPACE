@@ -1,5 +1,5 @@
 import { DatePipe, DecimalPipe } from '@angular/common';
-import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, OnInit, computed, inject, input, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { EstadoExamen, Examen, Pregunta, ResultadosExamen } from '../../../core/models/examen.model';
@@ -27,6 +27,11 @@ export class DocenteExamenesComponent implements OnInit {
   private readonly avisos = inject(NotificationService);
   private readonly confirmacion = inject(ConfirmService);
   private readonly fb = inject(FormBuilder);
+
+  /** Dentro de la página de un curso: solo los exámenes de esa sección y curso, sin cabecera. */
+  readonly seccionId = input<number | null>(null);
+  readonly cursoId = input<number | null>(null);
+  readonly embebido = input(false);
 
   protected readonly ctx = signal<ContextoDocente | null>(null);
   protected readonly examenes = signal<Examen[]>([]);
@@ -89,7 +94,7 @@ export class DocenteExamenesComponent implements OnInit {
 
   protected cargar(pagina = 0): void {
     this.cargando.set(true);
-    this.api.listar({ estado: this.estado.value }, pagina).subscribe({
+    this.api.listar({ estado: this.estado.value, seccionId: this.seccionId() ?? undefined, cursoId: this.cursoId() ?? undefined }, pagina).subscribe({
       next: p => {
         this.examenes.set(p.contenido);
         this.total.set(p.totalElementos);
@@ -111,7 +116,7 @@ export class DocenteExamenesComponent implements OnInit {
     inicio.setHours(8, 0, 0, 0);
     const fin = new Date(inicio.getTime() + 4 * 3_600_000);
     this.form.reset({
-      asignacion: c?.asignaciones[0]?.id ?? 0, periodoId: c?.periodoActivo?.id ?? 0, titulo: '', instrucciones: '',
+      asignacion: c?.asignaciones.find(a => a.seccionId === this.seccionId() && a.cursoId === this.cursoId())?.id ?? c?.asignaciones[0]?.id ?? 0, periodoId: c?.periodoActivo?.id ?? 0, titulo: '', instrucciones: '',
       fechaInicio: enLocal(inicio), fechaFin: enLocal(fin), duracionMin: 40, intentosMax: 1, barajarPreguntas: true
     });
     this.form.controls.asignacion.enable();

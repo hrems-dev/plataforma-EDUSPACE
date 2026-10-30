@@ -1,0 +1,5 @@
+# Temporal: permite levantar la observabilidad (obs/) desde Microforge sin terminal.
+include:
+  - path:
+      - obs/compose-dev.yml
+      - obs/compose-podman.yml

@@ -30,6 +30,7 @@ export const HUBS: Hub[] = [
     icono: 'M4 5h16v14H4zM8 9h8M8 13h5',
     pestanas: [
       { etiqueta: 'Matrículas', ruta: '/matriculas', roles: PERSONAL },
+      { etiqueta: 'Por aprobar', ruta: '/matriculas/aprobaciones', roles: ADMIN },
       { etiqueta: 'Alumnos', ruta: '/alumnos', roles: PERSONAL },
       { etiqueta: 'Importar alumnos', ruta: '/alumnos/importar', roles: PERSONAL },
       { etiqueta: 'Campañas', ruta: '/matriculas/campanias', roles: PERSONAL },
@@ -112,10 +113,11 @@ export const HUBS: Hub[] = [
   {
     id: 'administracion',
     titulo: 'Avisos y cuentas',
-    descripcion: 'Avisos a las familias, plantillas y cuentas de usuario',
+    descripcion: 'Avisos a las familias, plantillas, cuentas de acceso y usuarios',
     icono: 'M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z',
     pestanas: [
       { etiqueta: 'Avisos y plantillas', ruta: '/notificaciones/envio', roles: ADMIN },
+      { etiqueta: 'Cuentas de acceso', ruta: '/cuentas', roles: ADMIN, soloEduspace: true },
       { etiqueta: 'Usuarios y roles', ruta: '/usuarios', roles: ADMIN, soloEduspace: true }
     ]
   }

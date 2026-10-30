@@ -11,7 +11,7 @@ public final class MatriculaMapper {
         return new MatriculaResponse(m.getId(), m.getCodigo(), m.getAlumnoId(), m.getAlumnoNombre(), m.getAnioId(),
             m.getNivelId(), m.getGradoId(), m.getSeccionId(), m.getCampaniaId(), m.getTipo(), m.getEstado(),
             m.getMatriculaAnteriorId(), m.getVenceEn(), m.getObservaciones(), m.getCreadoEn(), m.getConfirmadaEn(),
-            m.getCerradaEn(), m.getMotivoCierre());
+            m.getCerradaEn(), m.getMotivoCierre(), m.getPagadaEn(), m.getAprobadaEn());
     }
 
     public static RequisitoResponse toResponse(MatriculaRequisito r) {

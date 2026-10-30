@@ -14,6 +14,7 @@ import pe.edu.upeu.eduspace.matricula.dto.Dtos.*;
 import pe.edu.upeu.eduspace.matricula.dto.PageResponse;
 import pe.edu.upeu.eduspace.matricula.security.IdentidadService;
 import pe.edu.upeu.eduspace.matricula.service.CupoService;
+import pe.edu.upeu.eduspace.matricula.service.MatriculaEnLineaService;
 import pe.edu.upeu.eduspace.matricula.service.MatriculaService;
 import pe.edu.upeu.eduspace.matricula.service.RatificacionService;
 import pe.edu.upeu.eduspace.matricula.service.RequisitoService;
@@ -31,6 +32,7 @@ public class MatriculaController {
     private final RequisitoService requisitoService;
     private final RatificacionService ratificacionService;
     private final IdentidadService identidad;
+    private final MatriculaEnLineaService enLinea;
 
     @GetMapping
     @Operation(summary = "Listar matrículas con filtros (ADMIN, SECRETARIA, DOCENTE)")
@@ -91,6 +93,28 @@ public class MatriculaController {
     @Operation(summary = "Anular una PRE_MATRICULA")
     public MatriculaResponse anular(@PathVariable Long id, @RequestBody(required = false) AnulacionRequest req, @AuthenticationPrincipal Jwt jwt) {
         return service.anular(id, req == null ? null : req.motivo(), identidad.usuarioId(jwt));
+    }
+
+    @PatchMapping("/{id}/aprobar")
+    @Operation(summary = "Aprobar una matrícula pagada (solo ADMIN): pasa a MATRICULADO y, si fue en línea, envía el acceso por correo")
+    public MatriculaResponse aprobar(@PathVariable Long id, @AuthenticationPrincipal Jwt jwt) {
+        MatriculaResponse r = service.aprobar(id, identidad.usuarioId(jwt));
+        enLinea.aprobada(id);
+        return r;
+    }
+
+    @PatchMapping("/{id}/rechazar")
+    @Operation(summary = "Rechazar una matrícula pagada (solo ADMIN): se anula, libera el cupo y avisa por correo")
+    public MatriculaResponse rechazar(@PathVariable Long id, @Valid @RequestBody AnulacionRequest req, @AuthenticationPrincipal Jwt jwt) {
+        MatriculaResponse r = service.rechazar(id, req.motivo(), identidad.usuarioId(jwt));
+        enLinea.rechazada(id, req.motivo());
+        return r;
+    }
+
+    @PostMapping("/{id}/reenviar-acceso")
+    @Operation(summary = "Reenviar el correo de acceso de una matrícula en línea ya aprobada (solo ADMIN)")
+    public void reenviarAcceso(@PathVariable Long id) {
+        enLinea.reenviarAcceso(id);
     }
 
     @PutMapping("/{id}/requisitos/{tipo}")

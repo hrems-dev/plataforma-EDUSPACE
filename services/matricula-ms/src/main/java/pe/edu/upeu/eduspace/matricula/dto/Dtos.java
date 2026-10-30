@@ -56,7 +56,7 @@ public final class Dtos {
                                     Long gradoId, Long seccionId, Long campaniaId, String tipo, String estado,
                                     Long matriculaAnteriorId, LocalDateTime venceEn, String observaciones,
                                     LocalDateTime creadoEn, LocalDateTime confirmadaEn, LocalDateTime cerradaEn,
-                                    String motivoCierre) {}
+                                    String motivoCierre, LocalDateTime pagadaEn, LocalDateTime aprobadaEn) {}
 
     public record MatriculaDetalleResponse(MatriculaResponse matricula, List<RequisitoResponse> requisitos,
                                            List<HistorialResponse> historial) {}

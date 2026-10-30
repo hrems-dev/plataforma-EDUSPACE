@@ -15,10 +15,12 @@ import java.util.Optional;
 public interface MatriculaRepository extends JpaRepository<Matricula, Long> {
 
     @Query("SELECT m FROM Matricula m WHERE m.alumnoId = :alumnoId AND m.anioId = :anioId "
-         + "AND m.estado IN ('PRE_MATRICULA','MATRICULADO')")
+         + "AND m.estado IN ('PRE_MATRICULA','POR_APROBAR','MATRICULADO')")
     Optional<Matricula> findVivaByAlumnoAndAnio(@Param("alumnoId") Long alumnoId, @Param("anioId") Long anioId);
 
     List<Matricula> findByAlumnoIdOrderByAnioIdDesc(Long alumnoId);
+
+    Optional<Matricula> findByCodigo(String codigo);
 
     List<Matricula> findByAlumnoIdIn(Collection<Long> alumnoIds);
 

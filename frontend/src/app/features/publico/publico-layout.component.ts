@@ -28,6 +28,7 @@ export class PublicoLayoutComponent {
     { ruta: '/nosotros', etiqueta: 'Nosotros', exacto: false },
     { ruta: '/niveles', etiqueta: 'Niveles', exacto: false },
     { ruta: '/admision', etiqueta: 'Admisión', exacto: false },
+    { ruta: '/matricula-en-linea', etiqueta: 'Matrícula en línea', exacto: false },
     { ruta: '/noticias', etiqueta: 'Noticias', exacto: false },
     { ruta: '/contacto', etiqueta: 'Contacto', exacto: false }
   ];
@@ -44,7 +45,7 @@ export class PublicoLayoutComponent {
   protected ingresar(): void {
     if (this.conSesion()) {
       void this.router.navigate(['/portal']);
-    } else if (this.auth.esKeycloak) {
+    } else if (this.auth.usaRedirect) {
       void this.kc.login(window.location.origin + '/portal');
     } else {
       void this.router.navigate(['/login']);

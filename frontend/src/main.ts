@@ -5,6 +5,10 @@ import { App } from './app/app';
 import { APP_CONFIG, cargarConfig } from './app/core/config/app-config';
 import { esRutaPublica } from './app/core/utils/publicas';
 import { KeycloakService } from './app/core/services/keycloak.service';
+import { completarWebCrypto } from './app/core/utils/crypto-polyfill';
+
+// Antes de todo: sin https, keycloak-js no encuentra Web Crypto (ver crypto-polyfill.ts).
+completarWebCrypto();
 
 // La configuración se lee en tiempo de ejecución (public/config.json). En modo Keycloak, la app no arranca hasta
 // que hay sesión: keycloak-js redirige al login y vuelve con el código.

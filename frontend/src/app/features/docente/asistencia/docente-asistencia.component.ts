@@ -1,4 +1,4 @@
-import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, OnInit, computed, inject, input, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
 import { EstadoAsistencia, ItemRegistro, Sesion, TipoSesion } from '../../../core/models/asistencia.model';
 import { Bloque } from '../../../core/models/planificacion.model';
@@ -35,6 +35,11 @@ export class DocenteAsistenciaComponent implements OnInit {
   private readonly avisos = inject(NotificationService);
   private readonly confirmacion = inject(ConfirmService);
   private readonly fb = inject(FormBuilder);
+
+  /** Dentro de la página de un curso: la sección y el curso ya vienen elegidos y se ocultan la cabecera y el selector de sección. */
+  readonly seccionId = input<number | null>(null);
+  readonly cursoId = input<number | null>(null);
+  readonly embebido = input(false);
 
   protected readonly ctx = signal<ContextoDocente | null>(null);
   protected readonly bloques = signal<Bloque[]>([]);
@@ -79,7 +84,7 @@ export class DocenteAsistenciaComponent implements OnInit {
     this.contexto.cargar().subscribe({
       next: c => {
         this.ctx.set(c);
-        const primera = c.asignaciones[0];
+        const primera = c.asignaciones.find(a => a.seccionId === this.seccionId() && a.cursoId === this.cursoId()) ?? c.asignaciones[0];
         this.form.patchValue({ seccionId: primera?.seccionId ?? 0, cursoId: primera?.cursoId ?? 0 });
         this.cargarBloques();
       },

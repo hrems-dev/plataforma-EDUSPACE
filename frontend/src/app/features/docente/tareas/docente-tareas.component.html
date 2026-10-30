@@ -1,9 +1,12 @@
-<div class="page">
-  <app-page-header titulo="Tareas" subtitulo="Crea tareas para tus secciones, publícalas y califica las entregas.">
-    <button type="button" class="btn btn-primary" [disabled]="!ctx()?.asignaciones?.length" (click)="nueva()">Nueva tarea</button>
-  </app-page-header>
+<div [class.page]="!embebido()">
+  @if (!embebido()) {
+    <app-page-header titulo="Tareas" subtitulo="Crea tareas para tus secciones, publícalas y califica las entregas.">
+      <button type="button" class="btn btn-primary" [disabled]="!ctx()?.asignaciones?.length" (click)="nueva()">Nueva tarea</button>
+    </app-page-header>
+  }
 
   <div class="toolbar">
+    @if (embebido()) { <button type="button" class="btn btn-primary" [disabled]="!ctx()?.asignaciones?.length" (click)="nueva()">Nueva tarea</button> }
     <select class="input" [formControl]="estado" (change)="cargar(0)" aria-label="Estado">
       <option value="">Todas</option>
       <option value="BORRADOR">Borradores</option>
@@ -15,17 +18,17 @@
   <div class="card">
     <div class="table-wrap">
       <table class="table">
-        <thead><tr><th>Tarea</th><th>Curso y sección</th><th>Entrega</th><th>Estado</th><th>Entregas</th><th></th></tr></thead>
+        <thead><tr><th>Tarea</th>@if (!embebido()) { <th>Curso y sección</th> }<th>Entrega</th><th>Estado</th><th>Entregas</th><th></th></tr></thead>
         <tbody>
           @for (t of tareas(); track t.id) {
             <tr>
               <td><strong>{{ t.titulo }}</strong></td>
-              <td>{{ etiqueta(t) }}</td>
+              @if (!embebido()) { <td>{{ etiqueta(t) }}</td> }
               <td>{{ t.fechaEntrega | date: 'dd/MM/yyyy HH:mm' }}@if (t.permiteTardia) { <div class="muted">acepta tardías</div> }</td>
               <td><span [class]="'badge ' + clase(t.estado)">{{ t.estado }}</span></td>
               <td>{{ t.entregadas ?? 0 }} entregadas · {{ t.calificadas ?? 0 }} calificadas</td>
               <td class="acciones">
-                <a class="btn btn-sm" [routerLink]="['/docente/tareas', t.id]">Entregas</a>
+                @if (embebido()) { <button type="button" class="btn btn-sm" (click)="viendo.set(t)">Entregas</button> } @else { <a class="btn btn-sm" [routerLink]="['/docente/tareas', t.id]">Entregas</a> }
                 @if (t.estado === 'BORRADOR') {
                   <button type="button" class="btn btn-sm" (click)="editar(t)">Editar</button>
                   <button type="button" class="btn btn-sm btn-primary" (click)="publicar(t)">Publicar</button>
@@ -34,13 +37,13 @@
               </td>
             </tr>
           } @empty {
-            <tr><td colspan="6" class="vacio">{{ cargando() ? 'Cargando…' : 'Aún no creaste tareas.' }}</td></tr>
+            <tr><td [attr.colspan]="embebido() ? 5 : 6" class="vacio">{{ cargando() ? 'Cargando…' : 'Aún no creaste tareas.' }}</td></tr>
           }
         </tbody>
       </table>
     </div>
     <div class="toolbar" style="padding: 12px 16px; justify-content: space-between">
-      <span class="muted">{{ total() }} tareas · página {{ pagina() + 1 }} de {{ paginas() }}</span>
+      <span class="muted">{{ total() }} {{ total() === 1 ? 'tarea' : 'tareas' }} · página {{ pagina() + 1 }} de {{ paginas() }}</span>
       <span>
         <button type="button" class="btn btn-sm" [disabled]="pagina() === 0" (click)="irA(pagina() - 1)">Anterior</button>
         <button type="button" class="btn btn-sm" [disabled]="pagina() + 1 >= paginas()" (click)="irA(pagina() + 1)">Siguiente</button>
@@ -53,12 +56,14 @@
   <app-modal [titulo]="editando() ? 'Editar tarea' : 'Nueva tarea'" [ancho]="640" (cerrar)="cerrar()">
     <form [formGroup]="form" (ngSubmit)="guardar()" id="form-tarea" novalidate>
       <div class="form-grid">
+        @if (!embebido()) {
         <div class="field full">
           <label for="t-asig">Curso y sección</label>
           <select id="t-asig" formControlName="asignacion">
             @for (a of ctx()?.asignaciones ?? []; track a.id) { <option [ngValue]="a.id">{{ a.cursoNombre }} · {{ a.seccionNombre }}</option> }
           </select>
         </div>
+        }
         <div class="field full">
           <label for="t-periodo">Periodo</label>
           <select id="t-periodo" formControlName="periodoId">
@@ -84,5 +89,11 @@
       <button type="button" class="btn" (click)="cerrar()">Cancelar</button>
       <button type="submit" form="form-tarea" class="btn btn-primary" [disabled]="guardando()">{{ guardando() ? 'Guardando…' : 'Guardar' }}</button>
     </ng-container>
+  </app-modal>
+}
+
+@if (viendo(); as t) {
+  <app-modal [titulo]="'Entregas · ' + t.titulo" [ancho]="980" (cerrar)="cerrarEntregas()">
+    <app-tarea-entregas [id]="'' + t.id" [embebido]="true" />
   </app-modal>
 }

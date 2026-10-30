@@ -4,6 +4,9 @@ import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 import pe.edu.eduspace.alumnos.dto.*;
+import jakarta.validation.Valid;
+import pe.edu.eduspace.alumnos.service.AlumnoService;
+import pe.edu.eduspace.alumnos.service.ApoderadoService;
 import pe.edu.eduspace.alumnos.service.ContactosService;
 import pe.edu.eduspace.alumnos.service.ExpedienteService;
 import pe.edu.eduspace.alumnos.service.InternalConsultaService;
@@ -20,6 +23,8 @@ public class InternalController {
     private final InternalConsultaService internal;
     private final ContactosService contactosService;
     private final ExpedienteService expedienteService;
+    private final AlumnoService alumnoService;
+    private final ApoderadoService apoderadoService;
 
     @GetMapping("/alumnos/{id}")
     public AlumnoBasicoResponse alumno(@PathVariable Long id) {
@@ -54,5 +59,21 @@ public class InternalController {
     @GetMapping("/apoderados/usuario/{usuarioId}/alumnos")
     public List<HijoResponse> hijosDeUsuario(@PathVariable Long usuarioId) {
         return internal.hijosDeUsuario(usuarioId);
+    }
+
+    /** Registro desde la matrícula en línea del sitio público (matricula-ms lo llama con el token de servicio). */
+    @PostMapping("/alumnos")
+    public AlumnoResponse registrar(@Valid @RequestBody AlumnoCreateRequest request) {
+        return alumnoService.crear(request);
+    }
+
+    @PostMapping("/alumnos/{id}/usuario")
+    public AlumnoResponse vincularAlumno(@PathVariable Long id, @Valid @RequestBody VincularUsuarioRequest request) {
+        return alumnoService.vincularUsuario(id, request.usuarioId());
+    }
+
+    @PostMapping("/apoderados/{id}/usuario")
+    public ApoderadoResponse vincularApoderado(@PathVariable Long id, @Valid @RequestBody VincularUsuarioRequest request) {
+        return apoderadoService.vincularUsuario(id, request.usuarioId());
     }
 }

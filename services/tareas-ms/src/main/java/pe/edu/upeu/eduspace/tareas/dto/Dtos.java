@@ -75,4 +75,19 @@ public final class Dtos {
                                          Boolean permiteTardia, Long alumnoId, String alumnoNombre, String estadoEntrega) {}
 
     public record DescargaResponse(String urlDescarga, String nombreArchivo) {}
+
+    // ---------------------------------------------------------------- materiales del curso
+
+    public record MaterialArchivoUrlRequest(
+        @NotNull Long seccionId, @NotNull Long cursoId,
+        @NotBlank String nombreArchivo, @NotBlank String contentType, @NotNull @Positive Long tamanoBytes) {}
+
+    /** tipo ARCHIVO: lleva {@code archivo} (ya subido con la URL firmada); tipo ENLACE: lleva {@code enlace}. */
+    public record MaterialRequest(
+        @NotNull Long seccionId, @NotNull Long cursoId,
+        @NotBlank @Size(min = 3, max = 150) String titulo, @Size(max = 1000) String descripcion,
+        @NotBlank String tipo, @Size(max = 500) String enlace, @Valid ArchivoRef archivo) {}
+
+    public record MaterialResponse(Long id, Long seccionId, Long cursoId, Long docenteId, String titulo, String descripcion, String tipo,
+                                   String enlace, String nombreArchivo, String contentType, Long tamanoBytes, LocalDateTime creadoEn) {}
 }

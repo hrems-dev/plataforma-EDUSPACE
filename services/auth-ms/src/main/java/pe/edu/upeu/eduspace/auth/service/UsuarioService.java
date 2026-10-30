@@ -15,6 +15,7 @@ import pe.edu.upeu.eduspace.auth.repository.RolRepository;
 import pe.edu.upeu.eduspace.auth.repository.UsuarioRepository;
 
 import java.security.SecureRandom;
+import java.text.Normalizer;
 import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.List;
@@ -62,6 +63,63 @@ public class UsuarioService {
             .nombres(req.nombres().trim()).apellidos(req.apellidos().trim()).passwordHash(encoder.encode(clave))
             .debeCambiarClave(temporal).roles(resolverRoles(req.roles())).build());
         return new UsuarioConClaveTemporal(toResponse(u), temporal ? clave : null);
+    }
+
+    /**
+     * Cuenta para una persona del colegio (alumno, docente, apoderado, caja…): usuario {@code nombre.apellido} (con número si ya existe)
+     * y clave inicial igual a su documento; queda obligada a cambiarla en el primer ingreso. Nunca crea cuentas de ADMIN.
+     */
+    @Transactional
+    public UsuarioConClaveTemporal crearCuentaPersona(CuentaPersonaRequest req) {
+        String rol = req.rol().trim().toUpperCase().replace("ROLE_", "");
+        if ("ADMIN".equals(rol)) throw new BusinessRuleException("Las cuentas de administración no se crean desde aquí.");
+        String username = usernameLibre(req.nombres(), req.apellidos());
+        String email = req.email() == null || req.email().isBlank() ? username + "@cuentas.eduspace.pe" : req.email().trim();
+        if (usuarios.existsByEmailIgnoreCase(email)) email = username + "@cuentas.eduspace.pe";
+        Usuario u = usuarios.save(Usuario.builder().username(username).email(email).nombres(req.nombres().trim())
+            .apellidos(req.apellidos().trim()).passwordHash(encoder.encode(req.documento().trim()))
+            .debeCambiarClave(true).roles(resolverRoles(Set.of(rol))).build());
+        log.info("Cuenta creada: usuario={} rol={}", username, rol);
+        return new UsuarioConClaveTemporal(toResponse(u), null);
+    }
+
+    /** Restaura la cuenta: la clave vuelve a ser el documento y debe cambiarse al entrar. No aplica a ADMIN. */
+    @Transactional
+    public UsuarioResponse restablecerPorDocumento(Long id, RestablecerPorDocumentoRequest req) {
+        Usuario u = buscar(id);
+        if (u.esAdmin()) throw new BusinessRuleException("Las cuentas de administración no se restauran desde aquí.");
+        u.setPasswordHash(encoder.encode(req.documento().trim()));
+        u.setDebeCambiarClave(true);
+        u.setBloqueadoHasta(null);
+        u.setIntentosFallidos((short) 0);
+        u.setActivo(true);
+        u.setActualizadoEn(LocalDateTime.now());
+        usuarios.save(u);
+        refresh.revocarTodos(id);
+        return toResponse(u);
+    }
+
+    private String usernameLibre(String nombres, String apellidos) {
+        String base = baseUsername(nombres, apellidos);
+        String candidato = base;
+        for (int n = 2; usuarios.existsByUsernameIgnoreCase(candidato); n++) candidato = base + n;
+        return candidato;
+    }
+
+    /** Primer nombre + punto + primer apellido, en minúsculas y sin tildes ni símbolos (ej. «María José» «Aguilar Ortiz» → maria.aguilar). */
+    static String baseUsername(String nombres, String apellidos) {
+        String n = soloLetras(primera(nombres)), a = soloLetras(primera(apellidos));
+        String base = (n + "." + a).replaceAll("^\\.|\\.$", "");
+        return base.length() >= 3 ? base : (base + "usr");
+    }
+
+    private static String primera(String texto) {
+        String[] partes = texto.trim().split("\\s+");
+        return partes.length == 0 ? "" : partes[0];
+    }
+
+    private static String soloLetras(String texto) {
+        return Normalizer.normalize(texto, Normalizer.Form.NFD).replaceAll("\\p{M}", "").toLowerCase().replaceAll("[^a-z0-9]", "");
     }
 
     @Transactional

@@ -24,7 +24,7 @@ class RateLimitFilterTest {
 
     @Test
     void loginSeLimitaPorIpYNoAfectaAOtrasIps() throws Exception {
-        RateLimitFilter filtro = new RateLimitFilter(true, 300, 50, 10, 3);
+        RateLimitFilter filtro = new RateLimitFilter(true, 300, 50, 10, 3, 30, 15);
         for (int i = 0; i < 3; i++) {
             assertEquals(200, llamar(filtro, "POST", "/api/v1/auth/login", "10.0.0.1"));
         }
@@ -34,7 +34,7 @@ class RateLimitFilterTest {
 
     @Test
     void elCuboDeLoginNoConsumeElDeLaApi() throws Exception {
-        RateLimitFilter filtro = new RateLimitFilter(true, 300, 5, 10, 1);
+        RateLimitFilter filtro = new RateLimitFilter(true, 300, 5, 10, 1, 30, 15);
         assertEquals(200, llamar(filtro, "POST", "/api/v1/auth/login", "10.0.0.3"));
         assertEquals(429, llamar(filtro, "POST", "/api/v1/auth/login", "10.0.0.3"));
         assertEquals(200, llamar(filtro, "GET", "/api/v1/alumnos", "10.0.0.3"));
@@ -42,7 +42,7 @@ class RateLimitFilterTest {
 
     @Test
     void laApiGeneralCortaAlSuperarLaRafaga() throws Exception {
-        RateLimitFilter filtro = new RateLimitFilter(true, 60, 4, 10, 5);
+        RateLimitFilter filtro = new RateLimitFilter(true, 60, 4, 10, 5, 30, 15);
         for (int i = 0; i < 4; i++) {
             assertEquals(200, llamar(filtro, "GET", "/api/v1/pagos/mias", "10.0.0.4"));
         }
@@ -51,13 +51,23 @@ class RateLimitFilterTest {
 
     @Test
     void actuatorNoSeLimitaYDesactivadoNoLimitaNada() throws Exception {
-        RateLimitFilter filtro = new RateLimitFilter(true, 60, 1, 10, 1);
+        RateLimitFilter filtro = new RateLimitFilter(true, 60, 1, 10, 1, 30, 15);
         for (int i = 0; i < 5; i++) {
             assertEquals(200, llamar(filtro, "GET", "/actuator/health", "10.0.0.5"));
         }
-        RateLimitFilter apagado = new RateLimitFilter(false, 60, 1, 10, 1);
+        RateLimitFilter apagado = new RateLimitFilter(false, 60, 1, 10, 1, 30, 15);
         for (int i = 0; i < 5; i++) {
             assertEquals(200, llamar(apagado, "GET", "/api/v1/alumnos", "10.0.0.6"));
         }
+    }
+
+    @Test
+    void laMatriculaEnLineaTieneSuPropioCuboMasEstricto() throws Exception {
+        RateLimitFilter filtro = new RateLimitFilter(true, 300, 50, 10, 5, 30, 2);
+        assertEquals(200, llamar(filtro, "POST", "/api/v1/publico/matricula", "10.0.0.7"));
+        assertEquals(200, llamar(filtro, "GET", "/api/v1/publico/matricula/oferta", "10.0.0.7"));
+        assertEquals(429, llamar(filtro, "POST", "/api/v1/publico/matricula", "10.0.0.7"));
+        // la API general de esa misma IP sigue disponible
+        assertEquals(200, llamar(filtro, "GET", "/api/v1/alumnos", "10.0.0.7"));
     }
 }

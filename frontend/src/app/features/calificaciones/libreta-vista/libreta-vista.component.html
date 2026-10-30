@@ -16,7 +16,7 @@
       <tbody>
         @for (c of libreta().cursos; track c.cursoId) {
           <tr>
-            <td><strong>{{ c.cursoNombre }}</strong></td>
+            <td><strong>{{ nombreCurso(c) }}</strong></td>
             @for (p of columnas(); track p) { <td [style.color]="claseNota(c, p)">{{ nota(c, p) }}</td> }
             <td>{{ c.promedioFinal !== undefined && c.promedioFinal !== null ? (c.promedioFinal | number: '1.1-1') + ' (' + c.literalFinal + ')' : '—' }}</td>
             <td><span [class]="'badge ' + claseResultado(c.estadoFinal)">{{ c.estadoFinal ?? 'En curso' }}</span></td>

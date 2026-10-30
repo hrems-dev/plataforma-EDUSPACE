@@ -50,6 +50,15 @@ public class ArchivoService {
         return firmar(Method.GET, ruta);
     }
 
+    /** Borra el archivo del almacenamiento; si falla solo se registra (el registro en la base ya se eliminó). */
+    public void eliminar(String ruta) {
+        try {
+            minio.removeObject(io.minio.RemoveObjectArgs.builder().bucket(bucket).object(ruta).build());
+        } catch (Exception e) {
+            log.warn("No se pudo borrar {} de MinIO: {}", ruta, e.getMessage());
+        }
+    }
+
     public int expiraMinutos() {
         return EXPIRA_MIN;
     }

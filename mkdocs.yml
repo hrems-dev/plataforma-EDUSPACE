@@ -1,0 +1,65 @@
+site_name: EduSpace
+site_description: Sistema de gestión escolar distribuido (DIST 2026-2, UPeU)
+docs_dir: docs
+
+nav:
+  - Inicio: sistema/index.md
+  - Instalación y ejecución: sistema/instalacion.md
+  - Uso del sistema: sistema/uso.md
+  - Arquitectura: sistema/arquitectura.md
+  - Módulos y funcionalidades: sistema/modulos.md
+  - Alumnos y entrada al sistema: sistema/alumnos-y-acceso.md
+  - Horarios: sistema/horarios.md
+  - Matrícula en línea: sistema/matricula-en-linea.md
+  - Datos y consistencia: sistema/datos.md
+  - Seguridad: sistema/seguridad.md
+  - Observabilidad: sistema/observabilidad.md
+  - Frontend: sistema/frontend.md
+  - Pruebas y métricas: sistema/pruebas-metricas.md
+  - Operación: sistema/operacion.md
+  - Decisiones de diseño: sistema/decisiones.md
+  - Equipo:
+      - Aporte individual: sistema/equipo.md
+      - Reparto y flujos: equipo/README.md
+      - Hermes: equipo/hermes.md
+      - Andre Fabricio: equipo/andre.md
+      - Witmer: equipo/witmer.md
+  - Repositorio y estándares: sistema/repositorio.md
+  - Limitaciones y mejoras: sistema/limitaciones.md
+  - Glosario: sistema/glosario.md
+  - Presentación en clase:
+      - Qué usar y en qué orden: presentacion/index.md
+      - Análisis: presentacion/00-analisis-de-la-presentacion.md
+      - Procesos transaccionales: presentacion/01-procesos-transaccionales.md
+      - Guion: presentacion/02-guion-de-la-presentacion.md
+      - Enseñanza de código: presentacion/03-ensenanza-de-codigo.md
+      - Diapositivas para generador: presentacion/04-diapositivas-para-generador.md
+      - Demostración rápida (10 min): presentacion/05-demo-rapida.md
+  - App móvil:
+      - Análisis por rol: movil/00-analisis-por-rol.md
+      - Instalación y funcionamiento: movil/01-app-movil.md
+  - Historial:
+      - Integración y correcciones: 05-integracion-y-correcciones.md
+      - Bitácora de avance: 06-bitacora-de-avance.md
+      - Verificación contra el plan y Pagatu: 07-verificacion-plan-y-pagatu.md
+      - Avance 28 de octubre: 08-avance-2026-10-28.md
+      - Espacios de trabajo: 09-espacios-de-trabajo.md
+
+theme:
+  name: material
+  features:
+    - navigation.instant
+    - navigation.top
+    - content.code.copy
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format

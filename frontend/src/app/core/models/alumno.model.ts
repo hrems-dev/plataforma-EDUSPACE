@@ -19,6 +19,9 @@ export interface AlumnoResumen {
   tipoDocumento?: string;
   numeroDocumento: string;
   estado: EstadoAlumno;
+  usuarioId?: number;
+  nombres?: string;
+  apellidoPaterno?: string;
 }
 
 export interface Apoderado {

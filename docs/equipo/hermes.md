@@ -86,7 +86,7 @@ Horario por sección · Aulas disponibles · Bloques horarios · Años y periodo
 | Administración de avisos | Listar con filtros, editar, eliminar | `admin` (GET), `admin/{id}` (PUT/DELETE) |
 
 **Tablas:** `notificaciones`, `plantillas_notificacion`, `preferencias_notificacion`, `dispositivos_push`, `intentos_envio`, `eventos_procesados`, `shedlock`.
-**Consume (15 tópicos):** `matricula.creada/confirmada/anulada`, `pago.confirmado/vencido/por-vencer`, `asistencia.falta-registrada`, `tarea.publicada/recordatorio/calificada`,
+**Consume (16 tópicos):** `matricula.creada/confirmada/anulada`, `pago.confirmado/vencido/por-vencer`, `asistencia.falta-registrada`, `tarea.publicada/recordatorio/calificada`, `material.publicado`,
 `examen.publicado/calificado`, `boletin.generado`, `horario.publicado`, `justificacion.resuelta`. **No publica.**
 **Reglas:** anti-duplicado por `eventos_procesados`; resuelve destinatarios con `alumnos-ms` (Feign con circuit breaker); reintentos de envío; el push usa un `LogPushSender` (no hay FCM real).
 **Pantallas:** *Notificaciones* (bandeja, todos los roles) y *Avisos y cuentas → Avisos y plantillas* (ADMIN: enviar con selector de destinatarios —docentes, familias de una sección, alumnos concretos o por número de usuario—, plantillas y avisos enviados).
@@ -95,6 +95,9 @@ Horario por sección · Aulas disponibles · Bloques horarios · Años y periodo
 ---
 
 ## 4. `auth-ms` (infraestructura, puerto 8090 · `auth_db` · 15440)
+**Interno (nuevo):** `POST /internal/cuentas` crea la cuenta de una persona (token de servicio); lo usa la matrícula en línea. `alumnos-ms` suma `POST /internal/alumnos` y los vínculos `POST /internal/alumnos|apoderados/{id}/usuario`; `notificaciones-ms`, `POST /internal/correos` (HTML + adjuntos por SMTP); `planificacion-ms`, `GET /internal/horarios/seccion/{id}`.
+**Cuentas de personas (nuevo):** `POST /api/v1/auth/usuarios/cuentas` (usuario `nombre.apellido`, clave inicial = documento, cambio obligatorio) y `POST /api/v1/auth/usuarios/{id}/restablecer-por-documento` (restaura la clave al documento; rechaza ADMIN). Pantalla: *Avisos y cuentas → Cuentas de acceso*. Ver `docs/sistema/alumnos-y-acceso.md`.
+
 Login propio, JWT RS256 + JWKS, refresh con rotación, bloqueo por intentos, cambio de clave y administración de usuarios/roles (`ADMIN`, `SECRETARIA`, `DOCENTE`, `ALUMNO`, `APODERADO`, `CAJERO`).
 En DEV el emisor por defecto es Keycloak (`infra/keycloak/`); en PROD `auth-ms`. Tablas: `usuarios`, `roles`, `usuario_roles`, `refresh_tokens`.
 

@@ -9,12 +9,14 @@ import { AlumnoService } from '../../core/services/alumno.service';
 import { AlumnoResumen } from '../../core/models/alumno.model';
 import { AuthService } from '../../core/services/auth.service';
 import { NotificacionService } from '../../core/services/notificacion.service';
+import { NAV_AULA, usaBarraAula } from '../aula-nav';
 import { HUBS, hubDe } from '../hubs';
 import { MENU, PERSONAL } from '../menu';
+import { AvisoServicioComponent } from '../../shared/components/aviso-servicio/aviso-servicio.component';
 
 @Component({
   selector: 'app-shell',
-  imports: [RouterLink, RouterOutlet],
+  imports: [RouterLink, RouterOutlet, AvisoServicioComponent],
   templateUrl: './shell.component.html',
   styleUrl: './shell.component.css'
 })
@@ -61,6 +63,21 @@ export class ShellComponent {
     return u === i.ruta || u.startsWith(i.ruta + '/');
   }
 
+  // --- Barra superior de docentes, alumnos y apoderados (sin menú lateral) ---
+  protected readonly esAula = computed(() => usaBarraAula(this.auth.roles()));
+  protected readonly navAula = computed(() => NAV_AULA.filter(e => this.auth.tieneAlgunRol(e.roles)));
+  protected readonly menuUsuario = signal(false);
+  protected readonly iniciales = computed(() => (this.usuario()?.username ?? '?').slice(0, 2).toUpperCase());
+
+  protected activoAula(e: { prefijos: string[] }): boolean {
+    const u = this.url().split(/[?#]/)[0];
+    return e.prefijos.some(p => u === p || u.startsWith(p + '/'));
+  }
+
+  protected cerrarMenuUsuario(): void {
+    this.menuUsuario.set(false);
+  }
+
   // --- Paleta de búsqueda (Ctrl+K): saltar a cualquier pantalla permitida o abrir el expediente de un alumno ---
   protected readonly paletaAbierta = signal(false);
   protected readonly texto = signal('');
@@ -98,6 +115,7 @@ export class ShellComponent {
 
   @HostListener('document:keydown', ['$event'])
   protected alTeclear(e: KeyboardEvent): void {
+    if (e.key === 'Escape' && this.menuUsuario()) this.menuUsuario.set(false);
     if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
       e.preventDefault();
       this.paletaAbierta() ? this.cerrarPaleta() : this.abrirPaleta();

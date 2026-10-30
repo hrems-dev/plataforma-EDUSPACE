@@ -1,6 +1,8 @@
-<div class="page">
-  <app-page-header titulo="Tareas" [subtitulo]="ctx.seleccionado()?.nombreCompleto ?? ''" />
-  <app-selector-hijo />
+<div [class.page]="!embebido()">
+  @if (!embebido()) {
+    <app-page-header titulo="Tareas" [subtitulo]="ctx.seleccionado()?.nombreCompleto ?? ''" />
+    <app-selector-hijo />
+  }
 
   @if (ctx.esApoderado()) { <div class="aviso aviso-warn">Las entregas las hace el alumno desde su cuenta. Aquí puedes ver qué tiene pendiente y cómo le fue.</div> }
 
@@ -33,7 +35,7 @@
 
 @if (entregando(); as t) {
   <app-modal [titulo]="'Entregar: ' + t.titulo" [ancho]="520" (cerrar)="cerrar()">
-    <form (ngSubmit)="entregar()" id="form-entrega" novalidate>
+    <form (submit)="$event.preventDefault(); entregar()" id="form-entrega" novalidate>
       <div class="field">
         <label for="e-arch">Archivos (máx. 10 MB cada uno)</label>
         <input id="e-arch" type="file" multiple accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.txt" (change)="elegirArchivos($event)" />

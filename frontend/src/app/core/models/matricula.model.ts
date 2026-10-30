@@ -1,9 +1,9 @@
-export type EstadoMatricula = 'PRE_MATRICULA' | 'MATRICULADO' | 'RETIRADO' | 'ANULADO' | 'TRASLADADO';
+export type EstadoMatricula = 'PRE_MATRICULA' | 'POR_APROBAR' | 'MATRICULADO' | 'RETIRADO' | 'ANULADO' | 'TRASLADADO';
 export type TipoMatricula = 'NUEVA' | 'RATIFICACION' | 'REINGRESO';
 export type EstadoCampania = 'PLANIFICADA' | 'ABIERTA' | 'CERRADA';
 export type TipoRequisito = 'FICHA_FIRMADA' | 'CONSTANCIA_NO_ADEUDO' | 'CERTIFICADO_ESTUDIOS' | 'EXPEDIENTE_COMPLETO';
 
-export const ESTADOS_MATRICULA: EstadoMatricula[] = ['PRE_MATRICULA', 'MATRICULADO', 'RETIRADO', 'TRASLADADO', 'ANULADO'];
+export const ESTADOS_MATRICULA: EstadoMatricula[] = ['PRE_MATRICULA', 'POR_APROBAR', 'MATRICULADO', 'RETIRADO', 'TRASLADADO', 'ANULADO'];
 export const TIPOS_MATRICULA: TipoMatricula[] = ['NUEVA', 'RATIFICACION', 'REINGRESO'];
 
 export interface Matricula {
@@ -22,6 +22,9 @@ export interface Matricula {
   venceEn?: string;
   observaciones?: string;
   creadoEn: string;
+  /** Cuándo se registró el pago de la matrícula (queda POR_APROBAR hasta que la administración la apruebe). */
+  pagadaEn?: string;
+  aprobadaEn?: string;
   confirmadaEn?: string;
   cerradaEn?: string;
   motivoCierre?: string;

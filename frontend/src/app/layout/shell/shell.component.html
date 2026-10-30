@@ -1,8 +1,55 @@
+<app-aviso-servicio />
+@if (esAula()) {
+  <div class="aula-app">
+    <header class="aula-barra">
+      <a class="aula-marca" [routerLink]="navAula()[0]?.ruta ?? '/'" aria-label="EduSpace, ir a mis cursos">
+        <span class="aula-logo" aria-hidden="true">E</span><span class="aula-nombre">EduSpace</span>
+      </a>
+      <nav class="aula-nav" aria-label="Principal">
+        @for (e of navAula(); track e.ruta) {
+          <a class="aula-pill" [routerLink]="e.ruta" [class.on]="activoAula(e)" [attr.aria-current]="activoAula(e) ? 'page' : null">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path [attr.d]="e.icono" /></svg>
+            <span>{{ e.etiqueta }}</span>
+          </a>
+        }
+      </nav>
+      <div class="aula-acc">
+        <button type="button" class="aula-icono" (click)="abrirPaleta()" aria-label="Buscar (Ctrl+K)" title="Buscar (Ctrl+K)">
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="M20 20l-3.5-3.5" /></svg>
+        </button>
+        <a class="aula-icono" routerLink="/notificaciones" [attr.aria-label]="'Notificaciones' + (noLeidas() > 0 ? ', ' + noLeidas() + ' sin leer' : '')" title="Notificaciones">
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9a6 6 0 0112 0c0 6 2 7 2 7H4s2-1 2-7M10 20a2 2 0 004 0" /></svg>
+          @if (noLeidas() > 0) { <span class="aula-punto">{{ noLeidas() > 9 ? '9+' : noLeidas() }}</span> }
+        </a>
+        <div class="aula-usuario">
+          <button type="button" class="aula-avatar" (click)="menuUsuario.set(!menuUsuario())" [attr.aria-expanded]="menuUsuario()" aria-haspopup="menu" aria-label="Mi cuenta">{{ iniciales() }}</button>
+          @if (menuUsuario()) {
+            <div class="aula-velo" (click)="cerrarMenuUsuario()" role="presentation"></div>
+            <div class="aula-menu" role="menu">
+              <div class="aula-menu-cab"><strong>{{ usuario()?.username }}</strong><span>{{ rolPrincipal() }}</span></div>
+              <a role="menuitem" routerLink="/mi-perfil" (click)="cerrarMenuUsuario()">Mi perfil</a>
+              <a role="menuitem" routerLink="/notificaciones" (click)="cerrarMenuUsuario()">Notificaciones</a>
+              <a role="menuitem" routerLink="/calendario" (click)="cerrarMenuUsuario()">Calendario</a>
+              <a role="menuitem" routerLink="/ayuda" (click)="cerrarMenuUsuario()">Ayuda</a>
+              <button type="button" role="menuitem" (click)="cerrarMenuUsuario(); irACambiarClave()">Cambiar clave</button>
+              <a role="menuitem" routerLink="/" (click)="cerrarMenuUsuario()">Sitio del colegio</a>
+              <button type="button" role="menuitem" class="salir" (click)="salir()">Cerrar sesión</button>
+            </div>
+          }
+        </div>
+      </div>
+    </header>
+    <main class="aula-main"><router-outlet /></main>
+  </div>
+} @else {
 <div class="app">
   <aside class="lateral" [class.abierto]="menuAbierto()">
     <div class="marca">
-      <div class="logo">E</div>
-      <div class="nombre">EduSpace</div>
+      <img src="/img/colegio-escudo.svg" alt="" class="logo-escudo" aria-hidden="true" />
+      <div>
+        <div class="nombre">EduSpace</div>
+        <small class="sub-marca">Horizonte del Valle</small>
+      </div>
     </div>
 
     <button type="button" class="buscar-menu" (click)="abrirPaleta()" aria-label="Buscar pantallas o alumnos (Ctrl+K)">
@@ -51,7 +98,10 @@
       <button type="button" class="hamburguesa" (click)="alternarMenu()" aria-label="Abrir menú">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16" /></svg>
       </button>
-      <span class="titulo-barra">EduSpace</span>
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <img src="/img/colegio-escudo.svg" alt="" style="width: 26px; height: 26px;" aria-hidden="true" />
+        <span class="titulo-barra">EduSpace</span>
+      </div>
       <button type="button" class="hamburguesa" style="margin-left: auto" (click)="abrirPaleta()" aria-label="Buscar">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="M20 20l-3.5-3.5" /></svg>
       </button>
@@ -71,6 +121,7 @@
     </main>
   </div>
 </div>
+}
 
 @if (paletaAbierta()) {
   <div class="paleta-velo" (click)="cerrarPaleta()" role="presentation">

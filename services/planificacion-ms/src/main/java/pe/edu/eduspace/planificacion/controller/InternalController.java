@@ -9,6 +9,7 @@ import pe.edu.eduspace.planificacion.dto.*;
 import pe.edu.eduspace.planificacion.service.AnioAcademicoService;
 import pe.edu.eduspace.planificacion.service.CursoService;
 import pe.edu.eduspace.planificacion.service.FeriadoService;
+import pe.edu.eduspace.planificacion.service.HorarioService;
 import pe.edu.eduspace.planificacion.service.InternalConsultaService;
 
 /**
@@ -24,6 +25,7 @@ public class InternalController {
     private final AnioAcademicoService anioService;
     private final CursoService cursoService;
     private final FeriadoService feriadoService;
+    private final HorarioService horarioService;
 
     @GetMapping("/docentes/usuario/{usuarioId}")
     public InternalDocenteResponse docentePorUsuario(@PathVariable Long usuarioId) {
@@ -50,6 +52,12 @@ public class InternalController {
     public List<SeccionInternaResponse> secciones(@RequestParam(required = false) Long anioId,
                                                   @RequestParam(required = false) Long gradoId) {
         return internal.secciones(anioId, gradoId);
+    }
+
+    /** Horario de una sección (matrícula en línea lo incluye en la constancia que se envía por correo). */
+    @GetMapping("/horarios/seccion/{seccionId}")
+    public HorarioSeccionResponse horario(@PathVariable Long seccionId) {
+        return horarioService.porSeccion(seccionId);
     }
 
     @GetMapping("/anios/activo")

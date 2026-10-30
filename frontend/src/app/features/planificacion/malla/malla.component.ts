@@ -1,4 +1,5 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
+import { catchError, forkJoin, map, of } from 'rxjs';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Curso, Grado, MallaGrado, MallaItem } from '../../../core/models/planificacion.model';
 import { AuthService } from '../../../core/services/auth.service';
@@ -45,6 +46,14 @@ export class MallaComponent implements OnInit {
       this.grados.set(g);
       this.gradoId.setValue(g[0]?.id ?? 0);
       this.cargar();
+      // Si el primer grado aún no tiene malla se muestra el primero que sí la tiene, para no abrir una pantalla vacía.
+      forkJoin(g.map(x => this.api.malla(x.id).pipe(map(m => m.cursos.length), catchError(() => of(0))))).subscribe(n => {
+        const i = n.findIndex(c => c > 0);
+        if (i > 0 && this.gradoId.value === g[0]?.id && this.malla()?.cursos.length === 0) {
+          this.gradoId.setValue(g[i].id);
+          this.cargar();
+        }
+      });
     });
   }
 

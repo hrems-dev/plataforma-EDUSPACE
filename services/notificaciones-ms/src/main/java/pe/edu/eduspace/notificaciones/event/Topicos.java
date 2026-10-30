@@ -13,6 +13,7 @@ public final class Topicos {
     public static final String TAREA_PUBLICADA = "tarea.publicada";
     public static final String TAREA_RECORDATORIO = "tarea.recordatorio";
     public static final String TAREA_CALIFICADA = "tarea.calificada";
+    public static final String MATERIAL_PUBLICADO = "material.publicado";
     public static final String EXAMEN_PUBLICADO = "examen.publicado";
     public static final String EXAMEN_CALIFICADO = "examen.calificado";
     public static final String BOLETIN_GENERADO = "boletin.generado";

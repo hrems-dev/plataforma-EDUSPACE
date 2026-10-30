@@ -18,6 +18,10 @@ export class UsuarioService {
     return this.http.get<Page<Usuario>>(API, { params });
   }
 
+  obtener(id: number): Observable<Usuario> {
+    return this.http.get<Usuario>(`${API}/${id}`);
+  }
+
   crear(body: UsuarioCreate): Observable<UsuarioConClaveTemporal> {
     return this.http.post<UsuarioConClaveTemporal>(API, body);
   }
@@ -44,5 +48,15 @@ export class UsuarioService {
 
   restablecerClave(id: number): Observable<UsuarioConClaveTemporal> {
     return this.http.post<UsuarioConClaveTemporal>(`${API}/${id}/restablecer-clave`, {});
+  }
+
+  /** Cuenta de una persona: usuario nombre.apellido y clave inicial = su documento (cambio obligatorio al entrar). */
+  crearCuenta(body: { nombres: string; apellidos: string; documento: string; rol: string; email?: string }): Observable<UsuarioConClaveTemporal> {
+    return this.http.post<UsuarioConClaveTemporal>(`${API}/cuentas`, body);
+  }
+
+  /** Restaura la cuenta: la clave vuelve a ser el documento y debe cambiarse al entrar (no aplica a ADMIN). */
+  restablecerPorDocumento(id: number, documento: string): Observable<Usuario> {
+    return this.http.post<Usuario>(`${API}/${id}/restablecer-por-documento`, { documento });
   }
 }

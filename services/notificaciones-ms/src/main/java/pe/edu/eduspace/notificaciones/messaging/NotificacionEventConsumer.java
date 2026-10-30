@@ -115,6 +115,16 @@ public class NotificacionEventConsumer {
                 Datos.de("curso", e.cursoNombre(), "titulo", e.titulo(), "fecha", Datos.fecha(e.fechaEntrega())));
     }
 
+    @KafkaListener(topics = Topicos.MATERIAL_PUBLICADO)
+    public void materialPublicado(ConsumerRecord<String, String> r) {
+        MaterialPublicadoEvent e = leer(r, MaterialPublicadoEvent.class);
+        if (e == null || requerido(r, "alumnoIds", e.alumnoIds())) {
+            return;
+        }
+        procesar(r, e.eventId(), clave(r, e.materialId()), "MATERIAL_PUBLICADO", Destino.ALUMNO_Y_APODERADOS, e.alumnoIds(),
+                Datos.de("curso", e.cursoNombre(), "titulo", e.titulo()));
+    }
+
     /** tareas-ms lo publica una vez por tarea, con los alumnos que aún no entregaron (vence en menos de 24 h). */
     @KafkaListener(topics = Topicos.TAREA_RECORDATORIO)
     public void tareaRecordatorio(ConsumerRecord<String, String> r) {

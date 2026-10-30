@@ -186,7 +186,7 @@ class MatriculaIntegrationTest extends PostgresIntegrationTestBase {
     }
 
     @Test
-    void pagoConfirmadoConfirmaUnaSolaVezAunqueElEventoSeRepita() {
+    void pagoConfirmadoDejaPorAprobarUnaSolaVezYLaAprobacionConfirma() {
         MatriculaResponse m = crear(1, 10);
         String id = java.util.UUID.randomUUID().toString();
         pagoConsumer.procesar(pagoJson(id, m.id(), "MATRICULA", "pago.confirmado"), false);
@@ -194,9 +194,29 @@ class MatriculaIntegrationTest extends PostgresIntegrationTestBase {
         // otro evento distinto para la misma matrícula tampoco la confirma de nuevo
         pagoConsumer.procesar(pagoJson(java.util.UUID.randomUUID().toString(), m.id(), "MATRICULA", "pago.confirmado"), false);
 
-        assertThat(jdbc.queryForObject("select estado from matriculas where id = ?", String.class, m.id())).isEqualTo("MATRICULADO");
+        // el pago NO matricula: queda POR_APROBAR y todavía no se publica matricula.confirmada
+        assertThat(jdbc.queryForObject("select estado from matriculas where id = ?", String.class, m.id())).isEqualTo("POR_APROBAR");
+        assertThat(eventos("matricula.confirmada")).isZero();
+        assertThat(jdbc.queryForObject("select count(*) from matricula_historial where tipo_cambio = 'PAGO'", Integer.class)).isEqualTo(1);
+
+        assertThat(service.aprobar(m.id(), 9L).estado()).isEqualTo("MATRICULADO");
+        service.aprobar(m.id(), 9L);   // repetir no publica otra vez
         assertThat(eventos("matricula.confirmada")).isEqualTo(1);
-        assertThat(jdbc.queryForObject("select count(*) from matricula_historial where tipo_cambio = 'CONFIRMACION'", Integer.class)).isEqualTo(1);
+        assertThat(jdbc.queryForObject("select count(*) from matricula_historial where tipo_cambio = 'APROBACION'", Integer.class)).isEqualTo(1);
+    }
+
+    @Test
+    void noSeApruebaSinPagoYElRechazoLiberaElCupo() {
+        MatriculaResponse sinPago = crear(1, 10);
+        assertThatThrownBy(() -> service.aprobar(sinPago.id(), 9L)).isInstanceOf(BusinessRuleException.class).hasMessageContaining("pago");
+
+        service.confirmarPorPago(sinPago.id(), 5L);
+        assertThatThrownBy(() -> service.rechazar(sinPago.id(), " ", 9L)).isInstanceOf(BusinessRuleException.class).hasMessageContaining("motivo");
+        MatriculaResponse r = service.rechazar(sinPago.id(), "Datos del alumno inconsistentes", 9L);
+        assertThat(r.estado()).isEqualTo("ANULADO");
+        assertThat(ocupados(10)).isZero();
+        assertThat(eventos("matricula.anulada")).isEqualTo(1);
+        assertThat(eventos("matricula.confirmada")).isZero();
     }
 
     @Test
@@ -212,7 +232,7 @@ class MatriculaIntegrationTest extends PostgresIntegrationTestBase {
         MatriculaResponse m = crear(1, 10);
         pagoConsumer.procesar(pagoJson(java.util.UUID.randomUUID().toString(), m.id(), "MATRICULA", "pago.confirmado"), false);
         pagoConsumer.procesar(pagoJson(java.util.UUID.randomUUID().toString(), m.id(), "MATRICULA", "pago.anulado"), true);
-        assertThat(jdbc.queryForObject("select estado from matriculas where id = ?", String.class, m.id())).isEqualTo("MATRICULADO");
+        assertThat(jdbc.queryForObject("select estado from matriculas where id = ?", String.class, m.id())).isEqualTo("POR_APROBAR");
         assertThat(jdbc.queryForObject("select count(*) from matricula_historial where tipo_cambio = 'ANULACION'", Integer.class)).isEqualTo(1);
     }
 
@@ -250,6 +270,7 @@ class MatriculaIntegrationTest extends PostgresIntegrationTestBase {
         assertThatThrownBy(() -> service.retirar(m.id(), new RetiroRequest("Mudanza"), 9L))
             .isInstanceOf(BusinessRuleException.class).hasMessageContaining("MATRICULADO");
         service.confirmarPorPago(m.id(), 77L);
+        service.aprobar(m.id(), 9L);
         MatriculaResponse r = service.retirar(m.id(), new RetiroRequest("Mudanza"), 9L);
         assertThat(r.estado()).isEqualTo("RETIRADO");
         assertThat(ocupados(10)).isZero();
@@ -303,6 +324,8 @@ class MatriculaIntegrationTest extends PostgresIntegrationTestBase {
         MatriculaResponse b = crear(2, 10);
         service.confirmarPorPago(a.id(), 1L);
         service.confirmarPorPago(b.id(), 2L);
+        service.aprobar(a.id(), 9L);
+        service.aprobar(b.id(), 9L);
 
         long anioSiguiente = 2L;
         when(planificacion.anio(anioSiguiente)).thenReturn(new PlanificacionClient.Anio(anioSiguiente, "2027", LocalDate.of(2027, 3, 1), LocalDate.of(2027, 12, 20), "PLANIFICADO"));

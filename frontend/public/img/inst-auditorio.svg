@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 180" width="100%" height="100%">
+  <rect width="320" height="180" rx="10" fill="#831843"/>
+  <!-- Telón de teatro rojo granate del auditorio -->
+  <path d="M0 0 Q40 40 80 0 Q120 40 160 0 Q200 40 240 0 Q280 40 320 0 Z" fill="#9f1239"/>
+  <!-- Cortinajes laterales -->
+  <path d="M0 0 L45 0 L25 150 L0 150 Z" fill="#9f1239"/>
+  <path d="M320 0 L275 0 L295 150 L320 150 Z" fill="#9f1239"/>
+  <!-- Escenario de madera iluminado -->
+  <polygon points="30,120 290,120 320,180 0,180" fill="#78350f"/>
+  <polygon points="100,0 120,140 200,140 220,0" fill="#fef08a" opacity="0.25"/>
+  <!-- Atril o piano -->
+  <rect x="145" y="105" width="30" height="25" rx="3" fill="#1e293b"/>
+  <line x1="160" y1="105" x2="160" y2="85" stroke="#94a3b8" stroke-width="2"/>
+  <circle cx="160" cy="83" r="3" fill="#e2e8f0"/>
+</svg>

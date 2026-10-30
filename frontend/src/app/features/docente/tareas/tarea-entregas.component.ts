@@ -21,6 +21,8 @@ export class TareaEntregasComponent {
   private readonly fb = inject(FormBuilder);
 
   readonly id = input.required<string>();
+  /** Dentro de una ventana de la página del curso: sin cabecera ni «Volver». */
+  readonly embebido = input(false);
   protected readonly tareaId = computed(() => Number(this.id()));
 
   protected readonly tarea = signal<Tarea | null>(null);

@@ -18,3 +18,7 @@ management:
       show-details: never
       probes:
         enabled: true
+
+# Token compartido entre servicios para /internal/** (obligatorio en PROD: sin él el servicio no arranca).
+eduspace:
+  service-token: ${SERVICE_TOKEN}

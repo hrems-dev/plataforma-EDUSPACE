@@ -52,11 +52,52 @@ public class JwtKeyConfig {
             throw new IllegalStateException("No se configuraron las claves JWT (app.auth.jwt.private-key-path / public-key-path). "
                 + "En PROD son obligatorias; en DEV use app.auth.jwt.generar-clave-si-falta=true.");
         }
-        KeyPairGenerator g = KeyPairGenerator.getInstance("RSA");
-        g.initialize(2048);
-        KeyPair par = g.generateKeyPair();
-        log.warn("Clave JWT GENERADA en memoria (kid={}): los tokens no sobrevivirán a un reinicio. Solo para DEV.", cfg.getKid());
+        // DEV: el par generado se guarda en un archivo y se reutiliza en cada arranque. Sin esto, cada reinicio de auth-ms cambiaba
+        // la clave: el Gateway y los servicios (que la guardan en caché) rechazaban todos los tokens y la web quedaba con sesión
+        // "viva" pero sin datos. Para empezar de cero basta borrar el archivo.
+        Path archivo = Path.of(System.getProperty("user.home"), ".eduspace-dev", "jwt-rsa-dev.der");
+        KeyPair par = leerParDev(archivo);
+        if (par == null) {
+            KeyPairGenerator g = KeyPairGenerator.getInstance("RSA");
+            g.initialize(2048);
+            par = g.generateKeyPair();
+            guardarParDev(archivo, par);
+            log.warn("Clave JWT de DEV GENERADA y guardada en {} (kid={}). Solo para DEV.", archivo, cfg.getKid());
+        } else {
+            log.warn("Clave JWT de DEV reutilizada desde {} (kid={}): los tokens sobreviven a los reinicios. Solo para DEV.", archivo, cfg.getKid());
+        }
         return new RSAKey.Builder((RSAPublicKey) par.getPublic()).privateKey(par.getPrivate()).keyID(cfg.getKid()).build();
+    }
+
+    private static KeyPair leerParDev(Path archivo) {
+        try {
+            if (!Files.exists(archivo)) return null;
+            byte[] datos = Files.readAllBytes(archivo);
+            int n = java.nio.ByteBuffer.wrap(datos, 0, 4).getInt();
+            byte[] priv = java.util.Arrays.copyOfRange(datos, 4, 4 + n);
+            byte[] pub = java.util.Arrays.copyOfRange(datos, 4 + n, datos.length);
+            KeyFactory kf = KeyFactory.getInstance("RSA");
+            return new KeyPair(kf.generatePublic(new X509EncodedKeySpec(pub)), kf.generatePrivate(new PKCS8EncodedKeySpec(priv)));
+        } catch (Exception e) {
+            log.warn("No se pudo leer la clave de DEV guardada ({}); se genera una nueva.", e.getMessage());
+            return null;
+        }
+    }
+
+    private static void guardarParDev(Path archivo, KeyPair par) {
+        try {
+            Files.createDirectories(archivo.getParent());
+            byte[] priv = par.getPrivate().getEncoded();
+            byte[] pub = par.getPublic().getEncoded();
+            java.nio.ByteBuffer b = java.nio.ByteBuffer.allocate(4 + priv.length + pub.length);
+            b.putInt(priv.length).put(priv).put(pub);
+            Files.write(archivo, b.array());
+            try {
+                Files.setPosixFilePermissions(archivo, java.nio.file.attribute.PosixFilePermissions.fromString("rw-------"));
+            } catch (UnsupportedOperationException ignorado) { /* sistema sin permisos POSIX */ }
+        } catch (IOException e) {
+            log.warn("No se pudo guardar la clave de DEV ({}): los tokens no sobrevivirán a un reinicio.", e.getMessage());
+        }
     }
 
     /** JWKS público: clave actual y, si existe, la anterior (rotación). */

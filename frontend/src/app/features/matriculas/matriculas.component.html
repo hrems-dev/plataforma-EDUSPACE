@@ -45,6 +45,9 @@
                 @if (m.estado === 'PRE_MATRICULA') {
                   <button type="button" class="btn btn-sm" (click)="pedirMotivo(m, 'anular')">Anular</button>
                 }
+                @if (m.estado === 'POR_APROBAR') {
+                  <a class="btn btn-sm btn-primary" routerLink="/matriculas/aprobaciones">Revisar y aprobar</a>
+                }
                 @if (m.estado === 'MATRICULADO') {
                   <button type="button" class="btn btn-sm" (click)="pedirTraslado(m)">Trasladar</button>
                   <button type="button" class="btn btn-sm" (click)="pedirMotivo(m, 'retirar')">Retirar</button>

@@ -9,6 +9,9 @@ public interface AsignacionService {
 
     List<AsignacionResponse> listarPorDocente(Long docenteId);
 
+    /** Todas las asignaciones del año (una sola consulta en lugar de una por docente). */
+    List<AsignacionResponse> listarPorAnio(Long anioId);
+
     AsignacionResponse obtener(Long id);
 
     AsignacionResponse crear(AsignacionRequest request);

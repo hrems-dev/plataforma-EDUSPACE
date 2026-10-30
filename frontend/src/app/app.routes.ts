@@ -22,6 +22,7 @@ export const routes: Routes = [
       { path: 'nosotros', title: 'Nosotros · Horizonte del Valle', loadComponent: () => import('./features/publico/nosotros.component').then(m => m.NosotrosComponent) },
       { path: 'niveles', title: 'Niveles · Horizonte del Valle', loadComponent: () => import('./features/publico/niveles-publico.component').then(m => m.NivelesPublicoComponent) },
       { path: 'admision', title: 'Admisión · Horizonte del Valle', loadComponent: () => import('./features/publico/admision.component').then(m => m.AdmisionComponent) },
+      { path: 'matricula-en-linea', title: 'Matrícula en línea · Horizonte del Valle', loadComponent: () => import('./features/publico/matricula-en-linea.component').then(m => m.MatriculaEnLineaComponent) },
       { path: 'noticias', title: 'Noticias · Horizonte del Valle', loadComponent: () => import('./features/publico/noticias.component').then(m => m.NoticiasComponent) },
       { path: 'contacto', title: 'Contacto · Horizonte del Valle', loadComponent: () => import('./features/publico/contacto.component').then(m => m.ContactoComponent) }
     ]
@@ -96,6 +97,12 @@ export const routes: Routes = [
         loadComponent: () => import('./features/usuarios/usuarios.component').then(m => m.UsuariosComponent)
       },
       {
+        path: 'cuentas',
+        canActivate: [roleGuard, modoGuard],
+        data: { roles: SOLO_ADMIN, modo: 'eduspace' },
+        loadComponent: () => import('./features/cuentas/cuentas.component').then(m => m.CuentasComponent)
+      },
+      {
         path: 'alumnos',
         canActivate: [roleGuard],
         data: { roles: PERSONAL },
@@ -156,6 +163,12 @@ export const routes: Routes = [
         loadComponent: () => import('./features/matriculas/matriculas.component').then(m => m.MatriculasComponent)
       },
       {
+        path: 'matriculas/aprobaciones',
+        canActivate: [roleGuard],
+        data: { roles: SOLO_ADMIN },
+        loadComponent: () => import('./features/matriculas/aprobaciones.component').then(m => m.AprobacionesComponent)
+      },
+      {
         path: 'matriculas/campanias',
         canActivate: [roleGuard],
         data: { roles: PERSONAL },
@@ -172,6 +185,12 @@ export const routes: Routes = [
         canActivate: [roleGuard],
         data: { roles: DOCENTE },
         loadComponent: () => import('./features/docente/inicio/docente-inicio.component').then(m => m.DocenteInicioComponent)
+      },
+      {
+        path: 'docente/curso/:seccionId/:cursoId',
+        canActivate: [roleGuard],
+        data: { roles: DOCENTE },
+        loadComponent: () => import('./features/docente/curso/docente-curso.component').then(m => m.DocenteCursoComponent)
       },
       {
         path: 'docente/horario',
@@ -219,7 +238,13 @@ export const routes: Routes = [
         path: 'familia/inicio',
         canActivate: [roleGuard],
         data: { roles: FAMILIA },
-        loadComponent: () => import('./features/familia/inicio/familia-inicio.component').then(m => m.FamiliaInicioComponent)
+        loadComponent: () => import('./features/familia/cursos/familia-cursos.component').then(m => m.FamiliaCursosComponent)
+      },
+      {
+        path: 'familia/curso/:cursoId',
+        canActivate: [roleGuard],
+        data: { roles: FAMILIA },
+        loadComponent: () => import('./features/familia/cursos/familia-curso.component').then(m => m.FamiliaCursoComponent)
       },
       {
         path: 'familia/asistencia',

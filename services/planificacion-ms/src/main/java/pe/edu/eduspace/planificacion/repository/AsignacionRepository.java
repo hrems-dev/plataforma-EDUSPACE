@@ -12,6 +12,9 @@ public interface AsignacionRepository extends JpaRepository<Asignacion, Long> {
 
     List<Asignacion> findByDocenteId(Long docenteId);
 
+    @Query("select a from Asignacion a where a.seccion.anio.id = :anioId order by a.seccion.id, a.curso.id")
+    List<Asignacion> findByAnio(@Param("anioId") Long anioId);
+
     Optional<Asignacion> findBySeccionIdAndCursoId(Long seccionId, Long cursoId);
 
     boolean existsBySeccionIdAndCursoId(Long seccionId, Long cursoId);

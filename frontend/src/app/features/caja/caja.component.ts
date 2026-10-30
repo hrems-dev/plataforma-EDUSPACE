@@ -12,6 +12,7 @@ import { mensajeError } from '../../core/utils/errores';
 import { BuscadorAlumnoComponent } from '../../shared/components/buscador-alumno/buscador-alumno.component';
 import { ModalComponent } from '../../shared/components/modal/modal.component';
 import { PageHeaderComponent } from '../../shared/components/page-header/page-header.component';
+import { uuid } from '../../core/utils/uuid';
 
 const PAGABLES = ['PENDIENTE', 'VENCIDA', 'PARCIAL'];
 
@@ -55,7 +56,7 @@ export class CajaComponent implements OnInit {
   protected readonly errorCobro = signal<string | null>(null);
   protected readonly recibo = signal<Pago | null>(null);
   /** Una clave por intento de cobro: pulsar "Cobrar" dos veces no genera dos pagos ni dos comprobantes. */
-  private claveIntento = crypto.randomUUID();
+  private claveIntento = uuid();
 
   protected readonly pagables = computed(() => (this.cuenta()?.cuotas ?? []).filter((c: Cuota) => PAGABLES.includes(c.estado)));
   protected readonly total = computed(() => Object.values(this.montos()).reduce((s, n) => s + n, 0));
@@ -155,7 +156,7 @@ export class CajaComponent implements OnInit {
     this.cuenta.set(null);
     this.montos.set({});
     this.errorCobro.set(null);
-    this.claveIntento = crypto.randomUUID();
+    this.claveIntento = uuid();
   }
 
   protected elegida(id: number): boolean {
@@ -216,7 +217,7 @@ export class CajaComponent implements OnInit {
     this.recibo.set(null);
     const a = this.alumno();
     this.montos.set({});
-    this.claveIntento = crypto.randomUUID();
+    this.claveIntento = uuid();
     if (a) this.elegirAlumno(a);
   }
 

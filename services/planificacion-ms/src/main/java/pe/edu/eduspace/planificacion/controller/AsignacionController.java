@@ -18,17 +18,21 @@ public class AsignacionController {
 
     private final AsignacionService service;
 
-    /** Filtra por sección o por docente (uno de los dos). */
+    /** Filtra por sección, por docente o por año (uno de los tres). */
     @GetMapping
     public List<AsignacionResponse> listar(@RequestParam(required = false) Long seccionId,
-                                           @RequestParam(required = false) Long docenteId) {
+                                           @RequestParam(required = false) Long docenteId,
+                                           @RequestParam(required = false) Long anioId) {
+        if (anioId != null) {
+            return service.listarPorAnio(anioId);
+        }
         if (seccionId != null) {
             return service.listarPorSeccion(seccionId);
         }
         if (docenteId != null) {
             return service.listarPorDocente(docenteId);
         }
-        throw new IllegalArgumentException("Indique seccionId o docenteId");
+        throw new IllegalArgumentException("Indique seccionId, docenteId o anioId");
     }
 
     @GetMapping("/{id}")

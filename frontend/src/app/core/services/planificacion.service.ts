@@ -177,8 +177,9 @@ export class PlanificacionService {
   }
 
   // Asignaciones docente-curso-sección
-  asignaciones(seccionId?: number, docenteId?: number): Observable<Asignacion[]> {
+  asignaciones(seccionId?: number, docenteId?: number, anioId?: number): Observable<Asignacion[]> {
     let params = new HttpParams();
+    if (anioId) params = params.set('anioId', anioId);
     if (seccionId) params = params.set('seccionId', seccionId);
     if (docenteId) params = params.set('docenteId', docenteId);
     return this.http.get<Asignacion[]>(`${API}/asignaciones`, { params });

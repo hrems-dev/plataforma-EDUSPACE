@@ -88,5 +88,6 @@ export const TIPOS_NOTIFICACION: { codigo: string; etiqueta: string; canales: Ca
   { codigo: 'PAGO_VENCIDO', etiqueta: 'Cuota vencida', canales: ['IN_APP', 'EMAIL'] },
   { codigo: 'TAREA_CALIFICADA', etiqueta: 'Tarea calificada', canales: ['IN_APP'] },
   { codigo: 'TAREA_PUBLICADA', etiqueta: 'Nueva tarea', canales: ['IN_APP'] },
+  { codigo: 'MATERIAL_PUBLICADO', etiqueta: 'Nuevo material del curso', canales: ['IN_APP'] },
   { codigo: 'TAREA_RECORDATORIO', etiqueta: 'Recordatorio de tarea', canales: ['IN_APP'] }
 ];

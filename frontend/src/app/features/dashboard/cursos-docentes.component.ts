@@ -191,13 +191,13 @@ export class CursosDocentesComponent implements OnInit {
   }
 
   private cargar(): void {
-    // La API pide una sección o un docente: se lee la carga de cada docente y se queda con las secciones del año mostrado.
-    const porDocente = this.docentesActivos().map(d => this.api.asignaciones(undefined, d.id).pipe(catchError(() => of([] as Asignacion[]))));
-    forkJoin({ cursos: this.api.cursos(), asignaciones: porDocente.length ? forkJoin(porDocente) : of([] as Asignacion[][]) }).subscribe({
+    // Una sola consulta con todas las asignaciones del año (antes eran una por docente y saturaban el límite de peticiones).
+    const anioId = this.secciones()[0]?.anioId;
+    forkJoin({ cursos: this.api.cursos(), asignaciones: anioId ? this.api.asignaciones(undefined, undefined, anioId) : of([] as Asignacion[]) }).subscribe({
       next: r => {
         this.cursos.set(r.cursos);
         const ids = new Set(this.secciones().map(s => s.id));
-        this.asignaciones.set(r.asignaciones.flat().filter(a => ids.has(a.seccionId)));
+        this.asignaciones.set(r.asignaciones.filter(a => ids.has(a.seccionId)));
         this.cargando.set(false);
       },
       error: e => {

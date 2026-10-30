@@ -30,6 +30,7 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/actuator/**", "/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
                 .requestMatchers("/internal/**").permitAll()
+                .requestMatchers("/api/v1/publico/**").permitAll()   // matrícula en línea: sin sesión (ver PublicoMatriculaController)
 
                 // Campañas
                 .requestMatchers(HttpMethod.GET, "/api/v1/matriculas/campanias/**").hasAnyRole("ADMIN", "SECRETARIA", "DOCENTE")
@@ -44,6 +45,8 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.GET, "/api/v1/matriculas/*").hasAnyRole("ADMIN", "SECRETARIA", "DOCENTE", "APODERADO", "ALUMNO")
 
                 // Escritura
+                .requestMatchers(HttpMethod.PATCH, "/api/v1/matriculas/*/aprobar", "/api/v1/matriculas/*/rechazar").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.POST, "/api/v1/matriculas/*/reenviar-acceso").hasRole("ADMIN")
                 .requestMatchers("/api/v1/matriculas/**").hasAnyRole("ADMIN", "SECRETARIA")
                 .anyRequest().authenticated()
             )

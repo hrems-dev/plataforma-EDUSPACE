@@ -1,11 +1,15 @@
 <main class="pagina">
   <section class="panel">
     <div class="marca">
-      <div class="logo">E</div>
-      <div class="nombre">EduSpace</div>
+      <img src="/img/colegio-escudo.svg" alt="" class="logo-escudo" aria-hidden="true" />
+      <div>
+        <div class="nombre">EduSpace</div>
+        <small class="sub-marca">Horizonte del Valle</small>
+      </div>
     </div>
     <h1>Iniciar sesión</h1>
     <p class="muted">Accede con tu usuario del colegio</p>
+    @if (aviso) { <div class="aviso aviso-warn" role="status">{{ aviso }}</div> }
 
     <form [formGroup]="form" (ngSubmit)="enviar()" novalidate>
       <div class="field">
@@ -32,5 +36,9 @@
         {{ cargando() ? 'Ingresando…' : 'Ingresar' }}
       </button>
     </form>
+    <p class="muted ayuda-ingreso">
+      <strong>¿Primera vez?</strong> Tu usuario es <em>nombre.apellido</em> (por ejemplo <code>maria.aguilar</code>) y tu clave inicial es tu DNI;
+      el sistema te pedirá cambiarla al entrar. Si la olvidaste, pide en secretaría que restauren tu cuenta.
+    </p>
   </section>
 </main>

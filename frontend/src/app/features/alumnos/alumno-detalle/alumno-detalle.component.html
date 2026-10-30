@@ -22,7 +22,19 @@
           <div><dt>Teléfono</dt><dd>{{ a.telefono ?? '—' }}</dd></div>
           <div><dt>Correo</dt><dd>{{ a.email ?? '—' }}</dd></div>
           <div><dt>Colegio de procedencia</dt><dd>{{ a.colegioProcedencia ?? '—' }}</dd></div>
-          <div><dt>Cuenta de acceso</dt><dd>{{ a.usuarioId ? 'Vinculada' : 'Sin cuenta' }}</dd></div>
+          <div>
+            <dt>Cuenta de acceso</dt>
+            <dd>
+              @if (!a.usuarioId) { Sin cuenta } @else if (cuenta(); as c) { <code>{{ c.username }}</code> · {{ c.debeCambiarClave ? 'aún no cambia su clave' : 'activa' }} } @else { Vinculada }
+              @if (puedeCuentas()) {
+                @if (!a.usuarioId) {
+                  <button type="button" class="btn btn-sm btn-primary" style="margin-left: 8px" [disabled]="trabajandoCuenta()" (click)="crearCuenta(a)">Crear cuenta</button>
+                } @else {
+                  <button type="button" class="btn btn-sm" style="margin-left: 8px" [disabled]="trabajandoCuenta()" (click)="restaurarCuenta(a)">Restaurar clave</button>
+                }
+              }
+            </dd>
+          </div>
         </dl>
       </div>
     </section>

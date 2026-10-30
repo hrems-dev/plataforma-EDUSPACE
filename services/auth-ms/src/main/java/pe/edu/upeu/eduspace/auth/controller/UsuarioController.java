@@ -39,6 +39,18 @@ public class UsuarioController {
         return ResponseEntity.status(HttpStatus.CREATED).body(service.crear(req));
     }
 
+    @PostMapping("/cuentas")
+    @Operation(summary = "Crea la cuenta de una persona: usuario nombre.apellido y clave inicial = documento (cambio obligatorio al entrar)")
+    public ResponseEntity<UsuarioConClaveTemporal> crearCuenta(@Valid @RequestBody CuentaPersonaRequest req) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(service.crearCuentaPersona(req));
+    }
+
+    @PostMapping("/{id}/restablecer-por-documento")
+    @Operation(summary = "Restaura la cuenta: la clave vuelve a ser el documento y debe cambiarse al entrar (no aplica a ADMIN)")
+    public UsuarioResponse restablecerPorDocumento(@PathVariable Long id, @Valid @RequestBody RestablecerPorDocumentoRequest req) {
+        return service.restablecerPorDocumento(id, req);
+    }
+
     @PutMapping("/{id}")
     public UsuarioResponse actualizar(@PathVariable Long id, @Valid @RequestBody UsuarioUpdateRequest req) {
         return service.actualizar(id, req);

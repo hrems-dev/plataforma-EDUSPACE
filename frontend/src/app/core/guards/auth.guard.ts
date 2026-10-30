@@ -10,7 +10,7 @@ export const authGuard: CanActivateFn = (_route, state) => {
 
   if (!auth.isAuthenticated()) {
     // Con Keycloak se entra desde el sitio público (sin sesión): se manda al login de Keycloak y se vuelve a esta pantalla.
-    if (auth.esKeycloak) {
+    if (auth.usaRedirect) {
       void inject(KeycloakService).login(window.location.origin + state.url);
       return false;
     }

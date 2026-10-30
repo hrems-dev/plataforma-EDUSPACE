@@ -31,6 +31,12 @@ aforo del aula, importación CSV, ficha de salud cerrada por defecto.
 ## Hecho el 2026-10-27/28
 - Inicio del admin (estadísticas, pre-matrículas, aulas con ficha, cursos y docentes), sitio público, datos para matricular, alineación con pagatu (Keycloak por defecto en DEV, `X-Trace-ID`), CRUD de notificaciones con selector de destinatarios y **armado automático de horarios**. Detalle, estado de los datos y pendientes: `docs/08-avance-2026-10-28.md`.
 
+## Hecho el 2026-10-29
+- Cuentas de personas: usuario `nombre.apellido`, clave inicial = documento, cambio obligatorio al primer ingreso, restauración por el ADMIN (no aplica a cuentas ADMIN); pantalla *Avisos y cuentas → Cuentas de acceso* y tarjeta en la ficha del alumno. Solo con el login propio (`auth-ms`); con Keycloak las cuentas se crean en su consola (ver `docs/sistema/alumnos-y-acceso.md`).
+- Documentación completa del sistema con métricas (`docs/sistema/`, `mkdocs.yml`), un documento por persona (`docs/equipo/`).
+
+- Matrícula en línea desde el sitio público (reserva, pago simulado, confirmación, cuentas, constancia PDF y correo): `docs/sistema/matricula-en-linea.md`.
+
 ## Pendiente
 
 | Pendiente | Motivo / qué lo destraba |
@@ -72,6 +78,8 @@ aforo del aula, importación CSV, ficha de salud cerrada por defecto.
 ## Keycloak: lo que queda (2026-10-27)
 | Pendiente | Detalle |
 |---|---|
+| Pasarela de pago real y correo real (matrícula en línea) | Integrar un proveedor en `POST /internal/pagos/matricula-en-linea`; configurar `SMTP_*` en `notificaciones-ms` (en DEV el correo lo recibe Mailpit). Definir el prorrateo de pensiones si se matricula a mitad de año. |
+| Cuentas de personas con Keycloak | Crearlas también en Keycloak (Admin API) y que `auth-ms` acepte el token de Keycloak del ADMIN; hoy la pantalla de cuentas solo funciona en modo `auth-ms`. |
 | Usuarios en un solo lugar | Con Keycloak, `auth-ms` debería administrar los usuarios por la Admin API (cuenta de servicio) y guardar el `usuarioId` como atributo; hoy el alta y el `usuarioId` son manuales. |
 | PROD con Keycloak | Base propia, HTTPS, sin el cliente `eduspace-e2e`, `sslRequired` externo; hoy solo hay perfil de DEV. |
 | e2e con Keycloak | `tools/e2e/lib.py` crea usuarios por `auth-ms`; para correrlo con Keycloak habría que crearlos en el realm. |

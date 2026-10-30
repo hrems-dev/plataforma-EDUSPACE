@@ -24,6 +24,8 @@ fi
 KP=19092; ss -ltn 2>/dev/null | grep -q ":19092 " && [ "$1" != "--sin-reset" ] && KP=19093
 [ -f "$AQUI/.kafka-port" ] && [ "$1" = "--sin-reset" ] && KP=$(cat "$AQUI/.kafka-port")
 echo $KP > "$AQUI/.kafka-port"; export KAFKA_BOOTSTRAP_SERVERS=localhost:$KP
+# App móvil desde otro equipo/celular: EXPONER_HOST=<IP del equipo> ./levantar.sh ... para que las URL firmadas de MinIO (subir tareas) sean alcanzables desde el teléfono.
+[ -n "$EXPONER_HOST" ] && export MINIO_ENDPOINT="http://$EXPONER_HOST:19000"
 JV="-Xmx256m -Xss512k -XX:+UseSerialGC -XX:TieredStopAtLevel=1"
 if [ "$1" != "--sin-reset" ]; then
   "$AQUI/detener.sh" >/dev/null 2>&1

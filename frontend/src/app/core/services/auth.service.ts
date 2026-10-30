@@ -1,5 +1,5 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { Observable, catchError, finalize, from, map, of, shareReplay, tap, throwError } from 'rxjs';
 import { APP_CONFIG } from '../config/app-config';
@@ -16,11 +16,21 @@ const TOKEN_KEY = 'eduspace_token';
 const REFRESH_KEY = 'eduspace_refresh';
 const CAMBIAR_CLAVE_KEY = 'eduspace_cambiar_clave';
 const API = '/api/v1/auth';
+const FORM = new HttpHeaders({ 'Content-Type': 'application/x-www-form-urlencoded' });
+
+interface KeycloakTokens {
+  access_token: string;
+  refresh_token: string;
+  token_type?: string;
+  expires_in: number;
+}
 
 /**
  * Sesión del usuario. Dos emisores de token con el mismo contrato (JWT RS256, `usuarioId`, `realm_access.roles`):
  * - `eduspace`: login propio contra auth-ms (usuario y clave, refresh con rotación).
  * - `keycloak`: Keycloak autentica (código de autorización + PKCE) y keycloak-js renueva el token.
+ * - `keycloak-form`: el formulario de EduSpace envía usuario y clave a Keycloak (credenciales directas), que valida y emite el token;
+ *   no necesita Web Crypto, así que sirve por http desde otros equipos de la red.
  */
 @Injectable({ providedIn: 'root' })
 export class AuthService {
@@ -28,8 +38,13 @@ export class AuthService {
   private readonly router = inject(Router);
   private readonly kc = inject(KeycloakService);
 
-  readonly modo = inject(APP_CONFIG).authMode;
-  readonly esKeycloak = this.modo === 'keycloak';
+  private readonly cfg = inject(APP_CONFIG);
+  readonly modo = this.cfg.authMode;
+  /** Keycloak es quien emite el token (con redirección o con el formulario propio). */
+  readonly esKeycloak = this.modo === 'keycloak' || this.modo === 'keycloak-form';
+  /** Keycloak con redirección a su pantalla de login (PKCE). */
+  readonly usaRedirect = this.modo === 'keycloak';
+  private readonly conFormulario = this.modo === 'keycloak-form';
 
   private readonly tokenSignal = signal<string | null>(null);
   private readonly refreshSignal = signal<string | null>(null);
@@ -46,7 +61,7 @@ export class AuthService {
   readonly isAdmin = computed(() => this.roles().includes('ADMIN'));
 
   constructor() {
-    if (this.esKeycloak) {
+    if (this.usaRedirect) {
       this.sincronizarKeycloak();
     } else {
       this.restaurarSesion();
@@ -55,6 +70,14 @@ export class AuthService {
 
   // --- login propio (modo eduspace) ---
   login(request: LoginRequest): Observable<TokenResponse> {
+    if (this.conFormulario) {
+      const cuerpo = new HttpParams().set('grant_type', 'password').set('client_id', this.clienteFormulario())
+        .set('username', request.username).set('password', request.password);
+      return this.http.post<KeycloakTokens>(this.urlKeycloak('token'), cuerpo.toString(), { headers: FORM }).pipe(
+        map(r => this.aTokenResponse(r)),
+        tap(res => this.guardarSesion(res))
+      );
+    }
     return this.http.post<TokenResponse>(`${API}/login`, request).pipe(tap(res => this.guardarSesion(res)));
   }
 
@@ -70,7 +93,7 @@ export class AuthService {
   // --- común a los dos modos ---
   /** Hay forma de renovar el token sin pedir la clave otra vez. */
   puedeRenovar(): boolean {
-    return this.esKeycloak ? this.kc.autenticado : !!this.refreshSignal();
+    return this.usaRedirect ? this.kc.autenticado : !!this.refreshSignal();
   }
 
   /** Renueva el access token. Las llamadas simultáneas comparten una sola petición. */
@@ -79,9 +102,18 @@ export class AuthService {
       return throwError(() => new Error('No hay sesión que renovar.'));
     }
     if (!this.renovacion$) {
-      const origen$: Observable<unknown> = this.esKeycloak
+      const refrescoKeycloak$ = (): Observable<unknown> => {
+        const cuerpo = new HttpParams().set('grant_type', 'refresh_token').set('client_id', this.clienteFormulario()).set('refresh_token', this.refreshSignal() ?? '');
+        return this.http.post<KeycloakTokens>(this.urlKeycloak('token'), cuerpo.toString(), { headers: FORM }).pipe(
+          map(r => this.aTokenResponse(r)),
+          tap(res => this.guardarSesion(res))
+        );
+      };
+      const origen$: Observable<unknown> = this.usaRedirect
         ? from(this.kc.actualizarToken(-1)).pipe(tap(() => this.sincronizarKeycloak()))
-        : this.http.post<TokenResponse>(`${API}/refresh`, { refresh_token: this.refreshSignal() }).pipe(tap(res => this.guardarSesion(res)));
+        : this.conFormulario
+          ? refrescoKeycloak$()
+          : this.http.post<TokenResponse>(`${API}/refresh`, { refresh_token: this.refreshSignal() }).pipe(tap(res => this.guardarSesion(res)));
       this.renovacion$ = origen$.pipe(
         finalize(() => (this.renovacion$ = null)),
         shareReplay(1)
@@ -92,7 +124,7 @@ export class AuthService {
 
   /** Token listo para usar: en Keycloak se renueva antes de que venza (keycloak-js lo hace solo si queda poco). */
   tokenFresco(): Observable<string | null> {
-    if (!this.esKeycloak) {
+    if (!this.usaRedirect) {
       return of(this.tokenSignal());
     }
     return from(this.kc.actualizarToken(30)).pipe(
@@ -103,34 +135,49 @@ export class AuthService {
   }
 
   logout(): void {
-    if (this.esKeycloak) {
+    if (this.usaRedirect) {
       void this.kc.logout();
       return;
     }
     const refresh = this.refreshSignal();
     if (refresh) {
-      this.http.post<void>(`${API}/logout`, { refresh_token: refresh }).subscribe({ error: () => undefined });
+      const cierre$ = this.conFormulario
+        ? this.http.post<void>(this.urlKeycloak('logout'), new HttpParams().set('client_id', this.clienteFormulario()).set('refresh_token', refresh).toString(), { headers: FORM })
+        : this.http.post<void>(`${API}/logout`, { refresh_token: refresh });
+      cierre$.subscribe({ error: () => undefined });
     }
     this.cerrarSesionLocal();
   }
 
-  /** Borra la sesión del navegador y vuelve al login (p. ej. cuando el servidor ya no acepta el token). */
-  cerrarSesionLocal(): void {
-    if (this.esKeycloak) {
+  /**
+   * Borra la sesión del navegador y vuelve al login (p. ej. cuando el servidor ya no acepta el token porque venció o se reinició).
+   * `motivo` hace que el login explique qué pasó, y `returnUrl` devuelve a la persona a la pantalla donde estaba.
+   */
+  cerrarSesionLocal(motivo?: 'vencida' | 'invalida'): void {
+    if (this.usaRedirect) {
       void this.kc.logout();
       return;
     }
+    const url = this.router.url;
+    const hayRetorno = !!url && url !== '/' && !url.startsWith('/login') && !url.startsWith('/cambiar-clave');
     this.limpiarSesion();
-    this.router.navigate(['/login']);
+    const queryParams: Record<string, string> = {};
+    if (motivo) queryParams['motivo'] = motivo;
+    if (hayRetorno && motivo) queryParams['returnUrl'] = url;
+    this.router.navigate(['/login'], Object.keys(queryParams).length ? { queryParams } : undefined);
   }
 
   /** Abre la consola de la cuenta (Keycloak) donde el usuario cambia su clave y gestiona sus sesiones. */
   abrirCuenta(): void {
+    if (this.conFormulario) {
+      window.open(`${location.protocol}//${location.hostname}:18090/realms/${this.cfg.keycloak.realm}/account`, '_blank', 'noopener');
+      return;
+    }
     void this.kc.cuenta();
   }
 
   get consolaAdminUrl(): string {
-    return this.kc.consolaAdminUrl;
+    return this.conFormulario ? `${location.protocol}//${location.hostname}:18090/admin/${this.cfg.keycloak.realm}/console/` : this.kc.consolaAdminUrl;
   }
 
   getToken(): string | null {
@@ -147,6 +194,19 @@ export class AuthService {
   }
 
   // --- internos ---
+  private clienteFormulario(): string {
+    return this.cfg.keycloak.clientIdFormulario ?? 'eduspace-web-form';
+  }
+
+  private urlKeycloak(operacion: 'token' | 'logout'): string {
+    const { url, realm } = this.cfg.keycloak;
+    return `${url.replace(/\/$/, '')}/realms/${realm}/protocol/openid-connect/${operacion}`;
+  }
+
+  private aTokenResponse(r: KeycloakTokens): TokenResponse {
+    return { access_token: r.access_token, refresh_token: r.refresh_token, token_type: r.token_type ?? 'Bearer', expires_in: r.expires_in, debe_cambiar_clave: false };
+  }
+
   private sincronizarKeycloak(): void {
     const token = this.kc.token;
     this.tokenSignal.set(token);

@@ -10,7 +10,7 @@ import { MatriculaService } from '../../../core/services/matricula.service';
 import { PlanificacionService } from '../../../core/services/planificacion.service';
 import { TareaService } from '../../../core/services/tarea.service';
 import { mensajeError } from '../../../core/utils/errores';
-import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
+import { CursoTarjetaComponent } from '../../../shared/aula/curso-tarjeta.component';
 
 export interface SeccionCursoDetalle {
   alumnos: number;
@@ -20,8 +20,34 @@ export interface SeccionCursoDetalle {
 
 @Component({
   selector: 'app-docente-inicio',
-  imports: [RouterLink, PageHeaderComponent],
-  templateUrl: './docente-inicio.component.html'
+  imports: [RouterLink, CursoTarjetaComponent],
+  templateUrl: './docente-inicio.component.html',
+  styles: `
+    .hero { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 16px; margin-bottom: 22px; }
+    .hola { margin: 0; color: var(--primary); font-weight: 700; font-size: .9rem; }
+    h1 { margin: 2px 0 4px; font-size: 1.9rem; letter-spacing: -.02em; }
+    .sub { margin: 0; color: var(--ink-2); }
+    .pendiente { display: flex; align-items: center; gap: 12px; padding: 12px 18px; border-radius: 16px; background: var(--warn-soft); color: var(--warn); text-decoration: none; }
+    .pendiente strong { font-size: 1.8rem; line-height: 1; }
+    .columnas { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 26px; align-items: start; }
+    h2 { font-size: 1.05rem; margin: 0 0 12px; }
+    .cuenta { margin-left: 6px; font-size: .8rem; background: var(--primary-soft); color: var(--primary); border-radius: 999px; padding: 1px 9px; }
+    .rejilla { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 14px; }
+    .esqueleto { height: 90px; border-radius: 16px; background: linear-gradient(90deg, #eef1f8, #f8f9fd, #eef1f8); background-size: 200% 100%; animation: brillo 1.4s infinite; }
+    @keyframes brillo { to { background-position: -200% 0; } }
+    .vacio { display: flex; flex-direction: column; gap: 4px; padding: 28px; text-align: center; border: 2px dashed var(--line-2); border-radius: 16px; color: var(--ink-2); grid-column: 1 / -1; }
+    .lateral { display: flex; flex-direction: column; gap: 16px; }
+    .caja { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 16px; }
+    .clase { display: flex; gap: 12px; padding: 8px 0; border-top: 1px solid var(--line); text-decoration: none; color: var(--ink); }
+    .clase:first-of-type { border-top: 0; }
+    .hora { flex: none; width: 46px; font-weight: 700; color: var(--primary); }
+    .entrega { display: flex; flex-direction: column; padding: 9px 0; border-top: 1px solid var(--line); text-decoration: none; color: var(--ink); }
+    .entrega:first-of-type { border-top: 0; }
+    .entrega small { color: var(--ink-2); }
+    .enlace { display: inline-block; margin-top: 8px; font-size: .88rem; font-weight: 600; text-decoration: none; }
+    @media (max-width: 960px) { .columnas { grid-template-columns: minmax(0, 1fr); } }
+    @media (prefers-reduced-motion: reduce) { .esqueleto { animation: none; } }
+  `
 })
 export class DocenteInicioComponent implements OnInit {
   private readonly contexto = inject(DocenteContextoService);
@@ -82,6 +108,22 @@ export class DocenteInicioComponent implements OnInit {
         this.error.set(mensajeError(e, 'No se pudo cargar tu información de docente.'));
       }
     });
+  }
+
+  protected readonly saludoHora = computed(() => {
+    const h = new Date().getHours();
+    return h < 12 ? 'Buenos días' : h < 19 ? 'Buenas tardes' : 'Buenas noches';
+  });
+
+  /** Tareas de ese curso y sección con entregas sin calificar. */
+  protected porCalificar(seccionId: number, cursoId: number): number {
+    return this.tareasPorCalificar().filter(t => t.seccionId === seccionId && t.cursoId === cursoId).length;
+  }
+
+  protected datosDe(seccionId: number): string[] {
+    const i = this.infoCurso(seccionId);
+    if (!i) return [];
+    return [`${i.alumnos} alumnos`, ...(i.aula ? [i.aula] : []), ...(i.turno ? ['turno ' + (i.turno === 'MANANA' ? 'mañana' : 'tarde')] : [])];
   }
 
   protected infoCurso(seccionId: number): SeccionCursoDetalle | null {

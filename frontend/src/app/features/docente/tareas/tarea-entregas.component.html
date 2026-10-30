@@ -1,9 +1,11 @@
-<div class="page">
+<div [class.page]="!embebido()">
   @if (tarea(); as t) {
+   @if (!embebido()) {
     <app-page-header [titulo]="t.titulo" [subtitulo]="'Entrega: ' + (t.fechaEntrega | date: 'dd/MM/yyyy HH:mm') + ' · puntaje máximo ' + t.puntajeMaximo">
       <span [class]="'badge ' + (t.estado === 'PUBLICADA' ? 'badge-ok' : t.estado === 'CERRADA' ? 'badge-warn' : 'badge-gray')">{{ t.estado }}</span>
       <a class="btn" routerLink="/docente/tareas">Volver</a>
     </app-page-header>
+   }
     @if (t.descripcion) { <div class="card"><div class="card-body" style="white-space: pre-line">{{ t.descripcion }}</div></div> }
   }
 

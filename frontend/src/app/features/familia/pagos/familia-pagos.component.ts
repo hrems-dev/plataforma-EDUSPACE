@@ -8,6 +8,7 @@ import { mensajeError } from '../../../core/utils/errores';
 import { ModalComponent } from '../../../shared/components/modal/modal.component';
 import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
 import { SelectorHijoComponent } from '../../../shared/components/selector-hijo/selector-hijo.component';
+import { uuid } from '../../../core/utils/uuid';
 
 const CLASE: Record<EstadoCuota, string> = { PENDIENTE: 'badge-warn', PARCIAL: 'badge-violet', PAGADA: 'badge-ok', VENCIDA: 'badge-danger', ANULADA: 'badge-gray' };
 const PAGABLES: EstadoCuota[] = ['PENDIENTE', 'VENCIDA', 'PARCIAL'];
@@ -91,7 +92,7 @@ export class FamiliaPagosComponent implements OnInit {
   // --- pagar ---
   protected abrirPago(): void {
     if (this.elegidas().size === 0) return;
-    this.claveIntento = crypto.randomUUID();
+    this.claveIntento = uuid();
     this.errorPago.set(null);
     this.recibo.set(null);
     this.confirmando.set(true);

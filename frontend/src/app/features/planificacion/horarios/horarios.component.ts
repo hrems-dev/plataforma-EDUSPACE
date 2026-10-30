@@ -2,7 +2,7 @@ import { DatePipe } from '@angular/common';
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
-import { catchError, firstValueFrom, of } from 'rxjs';
+import { catchError, firstValueFrom, forkJoin, of } from 'rxjs';
 import {
   Anio,
   Asignacion,
@@ -91,11 +91,14 @@ export class HorariosComponent implements OnInit {
     this.horario.set(null);
     this.validacion.set(null);
     if (!this.anioId.value) return;
-    this.api.secciones(this.anioId.value).subscribe(s => {
+    forkJoin({ secciones: this.api.secciones(this.anioId.value), clases: this.api.horariosAnio(this.anioId.value).pipe(catchError(() => of([] as ClaseHorario[]))) }).subscribe(({ secciones: s, clases }) => {
       this.secciones.set(s);
-      // ?seccion=ID abre directamente esa sección (el armado automático enlaza aquí)
+      // ?seccion=ID abre directamente esa sección (el armado automático enlaza aquí); si no, la que ya tiene más clases armadas.
       const pedida = Number(this.ruta.snapshot.queryParamMap.get('seccion'));
-      this.seccionId.setValue(s.some(x => x.id === pedida) ? pedida : (s[0]?.id ?? 0));
+      const cuenta = new Map<number, number>();
+      for (const c of clases) cuenta.set(c.seccionId, (cuenta.get(c.seccionId) ?? 0) + 1);
+      const conMas = [...s].sort((a, b) => (cuenta.get(b.id) ?? 0) - (cuenta.get(a.id) ?? 0))[0];
+      this.seccionId.setValue(s.some(x => x.id === pedida) ? pedida : ((cuenta.get(conMas?.id ?? 0) ?? 0) > 0 ? conMas!.id : (s[0]?.id ?? 0)));
       this.cargar();
     });
   }

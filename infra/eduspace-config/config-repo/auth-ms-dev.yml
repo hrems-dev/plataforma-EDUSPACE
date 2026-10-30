@@ -22,3 +22,7 @@ eureka:
     hostname: localhost
     prefer-ip-address: false
     instance-id: ${spring.application.name}:${server.port}
+
+# Token compartido entre servicios para /internal/** (header X-Service-Token). Sin él, /internal responde 401.
+eduspace:
+  service-token: ${SERVICE_TOKEN:eduspace-dev-service-token}

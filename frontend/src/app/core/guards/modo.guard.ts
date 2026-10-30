@@ -7,5 +7,6 @@ import { AuthService } from '../services/auth.service';
 export const modoGuard: CanActivateFn = route => {
   const auth = inject(AuthService);
   const requerido = route.data?.['modo'] as ModoAuth | undefined;
-  return !requerido || requerido === auth.modo ? true : inject(Router).createUrlTree(['/portal']);
+  const efectivo: ModoAuth = auth.esKeycloak ? 'keycloak' : 'eduspace'; // `keycloak-form` también emite Keycloak
+  return !requerido || requerido === efectivo ? true : inject(Router).createUrlTree(['/portal']);
 };

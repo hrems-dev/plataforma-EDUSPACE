@@ -54,6 +54,19 @@ export class MatriculaService {
     return this.http.patch<Matricula>(`${API}/${id}/anular`, { motivo });
   }
 
+  /** Solo ADMIN: la matrícula pagada pasa a MATRICULADO y, si fue en línea, el apoderado recibe el acceso por correo. */
+  aprobar(id: number): Observable<Matricula> {
+    return this.http.patch<Matricula>(`${API}/${id}/aprobar`, {});
+  }
+
+  rechazar(id: number, motivo: string): Observable<Matricula> {
+    return this.http.patch<Matricula>(`${API}/${id}/rechazar`, { motivo });
+  }
+
+  reenviarAcceso(id: number): Observable<void> {
+    return this.http.post<void>(`${API}/${id}/reenviar-acceso`, {});
+  }
+
   retirar(id: number, motivo: string): Observable<Matricula> {
     return this.http.patch<Matricula>(`${API}/${id}/retiro`, { motivo });
   }

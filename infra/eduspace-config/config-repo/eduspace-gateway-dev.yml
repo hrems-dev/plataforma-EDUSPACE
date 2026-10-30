@@ -50,6 +50,10 @@ spring:
               uri: lb://examenes-ms
               predicates:
                 - Path=/api/v1/examenes/**
+            - id: publico-route
+              uri: lb://matricula-ms
+              predicates:
+                - Path=/api/v1/publico/**
             - id: matriculas-route
               uri: lb://matricula-ms
               predicates:
@@ -66,7 +70,8 @@ spring:
 eduspace:
   gateway:
     cors:
-      allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:4200}
+      # DEV: la web también se abre desde otros equipos de la red local, por IP o por nombre del equipo (http://<host>:4200); en PROD el valor es obligatorio y exacto.
+      allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5000,http://*:4200}
     actuator-public: true     # DEV: Prometheus local raspa sin token
     rate-limit:
       enabled: true
@@ -74,6 +79,8 @@ eduspace:
       burst: 50
       login-per-minute: 120    # DEV: holgado para que tools/e2e (muchos login seguidos) no reciba 429
       login-burst: 60
+      public-per-minute: 30    # matrícula en línea del sitio público (sin sesión): más estricto que la API
+      public-burst: 15
 
 eureka:
   client:

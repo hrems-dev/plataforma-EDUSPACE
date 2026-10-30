@@ -69,6 +69,15 @@ public class Matricula {
     @Column(name = "confirmada_en")
     private LocalDateTime confirmadaEn;
 
+    @Column(name = "pagada_en")
+    private LocalDateTime pagadaEn;
+
+    @Column(name = "aprobada_por")
+    private Long aprobadaPor;
+
+    @Column(name = "aprobada_en")
+    private LocalDateTime aprobadaEn;
+
     @Column(name = "cerrada_en")
     private LocalDateTime cerradaEn;
 

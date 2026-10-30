@@ -40,7 +40,7 @@ EduSpace son **10 microservicios con base de datos** más la infraestructura com
 | `pago.confirmado` · `pago.anulado` | pago | matricula (y notificaciones el confirmado) |
 | `pago.por-vencer` · `pago.vencido` | pago (jobs) | notificaciones |
 | `asistencia.falta-registrada` · `justificacion.resuelta` | asistencia | notificaciones |
-| `tarea.publicada` · `tarea.recordatorio` | tareas | notificaciones |
+| `tarea.publicada` · `tarea.recordatorio` · `material.publicado` | tareas | notificaciones |
 | `tarea.calificada` | tareas | calificaciones, notificaciones |
 | `tarea.entregada` | tareas | nadie todavía |
 | `examen.publicado` | examenes | notificaciones |

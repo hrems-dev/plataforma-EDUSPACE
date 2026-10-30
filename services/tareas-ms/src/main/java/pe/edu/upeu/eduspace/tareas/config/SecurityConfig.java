@@ -31,6 +31,11 @@ public class SecurityConfig {
                 .requestMatchers("/actuator/**", "/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
                 .requestMatchers("/internal/**").denyAll()
 
+                // Materiales del curso: el docente sube y borra; los demás los ven si participan (filtro fino en el servicio)
+                .requestMatchers(HttpMethod.POST, "/api/v1/tareas/materiales", "/api/v1/tareas/materiales/archivo-url").hasAnyRole("DOCENTE", "ADMIN")
+                .requestMatchers(HttpMethod.DELETE, "/api/v1/tareas/materiales/*").hasAnyRole("DOCENTE", "ADMIN")
+                .requestMatchers(HttpMethod.GET, "/api/v1/tareas/materiales", "/api/v1/tareas/materiales/*/url").authenticated()
+
                 // Alumno / apoderado
                 .requestMatchers(HttpMethod.GET, "/api/v1/tareas/mias", "/api/v1/tareas/mias/pendientes").hasAnyRole("ALUMNO", "APODERADO")
                 .requestMatchers(HttpMethod.POST, "/api/v1/tareas/*/entregas", "/api/v1/tareas/*/entregas/archivo-url").hasRole("ALUMNO")

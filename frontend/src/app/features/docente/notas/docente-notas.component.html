@@ -1,17 +1,22 @@
-<div class="page">
-  <app-page-header titulo="Notas" subtitulo="Define los criterios de evaluación de cada curso (los pesos suman 100) y registra las notas de 0 a 20.">
-    <button type="button" class="btn btn-primary" [disabled]="!hayCambios() || guardando() || cerrado()" (click)="guardarNotas()">{{ guardando() ? 'Guardando…' : 'Guardar notas' }}</button>
-  </app-page-header>
+<div [class.page]="!embebido()">
+  @if (!embebido()) {
+    <app-page-header titulo="Notas" subtitulo="Define los criterios de evaluación de cada curso (los pesos suman 100) y registra las notas de 0 a 20.">
+      <button type="button" class="btn btn-primary" [disabled]="!hayCambios() || guardando() || cerrado()" (click)="guardarNotas()">{{ guardando() ? 'Guardando…' : 'Guardar notas' }}</button>
+    </app-page-header>
+  }
 
   <form class="toolbar" [formGroup]="filtro">
-    <select class="input" formControlName="asignacion" (change)="cargar()" aria-label="Curso y sección">
-      @for (a of ctx()?.asignaciones ?? []; track a.id) { <option [ngValue]="a.id">{{ a.cursoNombre }} · {{ a.seccionNombre }}</option> }
-    </select>
+    @if (!embebido()) {
+      <select class="input" formControlName="asignacion" (change)="cargar()" aria-label="Curso y sección">
+        @for (a of ctx()?.asignaciones ?? []; track a.id) { <option [ngValue]="a.id">{{ a.cursoNombre }} · {{ a.seccionNombre }}</option> }
+      </select>
+    }
     <select class="input" formControlName="periodoId" (change)="cargar()" aria-label="Periodo">
       @for (p of ctx()?.periodos ?? []; track p.id) { <option [ngValue]="p.id">{{ p.nombre }}</option> }
     </select>
     @if (registro()) { <span [class]="'badge ' + (cerrado() ? 'badge-warn' : 'badge-ok')">{{ cerrado() ? 'Periodo cerrado: solo lectura' : 'Periodo abierto' }}</span> }
     @if (hayCambios()) { <span class="muted">Hay notas sin guardar</span> }
+    @if (embebido()) { <button type="button" class="btn btn-primary" [disabled]="!hayCambios() || guardando() || cerrado()" (click)="guardarNotas()">{{ guardando() ? 'Guardando…' : 'Guardar notas' }}</button> }
   </form>
 
   <section class="card">

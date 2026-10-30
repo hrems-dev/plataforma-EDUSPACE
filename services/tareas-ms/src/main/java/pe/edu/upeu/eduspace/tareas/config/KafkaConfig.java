@@ -14,6 +14,7 @@ public class KafkaConfig {
     public static final String TOPIC_TAREA_ENTREGADA = "tarea.entregada";
     public static final String TOPIC_TAREA_CALIFICADA = "tarea.calificada";
     public static final String TOPIC_TAREA_RECORDATORIO = "tarea.recordatorio";
+    public static final String TOPIC_MATERIAL_PUBLICADO = "material.publicado";
 
     public static final String TOPIC_MATRICULA_CREADA = "matricula.creada";
     public static final String TOPIC_MATRICULA_CONFIRMADA = "matricula.confirmada";
@@ -32,4 +33,7 @@ public class KafkaConfig {
 
     @Bean
     NewTopic tareaRecordatorio() { return TopicBuilder.name(TOPIC_TAREA_RECORDATORIO).partitions(3).replicas(1).build(); }
+
+    @Bean
+    NewTopic materialPublicado() { return TopicBuilder.name(TOPIC_MATERIAL_PUBLICADO).partitions(3).replicas(1).build(); }
 }
